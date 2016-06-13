@@ -73,6 +73,14 @@ config DVB_SI2165
 
 	  Say Y when you want to support this frontend.
 
+config DVB_MN88472
+	tristate "Panasonic MN88472"
+	depends on DVB_CORE && I2C
+	select REGMAP_I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Say Y when you want to support this frontend.
+
 config DVB_MN88473
 	tristate "Panasonic MN88473"
 	depends on DVB_CORE && I2C
@@ -853,20 +861,6 @@ config DVB_TAS2101
 	help
 	  A DVB-S demod and tuner module.
 
-config DVB_HORUS3A
-	tristate "Sony Horus3A tuner"
-	depends on DVB_CORE && I2C
-	default m if !MEDIA_SUBDRV_AUTOSELECT
-	help
-	  Say Y when you want to support this frontend.
-
-config DVB_ASCOT2E
-	tristate "Sony Ascot2E tuner"
-	depends on DVB_CORE && I2C
-	default m if !MEDIA_SUBDRV_AUTOSELECT
-	help
-	  Say Y when you want to support this frontend.
-
 config DVB_AVL6882
 	tristate "Availink AVL6882 DVB-T/T2/C/S/S2 demodulator"
 	depends on DVB_CORE && I2C
@@ -889,6 +883,27 @@ config DVB_MXL5XX
 	help
 	  A DVB-S demod and tuner module.
 	  Say Y when you want to support this frontend.
+
+config DVB_HORUS3A
+	tristate "Sony Horus3A tuner"
+	depends on DVB_CORE && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Say Y when you want to support this frontend.
+
+config DVB_ASCOT2E
+	tristate "Sony Ascot2E tuner"
+	depends on DVB_CORE && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Say Y when you want to support this frontend.
+
+config DVB_HELENE
+	tristate "Sony HELENE Sat/Ter tuner (CXD2858ER)"
+	depends on DVB_CORE && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	Say Y when you want to support this frontend.
 
 comment "Tools to develop new frontends"
 
