@@ -48,6 +48,7 @@
 #define TBSECP3_BOARD_TBS6903	4
 #define TBSECP3_BOARD_TBS6902	5
 #define TBSECP3_BOARD_TBS6909	6
+#define TBSECP3_BOARD_TBS6910	7
 
 #define TBSECP3_MAX_ADAPTERS	(8)
 #define TBSECP3_MAX_I2C_BUS	(4)
@@ -83,6 +84,7 @@ struct tbsecp3_board {
 	int adapters;
 	u32 i2c_speed;
 	u8 eeprom_i2c;
+	u8 eeprom_addr;
 	struct tbsecp3_adap_config adap_config[8];
 };
 
@@ -188,5 +190,9 @@ extern void tbsecp3_dma_free(struct tbsecp3_dev *dev);
 extern void tbsecp3_dma_reg_init(struct tbsecp3_dev *dev);
 extern void tbsecp3_dma_enable(struct tbsecp3_adapter *adap);
 extern void tbsecp3_dma_disable(struct tbsecp3_adapter *adap);
+
+/* tbsecp3-ca.c */
+int tbsecp3_ca_init(struct tbsecp3_adapter *adap, int nr);
+void tbsecp3_ca_release(struct tbsecp3_adapter *adap);
 
 #endif

@@ -217,6 +217,30 @@ static struct stv6120_config tbs_stv6120_config = {
 	.bbgain			= 6,
 };
 
+static struct tas2101_config tbs6910_demod_cfg[] = {
+	{
+		.i2c_address   = 0x68,
+		.id            = ID_TAS2101,
+		.lnb_power     = tbs6904_lnb0_power,
+		.init          = {0x21, 0x43, 0x65, 0xb0, 0xa8, 0x97, 0xb1},
+		.init2         = 0,
+	},
+	{
+		.i2c_address   = 0x60,
+		.id            = ID_TAS2101,
+		.lnb_power     = tbs6904_lnb1_power,
+		.init          = {0xb0, 0xa8, 0x21, 0x43, 0x65, 0x97, 0xb1},
+		.init2         = 0,
+	},
+};
+
+static struct av201x_config tbs6910_av201x_cfg = {
+	.i2c_address = 0x62,
+	.id          = ID_AV2018,
+	.xtal_freq   = 27000,		/* kHz */
+};
+
+
 static int tbsecp3_set_voltage(struct dvb_frontend *fe, enum fe_sec_voltage voltage)
 {
 	struct tbsecp3_adapter *adapter = fe->dvb->priv;
@@ -251,7 +275,7 @@ static int tbsecp3_set_voltage(struct dvb_frontend *fe, enum fe_sec_voltage volt
 static int tbsecp3_set_mac(struct tbsecp3_adapter *adap)
 {
 	struct tbsecp3_dev *dev = adap->dev;
-	int eeprom_bus_nr = dev->info->eeprom_i2c;
+	u8 eeprom_bus_nr = dev->info->eeprom_i2c;
 	struct i2c_adapter *i2c = &dev->i2c_bus[eeprom_bus_nr].i2c_adap;
 	u8 eep_addr;
 	int ret;
@@ -263,7 +287,11 @@ static int tbsecp3_set_mac(struct tbsecp3_adapter *adap)
 		  .buf = adap->dvb_adapter.proposed_mac, .len = 6 }
 	};
 
-	eep_addr = 0xa0 + 0x10 * adap->nr;
+	if (dev->info->eeprom_addr)
+		eep_addr = dev->info->eeprom_addr;
+	else
+		eep_addr = 0xa0;
+	eep_addr += 0x10 * adap->nr;
 	ret = i2c_transfer(i2c, msg, 2);
 	if (ret != 2) {
 		dev_warn(&dev->pci_dev->dev,
@@ -386,8 +414,6 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 				adapter->nr);
 			goto frontend_atach_fail;
 		}
-
-
 #if 0
 		/* attach tuner */
 		memset(&av201x_config, 0, sizeof(av201x_config));
@@ -440,6 +466,23 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		adapter->fe->ops.diseqc_send_master_cmd = max_send_master_cmd;
 		adapter->fe->ops.diseqc_send_burst = max_send_burst;
 
+		break;
+	case 0x6910:
+		adapter->fe = dvb_attach(tas2101_attach, &tbs6910_demod_cfg[adapter->nr], i2c);
+		if (adapter->fe == NULL)
+			goto frontend_atach_fail;
+
+		if (dvb_attach(av201x_attach, adapter->fe, &tbs6910_av201x_cfg,
+				tas2101_get_i2c_adapter(adapter->fe, 2)) == NULL) {
+			dvb_frontend_detach(adapter->fe);
+			adapter->fe = NULL;
+			dev_err(&dev->pci_dev->dev,
+				"TBS_PCIE frontend %d tuner attach failed\n",
+				adapter->nr);
+			goto frontend_atach_fail;
+		}
+
+		tbsecp3_ca_init(adapter, adapter->nr);
 		break;
 	default:
 		dev_warn(&dev->pci_dev->dev, "unknonw card\n");
@@ -581,6 +624,7 @@ void tbsecp3_dvb_exit(struct tbsecp3_adapter *adapter)
 	struct dvb_demux *dvbdemux = &adapter->demux;
 
 	if (adapter->fe) {
+		tbsecp3_ca_release(adapter);
 		dvb_unregister_frontend(adapter->fe);
 		dvb_frontend_detach(adapter->fe);
 		adapter->fe = NULL;
