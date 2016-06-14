@@ -25,52 +25,53 @@ struct tbsecp3_board tbsecp3_boards[] = {
 		.adapters	= 4,
 		.adap_config	= {
 			{
-				.ts_in = 0,
-				.i2c_bus_nr = 0,
-				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
-				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(0, 0),
-			}, 
-			{
-				.ts_in = 1,
-				.i2c_bus_nr = 1,
-				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
-				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(2, 0),
-			},
-			{
-				.ts_in = 2,
-				.i2c_bus_nr = 2,
-				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
-				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(1, 0),
-			},
-			{
 				.ts_in = 3,
 				.i2c_bus_nr = 3,
 				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
 				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(3, 0),
-			}
-		}
-	},
-#if 0
-	[TBSECP3_BOARD_TBS6903] = {
-		.name			= "TurboSight TBS 6903 (Dual DVB-S/S2)",
-		.adapters		= 2,
-		.adap_config		= {
+			}, 
+			{
+				.ts_in = 2,
+				.i2c_bus_nr = 2,
+				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(2, 0),
+			},
+			{
+				.ts_in = 1,
+				.i2c_bus_nr = 1,
+				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(1, 0),
+			},
 			{
 				.ts_in = 0,
 				.i2c_bus_nr = 0,
 				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
 				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(0, 0),
-			}, 
+			}
+		}
+	},
+	[TBSECP3_BOARD_TBS6902] = {
+		.name			= "TurboSight TBS 6902 (Dual DVB-S/S2)",
+		.adapters		= 2,
+		.eeprom_i2c		= 1,
+		.adap_config		= {
 			{
 				.ts_in = 1,
+				.i2c_bus_nr = 1,
+				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(1, 0),
+			}, 
+			{
+				.ts_in = 0,
 				.i2c_bus_nr = 0,
+				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(0, 0),
 			},
 		}
 	},
-#endif
-	[TBSECP3_BOARD_TBS6904] = {
-		.name		= "TurboSight TBS 6904 (Quad DVB-S/S2)",
-		.adapters	= 4,
+	[TBSECP3_BOARD_TBS6903] = {
+		.name		= "TurboSight TBS 6903 (Dual DVB-S/S2)",
+		.adapters	= 2,
 		.eeprom_i2c	= 1,
 		.adap_config	= {
 			{
@@ -78,13 +79,32 @@ struct tbsecp3_board tbsecp3_boards[] = {
 				.i2c_bus_nr = 0,
 				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
 				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(0, 0),
+				.gpio.voltage_1318_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_1318_pin = TBSECP3_GPIO_PIN(0, 1),
+				.gpio.voltage_onoff_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_onoff_pin = TBSECP3_GPIO_PIN(0, 2),
 			}, 
 			{
 				.ts_in = 1,
-				.i2c_bus_nr = 1,
-				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
-				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(1, 0),
+				.i2c_bus_nr = 0,
+				.gpio.voltage_1318_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_1318_pin = TBSECP3_GPIO_PIN(1, 1),
+				.gpio.voltage_onoff_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_onoff_pin = TBSECP3_GPIO_PIN(1, 2),
 			},
+		}
+	},
+	[TBSECP3_BOARD_TBS6904] = {
+		.name		= "TurboSight TBS 6904 (Quad DVB-S/S2)",
+		.adapters	= 4,
+		.eeprom_i2c	= 1,
+		.adap_config	= {
+			{
+				.ts_in = 3,
+				.i2c_bus_nr = 3,
+				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(3, 0),
+			}, 
 			{
 				.ts_in = 2,
 				.i2c_bus_nr = 2,
@@ -92,14 +112,113 @@ struct tbsecp3_board tbsecp3_boards[] = {
 				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(2, 0),
 			},
 			{
-				.ts_in = 3,
-				.i2c_bus_nr = 3,
+				.ts_in = 1,
+				.i2c_bus_nr = 1,
 				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
-				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(3, 0),
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(1, 0),
+			},
+			{
+				.ts_in = 0,
+				.i2c_bus_nr = 0,
+				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(0, 0),
 			}
 		}
 	},
-#if 0
+	[TBSECP3_BOARD_TBS6905] = {
+		.name			= "TurboSight TBS 6905 (Quad DVB-S/S2)",
+		.eeprom_i2c    = 2,
+		.adapters	= 4,
+		.adap_config	= {
+			{
+				/* adapter 0 */
+				.ts_in = 2,
+				.i2c_bus_nr = 2,
+				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(2, 0),
+				.gpio.voltage_1318_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_1318_pin = TBSECP3_GPIO_PIN(2, 1),
+				.gpio.voltage_onoff_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_onoff_pin = TBSECP3_GPIO_PIN(2, 2),
+			}, 
+			{
+				/* adapter 1 */
+				.ts_in = 3,
+				.i2c_bus_nr = 2,
+				.gpio.voltage_1318_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_1318_pin = TBSECP3_GPIO_PIN(3, 1),
+				.gpio.voltage_onoff_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_onoff_pin = TBSECP3_GPIO_PIN(3, 2),
+			},
+			{
+				/* adapter 2 */
+				.ts_in = 0,
+				.i2c_bus_nr = 0,
+				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(0, 0),
+				.gpio.voltage_1318_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_1318_pin = TBSECP3_GPIO_PIN(0, 1),
+				.gpio.voltage_onoff_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_onoff_pin = TBSECP3_GPIO_PIN(0, 2),
+			}, 
+			{
+				/* adapter 3 */
+				.ts_in = 1,
+				.i2c_bus_nr = 0,
+				.gpio.voltage_1318_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_1318_pin = TBSECP3_GPIO_PIN(1, 1),
+				.gpio.voltage_onoff_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_onoff_pin = TBSECP3_GPIO_PIN(1, 2),
+			},
+		}
+	},
+	[TBSECP3_BOARD_TBS6908] = {
+		.name			= "TurboSight TBS 6908 (Quad DVB-S/S2)",
+		.eeprom_i2c    = 2,
+		.adapters	= 4,
+		.adap_config	= {
+			{
+				/* adapter 0 */
+				.ts_in = 2,
+				.i2c_bus_nr = 2,
+				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(2, 0),
+				.gpio.voltage_1318_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_1318_pin = TBSECP3_GPIO_PIN(2, 1),
+				.gpio.voltage_onoff_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_onoff_pin = TBSECP3_GPIO_PIN(2, 2),
+			}, 
+			{
+				/* adapter 1 */
+				.ts_in = 3,
+				.i2c_bus_nr = 2,
+				.gpio.voltage_1318_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_1318_pin = TBSECP3_GPIO_PIN(3, 1),
+				.gpio.voltage_onoff_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_onoff_pin = TBSECP3_GPIO_PIN(3, 2),
+			},
+			{
+				/* adapter 2 */
+				.ts_in = 0,
+				.i2c_bus_nr = 0,
+				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(0, 0),
+				.gpio.voltage_1318_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_1318_pin = TBSECP3_GPIO_PIN(0, 1),
+				.gpio.voltage_onoff_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_onoff_pin = TBSECP3_GPIO_PIN(0, 2),
+			}, 
+			{
+				/* adapter 3 */
+				.ts_in = 1,
+				.i2c_bus_nr = 0,
+				.gpio.voltage_1318_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_1318_pin = TBSECP3_GPIO_PIN(1, 1),
+				.gpio.voltage_onoff_lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.voltage_onoff_pin = TBSECP3_GPIO_PIN(1, 2),
+			},
+		}
+	},
 	[TBSECP3_BOARD_TBS6909] = {
 		.name			= "TurboSight TBS 6909 (Octa DVB-S/S2)",
 		.adapters		= 8,
@@ -108,7 +227,7 @@ struct tbsecp3_board tbsecp3_boards[] = {
 				.ts_in = 0,
 				.i2c_bus_nr = 0,
 				.gpio.demod_reset_lvl = TBSECP3_GPIODEF_LOW,
-				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(0, 0),
+				.gpio.demod_reset_pin = TBSECP3_GPIO_PIN(3, 0),
 			}, 
 			{
 				.ts_in = 1,
@@ -140,6 +259,4 @@ struct tbsecp3_board tbsecp3_boards[] = {
 			}
 		}
 	},
-#endif
 };
-

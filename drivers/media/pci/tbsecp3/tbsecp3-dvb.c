@@ -22,12 +22,11 @@
 
 #include "si2168.h"
 #include "si2157.h"
-#if 0
+
 #include "mxl5xx.h"
 
 #include "stv0910.h"
 #include "stv6120.h"
-#endif
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
@@ -149,7 +148,6 @@ static struct av201x_config tbs6904_av201x_cfg = {
 	.xtal_freq   = 27000,		/* kHz */
 };
 
-#if 0
 static int max_set_voltage(struct i2c_adapter *i2c,
 		enum fe_sec_voltage voltage, u8 rf_in)
 {
@@ -204,21 +202,51 @@ static struct mxl5xx_cfg tbs6909_mxl5xx_cfg = {
 	.set_voltage	= max_set_voltage,
 };
 
-static struct stv0910_cfg tbs6903_stv0910_cfg = {
+static struct stv0910_cfg tbs_stv0910_config = {
 	.adr      = 0x68,
 	.parallel = 1,
 	.rptlvl   = 4,
 	.clk      = 30000000,
-
-	.set_voltage = max_set_voltage,
+	.dual_tuner = 1,
 };
 
-struct stv6120_cfg tbs6903_stv6120_cfg = {
-	.adr      = 0x60,
-	.Rdiv     = 2,
-	.xtal     = 30000,
+static struct stv6120_config tbs_stv6120_config = {
+	.addr			= 0x60,
+	.refclk			= 30000000,
+	.clk_div		= 2,
+	.bbgain			= 6,
 };
-#endif
+
+static int tbsecp3_set_voltage(struct dvb_frontend *fe, enum fe_sec_voltage voltage)
+{
+	struct tbsecp3_adapter *adapter = fe->dvb->priv;
+	struct tbsecp3_dev *dev = adapter->dev;
+	struct tbsecp3_gpio_config *cfg = &adapter->cfg->gpio;
+
+	if (cfg->voltage_onoff_lvl == TBSECP3_GPIODEF_NONE || cfg->voltage_1318_lvl == TBSECP3_GPIODEF_NONE)
+		return 0;
+
+	tbsecp3_gpio_set_pin(dev, cfg->voltage_1318_pin, cfg->voltage_1318_lvl == TBSECP3_GPIODEF_LOW ? 1 : 0);
+	switch (voltage) {
+	case SEC_VOLTAGE_13:
+		//printk(KERN_INFO "%s: Adapter: %d, Polarization=[13V]\n", __func__, adapter->count);
+		tbsecp3_gpio_set_pin(dev, cfg->voltage_1318_pin, cfg->voltage_onoff_lvl == TBSECP3_GPIODEF_LOW ? 0 : 1);
+		tbsecp3_gpio_set_pin(dev, cfg->voltage_onoff_pin, cfg->voltage_onoff_lvl == TBSECP3_GPIODEF_LOW ? 0 : 1);
+		break;
+	case SEC_VOLTAGE_18:
+		//printk(KERN_INFO "%s: Adapter: %d, Polarization=[18V]\n", __func__, adapter->count);
+		tbsecp3_gpio_set_pin(dev, cfg->voltage_onoff_pin, cfg->voltage_onoff_lvl == TBSECP3_GPIODEF_LOW ? 0 : 1);
+		break;
+	case SEC_VOLTAGE_OFF:
+		//printk(KERN_INFO "%s: Adapter: %d, Polarization=[OFF]\n", __func__, adapter->count);
+		tbsecp3_gpio_set_pin(dev, cfg->voltage_onoff_pin, cfg->voltage_onoff_lvl == TBSECP3_GPIODEF_LOW ? 1 : 0);
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
 
 static int tbsecp3_set_mac(struct tbsecp3_adapter *adap)
 {
@@ -253,6 +281,7 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 {
 	struct tbsecp3_dev *dev = adapter->dev;
 	struct pci_dev *pci = dev->pci_dev;
+	struct tbsecp3_gpio_config *cfg = &adapter->cfg->gpio;
 
 	struct si2168_config si2168_config;
 	struct si2157_config si2157_config;
@@ -317,15 +346,16 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		}
 		adapter->i2c_client_tuner = client_tuner;
 		break;
-#if 0
 	case 0x6903:
+	case 0x6905:
+	case 0x6908:
 		adapter->fe = dvb_attach(stv0910_attach, i2c,
-				&tbs6903_stv0910_cfg, adapter->nr & 1);
+				&tbs_stv0910_config, adapter->nr & 1);
 		if (adapter->fe == NULL)
 			goto frontend_atach_fail;
 
-		if (dvb_attach(stv6120_attach, adapter->fe, i2c, &tbs6903_stv6120_cfg) == NULL) {
-			pr_err("No STV6120 found at 0x%02x!\n", 0x60);
+		if (dvb_attach(stv6120_attach, adapter->fe, &tbs_stv6120_config,
+				adapter->nr & 1 ? 0 : 1, i2c) == NULL) {
 			dvb_frontend_detach(adapter->fe);
 			adapter->fe = NULL;
 			dev_err(&dev->pci_dev->dev,
@@ -334,8 +364,14 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 			goto frontend_atach_fail;
 		}
 
+		if (adapter->fe->ops.init)
+		      adapter->fe->ops.init(adapter->fe);
+
+		adapter->fe->ops.set_voltage =  tbsecp3_set_voltage;
+		if (cfg->voltage_onoff_lvl != TBSECP3_GPIODEF_NONE)
+			tbsecp3_gpio_set_pin(dev, cfg->voltage_onoff_pin, cfg->voltage_onoff_lvl == TBSECP3_GPIODEF_LOW ? 1 : 0);
+
 		break;
-#endif
 	case 0x6904:
 		adapter->fe = dvb_attach(tas2101_attach, &tbs6904_demod_cfg[adapter->nr], i2c);
 		if (adapter->fe == NULL)
@@ -381,7 +417,6 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		adapter->i2c_client_tuner = client_tuner;
 #endif
 		break;
-#if 0
 	case 0x6909:
 /*
 		tmp = tbs_read(TBS_GPIO_BASE, 0x20);
@@ -406,7 +441,6 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		adapter->fe->ops.diseqc_send_burst = max_send_burst;
 
 		break;
-#endif
 	default:
 		dev_warn(&dev->pci_dev->dev, "unknonw card\n");
 		return -ENODEV;

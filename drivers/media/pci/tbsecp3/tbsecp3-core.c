@@ -305,10 +305,13 @@ static int tbsecp3_resume(struct pci_dev *pdev)
 	.driver_data = (unsigned long)&tbsecp3_boards[_driverdata_idx] }
 
 static const struct pci_device_id tbsecp3_id_table[] = {
+	TBSECP3_ID(0x6908, TBSECP3_BOARD_TBS6908),
+	TBSECP3_ID(0x6905, TBSECP3_BOARD_TBS6905),
 	TBSECP3_ID(0x6205, TBSECP3_BOARD_TBS6205),
-//	TBSECP3_ID(0x6903, TBSECP3_BOARD_TBS6903),
 	TBSECP3_ID(0x6904, TBSECP3_BOARD_TBS6904),
-//	TBSECP3_ID(0x6909, TBSECP3_BOARD_TBS6909),
+	TBSECP3_ID(0x6903, TBSECP3_BOARD_TBS6903),
+	TBSECP3_ID(0x6902, TBSECP3_BOARD_TBS6902),
+	TBSECP3_ID(0x6909, TBSECP3_BOARD_TBS6909),
 	{0}
 };
 MODULE_DEVICE_TABLE(pci, tbsecp3_id_table);
