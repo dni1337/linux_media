@@ -711,9 +711,9 @@ static int set_voltage(struct dvb_frontend *fe, enum fe_sec_voltage voltage)
 	case 0:
 	default:
 		if (voltage == SEC_VOLTAGE_18)
-			state->rf_in |= 2;
-		else
 			state->rf_in &= ~2;
+		else
+			state->rf_in |= 2;
 		break;
 	}
 
@@ -729,9 +729,9 @@ static int set_tone(struct dvb_frontend *fe, enum fe_sec_tone_mode tone)
 	case 0:
 	default:
 		if (tone == SEC_TONE_ON)
-			state->rf_in |= 1;
-		else
 			state->rf_in &= ~1;
+		else
+			state->rf_in |= 1;
 		break;
 	}
 
@@ -1331,14 +1331,14 @@ static int init_multisw(struct mxl *state)
 	switch (mode) {
 	case 0:
 	default:
-		cfg->set_voltage(i2c, SEC_VOLTAGE_13, 0);
-		cfg->set_voltage(i2c, SEC_VOLTAGE_13, 1);
-		cfg->set_voltage(i2c, SEC_VOLTAGE_18, 2);
-		cfg->set_voltage(i2c, SEC_VOLTAGE_18, 3);
-		set_input_tone(fe, SEC_TONE_OFF, 0);
-		set_input_tone(fe, SEC_TONE_ON, 1);
-		set_input_tone(fe, SEC_TONE_OFF, 2);
-		set_input_tone(fe, SEC_TONE_ON, 3);
+		cfg->set_voltage(i2c, SEC_VOLTAGE_13, 3);
+		cfg->set_voltage(i2c, SEC_VOLTAGE_13, 2);
+		cfg->set_voltage(i2c, SEC_VOLTAGE_18, 1);
+		cfg->set_voltage(i2c, SEC_VOLTAGE_18, 0);
+		set_input_tone(fe, SEC_TONE_OFF, 3);
+		set_input_tone(fe, SEC_TONE_ON, 2);
+		set_input_tone(fe, SEC_TONE_OFF, 1);
+		set_input_tone(fe, SEC_TONE_ON, 0);
 		break;
 	}
 
