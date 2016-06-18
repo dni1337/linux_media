@@ -2513,8 +2513,9 @@ static int saa716x_tbs6983_frontend_attach(struct saa716x_adapter *adapter, int 
 		goto err;
 	}
 
-	if (dvb_attach(stv6120_attach, adapter->fe, &tbs6983_stv6120_config,
-			count & 1 ? 0 : 1,  &dev->i2c[1].i2c_adapter) == NULL) {
+	if (dvb_attach(stv6120_attach, adapter->fe,  &dev->i2c[1].i2c_adapter,
+			&tbs6983_stv6120_config,
+			count & 1 ? 0 : 1) == NULL) {
 		dvb_frontend_detach(adapter->fe);
 		adapter->fe = NULL;
 		dev_dbg(&dev->pdev->dev,

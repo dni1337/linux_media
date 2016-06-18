@@ -41,14 +41,14 @@
 #define TBSECP3_VID		0x544d
 #define TBSECP3_PID		0x6178
 
-#define TBSECP3_BOARD_TBS6908	0
-#define TBSECP3_BOARD_TBS6905	1
-#define TBSECP3_BOARD_TBS6205 	2
-#define TBSECP3_BOARD_TBS6904	3
-#define TBSECP3_BOARD_TBS6903	4
-#define TBSECP3_BOARD_TBS6902	5
-#define TBSECP3_BOARD_TBS6909	6
-#define TBSECP3_BOARD_TBS6910	7
+#define TBSECP3_BOARD_TBS6205 	0x6205
+#define TBSECP3_BOARD_TBS6522 	0x6522
+#define TBSECP3_BOARD_TBS6903	0x6903
+#define TBSECP3_BOARD_TBS6904	0x6904
+#define TBSECP3_BOARD_TBS6905	0x6905
+#define TBSECP3_BOARD_TBS6908	0x6908
+#define TBSECP3_BOARD_TBS6909	0x6909
+#define TBSECP3_BOARD_TBS6910	0x6910
 
 #define TBSECP3_MAX_ADAPTERS	(8)
 #define TBSECP3_MAX_I2C_BUS	(4)
@@ -62,15 +62,16 @@
 
 struct tbsecp3_dev;
 
+
+struct tbsecp3_gpio_pin {
+	u8 lvl;
+	u8 nr;
+};
+
 struct tbsecp3_gpio_config {
-	u8 voltage_onoff_pin;
-	u8 voltage_onoff_lvl;
-
-	u8 voltage_1318_pin;
-	u8 voltage_1318_lvl;
-
-	u8 demod_reset_pin;
-	u8 demod_reset_lvl;
+	struct tbsecp3_gpio_pin lnb_power;
+	struct tbsecp3_gpio_pin lnb_voltage;
+	struct tbsecp3_gpio_pin demod_reset;
 };
 
 struct tbsecp3_adap_config {
@@ -133,6 +134,8 @@ struct tbsecp3_adapter {
 	/* dvb */
 	struct dvb_adapter dvb_adapter;
 	struct dvb_frontend *fe;
+	struct dvb_frontend *fe2;
+	struct dvb_frontend _fe2;
 	struct dvb_demux demux;
 	struct dmxdev dmxdev;
 	struct dvb_net dvbnet;
@@ -169,7 +172,8 @@ struct tbsecp3_dev {
 
 
 /* tbsecp3-core.c */
-void tbsecp3_gpio_set_pin(struct tbsecp3_dev *dev, int pin, int state);
+void tbsecp3_gpio_set_pin(struct tbsecp3_dev *dev,
+			  struct tbsecp3_gpio_pin *pin, int state);
 
 /* tbspcie-i2c.c */
 extern int tbsecp3_i2c_init(struct tbsecp3_dev *dev);

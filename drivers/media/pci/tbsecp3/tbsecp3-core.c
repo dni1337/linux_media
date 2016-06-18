@@ -22,11 +22,19 @@ module_param(enable_msi, bool, 0444);
 MODULE_PARM_DESC(enable_msi, "use an msi interrupt if available");
 
 
-void tbsecp3_gpio_set_pin(struct tbsecp3_dev *dev, int pin, int state)
+void tbsecp3_gpio_set_pin(struct tbsecp3_dev *dev,
+		struct tbsecp3_gpio_pin *pin, int state)
 {
-	u32 tmp;
-	u32 bank = (pin >> 3) & ~3;
-	u32 bit = pin % 32;
+	u32 tmp, bank, bit;
+
+	if (pin->lvl == TBSECP3_GPIODEF_NONE)
+		return;
+
+	if (pin->lvl == TBSECP3_GPIODEF_LOW)
+		state = !state;
+
+	bank = (pin->nr >> 3) & ~3;
+	bit = pin->nr % 32;
 
 	tmp = tbs_read(TBSECP3_GPIO_BASE, bank);
 	if (state)
@@ -299,20 +307,20 @@ static int tbsecp3_resume(struct pci_dev *pdev)
 }
 
 /* PCI IDs */
-#define TBSECP3_ID(_subvend, _driverdata_idx) { \
+#define TBSECP3_ID(_subvend) { \
 	.vendor = TBSECP3_VID, .device = TBSECP3_PID, \
 	.subvendor = _subvend, .subdevice = PCI_ANY_ID, \
-	.driver_data = (unsigned long)&tbsecp3_boards[_driverdata_idx] }
+	.driver_data = (unsigned long)&tbsecp3_boards[_subvend] }
 
 static const struct pci_device_id tbsecp3_id_table[] = {
-	TBSECP3_ID(0x6908, TBSECP3_BOARD_TBS6908),
-	TBSECP3_ID(0x6905, TBSECP3_BOARD_TBS6905),
-	TBSECP3_ID(0x6205, TBSECP3_BOARD_TBS6205),
-	TBSECP3_ID(0x6904, TBSECP3_BOARD_TBS6904),
-	TBSECP3_ID(0x6903, TBSECP3_BOARD_TBS6903),
-	TBSECP3_ID(0x6902, TBSECP3_BOARD_TBS6902),
-	TBSECP3_ID(0x6909, TBSECP3_BOARD_TBS6909),
-	TBSECP3_ID(0x6910, TBSECP3_BOARD_TBS6910),
+	TBSECP3_ID(TBSECP3_BOARD_TBS6205),
+	TBSECP3_ID(TBSECP3_BOARD_TBS6522),
+	TBSECP3_ID(TBSECP3_BOARD_TBS6903),
+	TBSECP3_ID(TBSECP3_BOARD_TBS6904),
+	TBSECP3_ID(TBSECP3_BOARD_TBS6905),
+	TBSECP3_ID(TBSECP3_BOARD_TBS6908),
+	TBSECP3_ID(TBSECP3_BOARD_TBS6909),
+	TBSECP3_ID(TBSECP3_BOARD_TBS6910),
 	{0}
 };
 MODULE_DEVICE_TABLE(pci, tbsecp3_id_table);
