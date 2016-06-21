@@ -101,6 +101,14 @@ config DVB_USB_GL861
 	  receiver with USB ID 0db0:5581.
 
 config DVB_USB_LME2510
+	tristate "Leaguer MicroElectronics LME2510"
+	depends on DVB_USB_V2
+	select DVB_SI2168 if MEDIA_SUBDRV_AUTOSELECT
+	select MEDIA_TUNER_SI2157 if MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Say Y here to support the Leaguer MicroElectronics LME2510.
+
+config DVB_USB_LME2510
 	tristate "LME DM04/QQBOX DVB-S USB2.0 support"
 	depends on DVB_USB_V2
 	depends on RC_CORE
