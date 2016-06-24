@@ -414,8 +414,9 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
 		adapter->fe->ops.delsys[0] = SYS_DVBT;
 		adapter->fe->ops.delsys[1] = SYS_DVBT2;
-		adapter->fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
-		adapter->fe->ops.delsys[3] = SYS_DVBC_ANNEX_B;
+		adapter->fe->ops.delsys[2] = SYS_ISDBT;
+		adapter->fe->ops.delsys[3] = SYS_DVBC_ANNEX_A;
+		adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
 
 		/* attach tuner */
 		memset(&si2157_config, 0, sizeof(si2157_config));
