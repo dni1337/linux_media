@@ -74,6 +74,11 @@ struct si2183_dev {
 	bool ts_clock_inv;
 	bool ts_clock_gapped;
 
+	int ter_agc_pin;
+	bool ter_agc_inv;
+	int sat_agc_pin;
+	bool sat_agc_inv;
+
 	struct si_base *base;
 
 	u8 active_fe;
@@ -152,12 +157,7 @@ static int si2183_cmd_execute_unlocked(struct i2c_client *client,
 				jiffies_to_msecs(jiffies) -
 				(jiffies_to_msecs(timeout) - TIMEOUT));
 
-		/* error bit set? */
-		if ((cmd->args[0] >> 6) & 0x01) {
-			ret = -EREMOTEIO;
-			goto err;
-		}
-
+		/* CTS ? */
 		if (!((cmd->args[0] >> 7) & 0x01)) {
 			ret = -ETIMEDOUT;
 			goto err;
@@ -222,6 +222,7 @@ static int si2183_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	int ret;
 	struct si2183_cmd cmd;
+	u16 agc;
 
 	*status = 0;
 
@@ -292,11 +293,31 @@ static int si2183_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		c->cnr.stat[0].svalue = 0;
 		break;
 	}
-
+	
 	dev->fe_status = *status;
 
 	dev_dbg(&client->dev, "status=%02x args=%*ph\n",
 			*status, cmd.rlen, cmd.args);
+
+	if (fe->ops.tuner_ops.get_rf_strength)
+	{
+		memcpy(cmd.args, "\x8a\x00\x00\x00\x00\x00", 6);
+		cmd.wlen = 6;
+		cmd.rlen = 3;
+		ret = si2183_cmd_execute(client, &cmd);
+		if (ret) {
+			dev_err(&client->dev, "read_status fe%d cmd_exec failed=%d\n", fe->id, ret);
+			goto err;
+		}
+		dev_dbg(&client->dev, "status=%02x args=%*ph\n",
+			*status, cmd.rlen, cmd.args);
+
+		agc = cmd.args[1];
+		//dev_info(&client->dev, "agc = %d\n", agc);
+		fe->ops.tuner_ops.get_rf_strength(fe, &agc);
+		//dev_info(&client->dev, "rf_strength = %d\n", agc);
+	}
+
 	return 0;
 err:
 	dev_err(&client->dev, "read_status failed=%d\n", ret);
@@ -608,6 +629,30 @@ static int si2183_set_frontend(struct dvb_frontend *fe)
 		}
 	}
 
+	/* TER AGC */
+	memcpy(cmd.args, "\x89\x01\x06\x12\x00\x00", 6);
+	cmd.wlen = 6;
+	cmd.rlen = 3;
+	cmd.args[1] |= (dev->ter_agc_inv & 1) << 7 | (dev->ter_agc_pin & 7) << 4;
+	dev_dbg(&client->dev, "args=%*ph\n", cmd.wlen, cmd.args);
+	
+	ret = si2183_cmd_execute(client, &cmd);
+	if (ret) {
+		dev_err(&client->dev, "err set ter agc\n");
+	}
+
+	/* SAT AGC */
+	memcpy(cmd.args, "\x8a\x10\x12\x00\x00\x00", 6);
+	cmd.wlen = 6;
+	cmd.rlen = 3;
+	cmd.args[1] |= (dev->sat_agc_inv & 1) << 3 | (dev->sat_agc_pin & 7);
+	dev_dbg(&client->dev, "args=%*ph\n", cmd.wlen, cmd.args);
+
+	ret = si2183_cmd_execute(client, &cmd);
+	if (ret) {
+		dev_err(&client->dev, "err set sat agc\n");
+	}
+
 	switch (c->delivery_system) {
 	case SYS_DVBT:
 	case SYS_DVBT2:
@@ -788,9 +833,9 @@ static int si2183_init(struct dvb_frontend *fe)
 	cmd.wlen = 6;
 	cmd.rlen = 4;
 	ret = si2183_cmd_execute(client, &cmd);
-	if (ret)
-		goto err;
-
+	if (ret) {
+		dev_err(&client->dev, "err set ts mode\n");
+	}
 
 	/* FER resol */
 	memcpy(cmd.args, "\x14\x00\x0c\x10\x12\x00", 6);
@@ -1261,6 +1306,10 @@ static int si2183_probe(struct i2c_client *client,
 	dev->ts_mode = config->ts_mode;
 	dev->ts_clock_inv = config->ts_clock_inv;
 	dev->ts_clock_gapped = config->ts_clock_gapped;
+	dev->ter_agc_pin = config->ter_agc_pin;
+	dev->ter_agc_inv = config->ter_agc_inv;
+	dev->sat_agc_pin = config->sat_agc_pin;
+	dev->sat_agc_inv = config->sat_agc_inv;
 	dev->fw_loaded = false;
 
 	dev->active_fe = 0;
