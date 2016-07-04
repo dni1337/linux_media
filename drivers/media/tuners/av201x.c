@@ -251,7 +251,7 @@ static int av201x_get_rf_strength(struct dvb_frontend *fe, u16 *st)
 
 	c->strength.len = 1;
 	c->strength.stat[0].scale = FE_SCALE_DECIBEL;
-	c->strength.stat[0].svalue = ((y[index-1] + ((if_agc - x[index-1])*slope + 500)/1000)) * 10;
+	c->strength.stat[0].svalue = ((y[index-1] + ((if_agc - x[index-1])*slope + 500)/1000)) * 100;
 
 	return 0;
 }
