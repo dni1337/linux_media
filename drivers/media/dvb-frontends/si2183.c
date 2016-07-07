@@ -74,6 +74,8 @@ struct si2183_dev {
 	bool ts_clock_inv;
 	bool ts_clock_gapped;
 
+	int fef_pin;
+	bool fef_inv;
 	int ter_agc_pin;
 	bool ter_agc_inv;
 	int sat_agc_pin;
@@ -136,7 +138,7 @@ static int si2183_cmd_execute_unlocked(struct i2c_client *client,
 
 	if (cmd->rlen) {
 		/* wait cmd execution terminate */
-		#define TIMEOUT 70
+		#define TIMEOUT 500
 		timeout = jiffies + msecs_to_jiffies(TIMEOUT);
 		while (!time_after(jiffies, timeout)) {
 			ret = si2183_i2c_master_recv_unlocked(client, cmd->args,
@@ -799,6 +801,74 @@ static int si2183_init(struct dvb_frontend *fe)
 	dev_info(&client->dev, "firmware version: %c.%c.%d\n",
 			cmd.args[6], cmd.args[7], cmd.args[8]);
 
+	/* TER FEF */
+	memcpy(cmd.args, "\x51\x00", 2);
+	cmd.wlen = 2;
+	cmd.rlen = 12;
+	cmd.args[1] = (dev->fef_inv & 1) << 3 | (dev->fef_pin & 7);
+	dev_dbg(&client->dev, "args=%*ph\n", cmd.wlen, cmd.args);
+	
+	ret = si2183_cmd_execute(client, &cmd);
+	if (ret) {
+		dev_err(&client->dev, "err set fef pip\n");
+	}
+
+	/* MP DEFAULTS */
+	memcpy(cmd.args, "\x88\x00\x00\x00\x00", 5);
+	cmd.wlen = 5;
+	cmd.rlen = 2;
+	switch (dev->fef_pin)
+	{
+	case 2:
+		cmd.args[1] = dev->fef_inv ? 3 : 2;
+		break;
+	case 3:
+		cmd.args[2] = dev->fef_inv ? 3 : 2;
+		break;
+	case 4:
+		cmd.args[3] = dev->fef_inv ? 3 : 2;
+		break;
+	case 5:
+		cmd.args[4] = dev->fef_inv ? 3 : 2;
+		break;
+	}
+	switch (dev->ter_agc_pin)
+	{
+	case 2:
+		cmd.args[1] = 1;
+		break;
+	case 3:
+		cmd.args[2] = 1;
+		break;
+	case 4:
+		cmd.args[3] = 1;
+		break;
+	case 5:
+		cmd.args[4] = 1;
+		break;
+	}
+	switch (dev->sat_agc_pin)
+	{
+	case 2:
+		cmd.args[1] = 1;
+		break;
+	case 3:
+		cmd.args[2] = 1;
+		break;
+	case 4:
+		cmd.args[3] = 1;
+		break;
+	case 5:
+		cmd.args[4] = 1;
+		break;
+	}
+	dev_dbg(&client->dev, "args=%*ph\n", cmd.wlen, cmd.args);
+	
+	ret = si2183_cmd_execute(client, &cmd);
+	if (ret) {
+		dev_err(&client->dev, "err set mp defaults\n");
+	}
+
 	/* TER AGC */
 	memcpy(cmd.args, "\x89\x01\x06\x12\x00\x00", 6);
 	cmd.wlen = 6;
@@ -1304,6 +1374,8 @@ static int si2183_probe(struct i2c_client *client,
 	dev->ts_mode = config->ts_mode;
 	dev->ts_clock_inv = config->ts_clock_inv;
 	dev->ts_clock_gapped = config->ts_clock_gapped;
+	dev->fef_pin = config->fef_pin;
+	dev->fef_inv = config->fef_inv;
 	dev->ter_agc_pin = config->ter_agc_pin;
 	dev->ter_agc_inv = config->ter_agc_inv;
 	dev->sat_agc_pin = config->sat_agc_pin;

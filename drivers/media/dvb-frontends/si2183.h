@@ -44,6 +44,8 @@ struct si2183_config {
 	/* TS clock gapped */
 	bool ts_clock_gapped;
 	
+	int fef_pin;
+	bool fef_inv;
 	int ter_agc_pin;
 	bool ter_agc_inv;
 	int sat_agc_pin;

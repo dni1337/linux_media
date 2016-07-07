@@ -388,6 +388,8 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		si2183_config.ts_clock_gapped = true;
 		si2183_config.ter_agc_pin = adapter->nr ? 4 : 5;
 		si2183_config.ter_agc_inv = 0;
+		si2183_config.fef_pin = adapter->nr ? 2 : 3;
+		si2183_config.fef_inv = 0;
 		si2183_config.sat_agc_pin = adapter->nr ? 4 : 5;
 		si2183_config.sat_agc_inv = 1;
 
