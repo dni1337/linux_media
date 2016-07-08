@@ -46,9 +46,8 @@ struct si2183_config {
 	
 	int fef_pin;
 	bool fef_inv;
-	int ter_agc_pin;
+	int agc_pin;
 	bool ter_agc_inv;
-	int sat_agc_pin;
 	bool sat_agc_inv;
 };
 

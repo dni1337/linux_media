@@ -76,9 +76,8 @@ struct si2183_dev {
 
 	int fef_pin;
 	bool fef_inv;
-	int ter_agc_pin;
+	int agc_pin;
 	bool ter_agc_inv;
-	int sat_agc_pin;
 	bool sat_agc_inv;
 
 	struct si_base *base;
@@ -433,6 +432,22 @@ static int si2183_set_mcns(struct dvb_frontend *fe)
 	return 0;
 }
 
+static int gold_code_index (int gold_sequence_index)
+{
+	unsigned int i, k , x_init;
+	u8 GOLD_PRBS[19] = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	for (k=0; k<gold_sequence_index; k++) {
+		GOLD_PRBS[18] = (GOLD_PRBS[0] + GOLD_PRBS[7])%2;
+		/* Shifting 18 first values */
+		for (i=0; i<18; i++) 
+			GOLD_PRBS[i] = GOLD_PRBS[i+1];
+	}
+	x_init = 0;
+	for (i=0; i<18; i++) { x_init = x_init + GOLD_PRBS[i]*(1<<i); }
+
+	return x_init;
+}
+
 static int si2183_set_dvbs(struct dvb_frontend *fe)
 {
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
@@ -440,6 +455,7 @@ static int si2183_set_dvbs(struct dvb_frontend *fe)
 	struct si2183_cmd cmd;
 	int ret;
 	u16 prop;
+	u32 pls_mode, pls_code;
 	
 	/* set mode */
 	prop = 0x8;
@@ -482,6 +498,25 @@ static int si2183_set_dvbs(struct dvb_frontend *fe)
 		ret = si2183_cmd_execute(client, &cmd);
 		if (ret)
 			dev_warn(&client->dev, "dvb-s2: err selecting stream_id\n");
+
+		/* pls selection */
+		pls_mode = c->stream_id == NO_STREAM_ID_FILTER ? 0 : (c->stream_id >> 26) & 3;
+		pls_code = c->stream_id == NO_STREAM_ID_FILTER ? 0 : (c->stream_id >> 8) & 0x3FFFF;
+		if (pls_mode)
+			pls_code = gold_code_index(pls_code);
+		cmd.args[0] = 0x73;
+		cmd.args[1] = pls_code > 0;
+		cmd.args[2] = cmd.args[3] = 0;
+		cmd.args[4] = (u8) pls_code;
+		cmd.args[5] = (u8) (pls_code >> 8);
+		cmd.args[6] = (u8) (pls_code >> 16);
+		cmd.args[7] = (u8) (pls_code >> 24);
+		cmd.wlen = 8;
+		cmd.rlen = 1;
+		ret = si2183_cmd_execute(client, &cmd);
+		if (ret)
+			dev_warn(&client->dev, "dvb-s2: err set pls\n");
+
 		break;
 	}
 
@@ -832,22 +867,7 @@ static int si2183_init(struct dvb_frontend *fe)
 		cmd.args[4] = dev->fef_inv ? 3 : 2;
 		break;
 	}
-	switch (dev->ter_agc_pin)
-	{
-	case 2:
-		cmd.args[1] = 1;
-		break;
-	case 3:
-		cmd.args[2] = 1;
-		break;
-	case 4:
-		cmd.args[3] = 1;
-		break;
-	case 5:
-		cmd.args[4] = 1;
-		break;
-	}
-	switch (dev->sat_agc_pin)
+	switch (dev->agc_pin)
 	{
 	case 2:
 		cmd.args[1] = 1;
@@ -873,7 +893,7 @@ static int si2183_init(struct dvb_frontend *fe)
 	memcpy(cmd.args, "\x89\x01\x06\x12\x00\x00", 6);
 	cmd.wlen = 6;
 	cmd.rlen = 3;
-	cmd.args[1] |= (dev->ter_agc_inv & 1) << 7 | (dev->ter_agc_pin & 7) << 4;
+	cmd.args[1] |= (dev->ter_agc_inv & 1) << 7 | (dev->agc_pin & 7) << 4;
 	dev_dbg(&client->dev, "args=%*ph\n", cmd.wlen, cmd.args);
 	
 	ret = si2183_cmd_execute(client, &cmd);
@@ -885,7 +905,7 @@ static int si2183_init(struct dvb_frontend *fe)
 	memcpy(cmd.args, "\x8a\x10\x12\x00\x00\x00", 6);
 	cmd.wlen = 6;
 	cmd.rlen = 3;
-	cmd.args[1] |= (dev->sat_agc_inv & 1) << 3 | (dev->sat_agc_pin & 7);
+	cmd.args[1] |= (dev->sat_agc_inv & 1) << 3 | (dev->agc_pin & 7);
 	dev_dbg(&client->dev, "args=%*ph\n", cmd.wlen, cmd.args);
 
 	ret = si2183_cmd_execute(client, &cmd);
@@ -934,16 +954,6 @@ static int si2183_init(struct dvb_frontend *fe)
 		dev_err(&client->dev, "err set int sense\n");
 		return ret;
 	}
-
-/*
-	memcpy(cmd.args, "\x88\x02\x02\x02\x02", 5);
-	cmd.wlen = 5;
-	cmd.rlen = 5;
-	ret = si2183_cmd_execute(client, &cmd);
-	if (ret) {
-		dev_err(&client->dev, "err set x88\n");
-	}
-*/
 
 	prop = 0x10;
 	ret = si2183_set_prop(client, 0x100f, &prop);
@@ -1376,9 +1386,8 @@ static int si2183_probe(struct i2c_client *client,
 	dev->ts_clock_gapped = config->ts_clock_gapped;
 	dev->fef_pin = config->fef_pin;
 	dev->fef_inv = config->fef_inv;
-	dev->ter_agc_pin = config->ter_agc_pin;
+	dev->agc_pin = config->agc_pin;
 	dev->ter_agc_inv = config->ter_agc_inv;
-	dev->sat_agc_pin = config->sat_agc_pin;
 	dev->sat_agc_inv = config->sat_agc_inv;
 	dev->fw_loaded = false;
 
