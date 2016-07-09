@@ -534,7 +534,7 @@ struct dvb_fe_events {
  * @layer.modulation:	per layer modulation;
  * @layer.interleaving:	 per layer interleaving.
  * @stream_id:		If different than zero, enable substream filtering, if
- *			hardware supports (DVB-S2 and DVB-T2).
+ *			hardware supports (DVB-S2/T2/C2 and ISDB-T/S ).
  * @atscmh_fic_ver:	Version number of the FIC (Fast Information Channel)
  *			signaling data (only ATSC-M/H)
  * @atscmh_parade_id:	Parade identification number (only ATSC-M/H)
