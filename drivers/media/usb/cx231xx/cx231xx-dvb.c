@@ -1066,6 +1066,7 @@ static int dvb_init(struct cx231xx *dev)
 		struct si2168_config si2168_config;
 		struct si2157_config si2157_config;
 
+		demod_i2c = cx231xx_get_i2c_adap(dev, dev->board.demod_i2c_master+i);
 		/* attach frontend */
 		si2168_config.i2c_adapter = &adapter;
 		si2168_config.fe = &dev->dvb[i]->frontend;
