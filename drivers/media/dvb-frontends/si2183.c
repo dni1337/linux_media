@@ -343,7 +343,6 @@ static int si2183_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
 	struct i2c_client *client = fe->demodulator_priv;
 	struct si2183_dev *dev = i2c_get_clientdata(client);
-	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	
 	*snr = (dev->fe_status & FE_HAS_LOCK) ? dev->snr : 0;
 
@@ -363,20 +362,20 @@ static int si2183_read_ber(struct dvb_frontend *fe, u32 *ber)
 {
 	struct i2c_client *client = fe->demodulator_priv;
 	struct si2183_dev *dev = i2c_get_clientdata(client);
-	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	struct si2183_cmd cmd;
 	int ret;
 	
-	memcpy(cmd.args, "\x82\x00", 2);
-	cmd.wlen = 2;
-	cmd.rlen = 3;
-	ret = si2183_cmd_execute(client, &cmd);
-	if (ret) {
-		dev_err(&client->dev, "read_ber fe%d cmd_exec failed=%d\n", fe->id, ret);
-		goto err;
-	}
-
-	*ber = (u32)cmd.args[2] * cmd.args[1] & 0xf;
+	if (dev->fe_status & FE_HAS_LOCK) {
+		memcpy(cmd.args, "\x82\x00", 2);
+		cmd.wlen = 2;
+		cmd.rlen = 3;
+		ret = si2183_cmd_execute(client, &cmd);
+		if (ret) {
+			dev_err(&client->dev, "read_ber fe%d cmd_exec failed=%d\n", fe->id, ret);
+			goto err;
+		}
+		*ber = (u32)cmd.args[2] * cmd.args[1] & 0xf;
+	} else *ber = 1;
 
 	return 0;
 err:
@@ -388,7 +387,6 @@ static int si2183_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 {
 	struct i2c_client *client = fe->demodulator_priv;
 	struct si2183_dev *dev = i2c_get_clientdata(client);
-	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	struct si2183_cmd cmd;
 	int ret;
 	
@@ -796,7 +794,6 @@ static int si2183_init(struct dvb_frontend *fe)
 {
 	struct i2c_client *client = fe->demodulator_priv;
 	struct si2183_dev *dev = i2c_get_clientdata(client);
-	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	int ret = 0, len, remaining;
 	const struct firmware *fw;
 	const char *fw_name;
