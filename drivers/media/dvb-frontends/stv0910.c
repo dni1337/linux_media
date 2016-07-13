@@ -1181,20 +1181,45 @@ static int get_frontend(struct dvb_frontend *fe, struct dtv_frontend_properties 
 }
 
 
-static int read_snr(struct dvb_frontend *fe, u16 *snr);
-static int read_signal_strength(struct dvb_frontend *fe, u16 *strength);
-static int read_ber(struct dvb_frontend *fe, u32 *ber);
-
 static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 {
 	struct stv *state = fe->demodulator_priv;
+	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
 	u8 DmdState = 0;
 	u8 DStatus  = 0;
 	enum ReceiveMode CurReceiveMode = Mode_None;
 	u32 FECLock = 0;
-	u16 val;
-	u32 ber;
+	s32 snr;
+	u32 n, d;
+	u8 Reg[2];
+	u16 agc;
+	s32 power = 0, Padc = 0;
+	int i;
 	
+	read_regs(state, RSTV0910_P2_AGCIQIN1 + state->regoff, Reg, 2);
+	
+	agc = (((u32) Reg[0]) << 8) | Reg[1];
+	
+	if (fe->ops.tuner_ops.get_rf_strength)
+		fe->ops.tuner_ops.get_rf_strength(fe, &agc);
+	else
+		agc = 0;
+
+	for (i = 0; i < 5; i += 1) {
+		read_regs(state, RSTV0910_P2_POWERI + state->regoff, Reg, 2);
+		power += (u32) Reg[0] * (u32) Reg[0] + (u32) Reg[1] * (u32) Reg[1];
+		msleep(3);
+	}
+	power /= 5;
+
+	Padc = TableLookup(PADC_Lookup, ARRAY_SIZE(PADC_Lookup), power) + 352;	
+
+	//pr_warn("%s: power = %d  Padc = %d  str = %u\n", __func__, power, Padc, *strength);
+	
+	p->strength.len = 1;
+	p->strength.stat[0].scale = FE_SCALE_DECIBEL;
+	p->strength.stat[0].svalue = Padc - agc;
+
 	read_reg(state, RSTV0910_P2_DMDSTATE + state->regoff, &DmdState);
 
 	if (DmdState & 0x40) {
@@ -1209,7 +1234,6 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	}
 
 	*status = FE_HAS_SIGNAL | FE_HAS_CARRIER | FE_HAS_VITERBI | FE_HAS_SYNC;
-	read_signal_strength(fe, &val);
 
 	if (state->ReceiveMode == Mode_None) {
 		state->ReceiveMode = CurReceiveMode;
@@ -1291,8 +1315,22 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 		TrackingOptimization(state);
 	}
 
-	read_snr(fe, &val);
-	read_ber(fe, &ber);
+	if (GetSignalToNoise(state, &snr))
+		return -EIO;
+
+	p->cnr.len = 1;
+	p->cnr.stat[0].scale = FE_SCALE_DECIBEL;
+	p->cnr.stat[0].svalue = snr * 100;
+
+	if (GetBitErrorRate(state, &n, &d))
+		return -EIO;
+
+	p->post_bit_error.len = 1;
+	p->post_bit_error.stat[0].scale = FE_SCALE_COUNTER;
+	p->post_bit_error.stat[0].uvalue = n;
+	p->post_bit_count.len = 1;
+	p->post_bit_count.stat[0].scale = FE_SCALE_COUNTER;
+	p->post_bit_count.stat[0].uvalue = d;
 
 	return 0;
 }
@@ -1416,77 +1454,37 @@ static int sleep(struct dvb_frontend *fe)
 
 static int read_snr(struct dvb_frontend *fe, u16 *snr)
 {
-	struct stv *state = fe->demodulator_priv;
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
-	s32 val;
 
-	if (GetSignalToNoise(state, &val))
-		return -EIO;
-
-	p->cnr.len = 1;
-	p->cnr.stat[0].scale = FE_SCALE_DECIBEL;
-	p->cnr.stat[0].uvalue = 100 * (s64) val;
-
-	if (val > 200) val = 200;
-	*snr = val * 328; /* 20dB = 100% */
+	if (p->cnr.stat[0].scale == FE_SCALE_DECIBEL) {
+		 *snr = p->cnr.stat[0].svalue / 100;
+		 if (*snr > 200)
+			  *snr = 0xffff;
+		 else
+			  *snr *= 328;
+	} else *snr = 0;
 
 	return 0;
 }
 
 static int read_ber(struct dvb_frontend *fe, u32 *ber)
 {
-	struct stv *state = fe->demodulator_priv;
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
-	u32 n, d;
 
-	GetBitErrorRate(state, &n, &d);
-	if (d) 
-		*ber = n / d;
-	else
-		*ber = 0;
+	if ( p->post_bit_error.stat[0].scale == FE_SCALE_COUNTER &&
+		p->post_bit_count.stat[0].scale == FE_SCALE_COUNTER )	  
+	      *ber = p->post_bit_count.stat[0].uvalue ? p->post_bit_error.stat[0].uvalue / p->post_bit_count.stat[0].uvalue : 0;
 
-	p->post_bit_error.len = 1;
-	p->post_bit_error.stat[0].scale = FE_SCALE_COUNTER;
-	p->post_bit_error.stat[0].uvalue = n;
-	p->post_bit_count.len = 1;
-	p->post_bit_count.stat[0].scale = FE_SCALE_COUNTER;
-	p->post_bit_count.stat[0].uvalue = d;
 	return 0;
 }
 
 static int read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 {
-	struct stv *state = fe->demodulator_priv;
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
-	u8 Reg[2];
-	s32 power = 0, Padc = 0;
-	int i;
 
-	read_regs(state, RSTV0910_P2_AGCIQIN1 + state->regoff, Reg, 2);
-	
-	*strength = (((u32) Reg[0]) << 8) | Reg[1];
-	
-	if (fe->ops.tuner_ops.get_rf_strength)
-		fe->ops.tuner_ops.get_rf_strength(fe, strength);
-	else
-		*strength = 0;
-
-	for (i = 0; i < 5; i += 1) {
-		read_regs(state, RSTV0910_P2_POWERI + state->regoff, Reg, 2);
-		power += (u32) Reg[0] * (u32) Reg[0] + (u32) Reg[1] * (u32) Reg[1];
-		msleep(3);
-	}
-	power /= 5;
-
-	Padc = TableLookup(PADC_Lookup, ARRAY_SIZE(PADC_Lookup), power) + 352;	
-
-	//pr_warn("%s: power = %d  Padc = %d  str = %u\n", __func__, power, Padc, *strength);
-	
-	p->strength.len = 1;
-	p->strength.stat[0].scale = FE_SCALE_DECIBEL;
-	p->strength.stat[0].svalue = Padc - *strength;
-	
-	*strength = (100 + p->strength.stat[0].svalue/1000) * 656;
+	if (p->strength.stat[0].scale == FE_SCALE_DECIBEL)
+		*strength = (100 + p->strength.stat[0].svalue/1000) * 656;
+	else *strength = 0;
 
 	return 0;
 }
