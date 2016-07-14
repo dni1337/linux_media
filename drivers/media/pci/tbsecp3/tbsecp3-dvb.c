@@ -171,17 +171,33 @@ static void reset_demod(struct tbsecp3_adapter *adapter)
 	usleep_range(50000, 100000);
 }
 
-static struct tas2101_config tbs6904_demod_cfg[] = {
+
+static struct tas2101_config tbs6902_demod_cfg[] = {
+	{
+		.i2c_address   = 0x60,
+		.id            = ID_TAS2101,
+		.init          = {0xb0, 0x32, 0x81, 0x57, 0x64, 0x9a, 0x33},
+		.init2         = 0,
+	},
 	{
 		.i2c_address   = 0x68,
 		.id            = ID_TAS2101,
 		.init          = {0xb0, 0x32, 0x81, 0x57, 0x64, 0x9a, 0x33}, // 0xb1
 		.init2         = 0,
-	},
+	}
+};
+
+static struct av201x_config tbs6902_av201x_cfg = {
+		.i2c_address = 0x62,
+		.id 		 = ID_AV2012,
+		.xtal_freq	 = 27000,		/* kHz */
+};
+
+static struct tas2101_config tbs6904_demod_cfg[] = {
 	{
 		.i2c_address   = 0x60,
 		.id            = ID_TAS2101,
-		.init          = {0xb0, 0x32, 0x81, 0x57, 0x64, 0x9a, 0x33},
+		.init          = {0xb0, 0x32, 0x81, 0x57, 0x64, 0x9a, 0x33}, // 0xb1
 		.init2         = 0,
 	},
 	{
@@ -192,6 +208,12 @@ static struct tas2101_config tbs6904_demod_cfg[] = {
 	},
 	{
 		.i2c_address   = 0x60,
+		.id            = ID_TAS2101,
+		.init          = {0xb0, 0x32, 0x81, 0x57, 0x64, 0x9a, 0x33},
+		.init2         = 0,
+	},
+	{
+		.i2c_address   = 0x68,
 		.id            = ID_TAS2101,
 		.init          = {0xb0, 0x32, 0x81, 0x57, 0x64, 0x9a, 0x33},
 		.init2         = 0,
@@ -465,6 +487,28 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		}
 
 		break;
+
+	case 0x6902:
+		adapter->fe = dvb_attach(tas2101_attach, &tbs6902_demod_cfg[adapter->nr], i2c);
+		if (adapter->fe == NULL)
+			goto frontend_atach_fail;
+
+		if (dvb_attach(av201x_attach, adapter->fe, &tbs6902_av201x_cfg,
+				tas2101_get_i2c_adapter(adapter->fe, 2)) == NULL) {
+			dvb_frontend_detach(adapter->fe);
+			adapter->fe = NULL;
+			dev_err(&dev->pci_dev->dev,
+				"TBS_PCIE frontend %d tuner attach failed\n",
+				adapter->nr);
+			goto frontend_atach_fail;
+		}
+
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+			dev_warn(&dev->pci_dev->dev,
+				"error attaching lnb control on adapter %d\n",
+				adapter->nr);
+		}
+		break;
 	case 0x6903:
 	case 0x6905:
 	case 0x6908:
@@ -558,8 +602,8 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		if (adapter->fe == NULL)
 			goto frontend_atach_fail;
 
-		adapter->fe->ops.diseqc_send_master_cmd = max_send_master_cmd;
-		adapter->fe->ops.diseqc_send_burst = max_send_burst;
+	//	adapter->fe->ops.diseqc_send_master_cmd = max_send_master_cmd;
+	//	adapter->fe->ops.diseqc_send_burst = max_send_burst;
 
 		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
 			dev_warn(&dev->pci_dev->dev,
