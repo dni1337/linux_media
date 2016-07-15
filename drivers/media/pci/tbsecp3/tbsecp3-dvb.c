@@ -281,17 +281,6 @@ static int max_set_voltage(struct i2c_adapter *i2c,
 	return 0;
 }
 
-static int max_send_master_cmd(struct dvb_frontend *fe, struct dvb_diseqc_master_cmd *cmd)
-{
-	//printk("send master cmd\n");
-	return 0;
-}
-static int max_send_burst(struct dvb_frontend *fe, enum fe_sec_mini_cmd burst)
-{
-	//printk("send burst: %d\n", burst);
-	return 0;
-}
-
 static struct mxl5xx_cfg tbs6909_mxl5xx_cfg = {
 	.adr		= 0x60,
 	.type		= 0x01,
@@ -601,9 +590,6 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 				&tbs6909_mxl5xx_cfg, adapter->nr);
 		if (adapter->fe == NULL)
 			goto frontend_atach_fail;
-
-	//	adapter->fe->ops.diseqc_send_master_cmd = max_send_master_cmd;
-	//	adapter->fe->ops.diseqc_send_burst = max_send_burst;
 
 		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
 			dev_warn(&dev->pci_dev->dev,

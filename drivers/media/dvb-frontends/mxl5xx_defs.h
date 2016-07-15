@@ -803,3 +803,20 @@ typedef struct
 	u32 contToneFlag;  // 1: Enable , 0: Disable
 } MXL_HYDRA_DISEQC_CFG_CONT_TONE_T;
 
+#define MXL_HYDRA_DISEQC_MAX_PKT_SIZE   (32)
+
+typedef enum
+{
+  MXL_HYDRA_DISEQC_TONE_NONE = 0,
+  MXL_HYDRA_DISEQC_TONE_SA,
+  MXL_HYDRA_DISEQC_TONE_SB
+} MXL_HYDRA_DISEQC_TONE_CTRL_E;
+
+typedef struct
+{
+  u32 diseqcId;
+  u32 nbyte;
+  u8 bufMsg[MXL_HYDRA_DISEQC_MAX_PKT_SIZE];
+  MXL_HYDRA_DISEQC_TONE_CTRL_E toneBurst;
+} MXL_HYDRA_DISEQC_TX_MSG_T;
+
