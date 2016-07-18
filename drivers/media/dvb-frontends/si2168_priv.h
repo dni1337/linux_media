@@ -46,6 +46,10 @@ struct si2168_dev {
 	u8 ts_mode;
 	bool ts_clock_inv;
 	bool ts_clock_gapped;
+	int fef_pin;
+	bool fef_inv;
+	int agc_pin;
+	bool agc_inv;
 };
 
 /* firmware command struct */
