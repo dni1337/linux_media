@@ -43,7 +43,13 @@ struct si2183_config {
 
 	/* TS clock gapped */
 	bool ts_clock_gapped;
-	
+
+	/* Tuner control pins */
+#define SI2183_MP_NOT_USED	1
+#define SI2183_MP_A		2
+#define SI2183_MP_B		3
+#define SI2183_MP_C		4
+#define SI2183_MP_D		5
 	int fef_pin;
 	bool fef_inv;
 	int agc_pin;

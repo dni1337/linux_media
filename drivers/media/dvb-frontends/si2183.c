@@ -938,31 +938,31 @@ static int si2183_init(struct dvb_frontend *fe)
 	cmd.rlen = 2;
 	switch (dev->fef_pin)
 	{
-	case 2:
+	case SI2183_MP_A:
 		cmd.args[1] = dev->fef_inv ? 3 : 2;
 		break;
-	case 3:
+	case SI2183_MP_B:
 		cmd.args[2] = dev->fef_inv ? 3 : 2;
 		break;
-	case 4:
+	case SI2183_MP_C:
 		cmd.args[3] = dev->fef_inv ? 3 : 2;
 		break;
-	case 5:
+	case SI2183_MP_D:
 		cmd.args[4] = dev->fef_inv ? 3 : 2;
 		break;
 	}
 	switch (dev->agc_pin)
 	{
-	case 2:
+	case SI2183_MP_A:
 		cmd.args[1] = 1;
 		break;
-	case 3:
+	case SI2183_MP_B:
 		cmd.args[2] = 1;
 		break;
-	case 4:
+	case SI2183_MP_C:
 		cmd.args[3] = 1;
 		break;
-	case 5:
+	case SI2183_MP_D:
 		cmd.args[4] = 1;
 		break;
 	}
