@@ -93,23 +93,6 @@ static int r848_regmask(struct r848_priv *priv,
 	return r848_wr(priv, reg, b | setmask);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static int r848_get_lock_status(struct r848_priv *priv, u8 *lock)
 {
 	int ret;
@@ -126,23 +109,6 @@ static int r848_get_lock_status(struct r848_priv *priv, u8 *lock)
 
 	return ret;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //-----------------------------------------------------------------------------------/ 
 // Purpose: read multiple IMC results for stability
@@ -3439,8 +3405,6 @@ R848_Sys_Info_Type R848_Sys_Sel( struct r848_priv *priv,R848_Standard_Type R848_
 		return R848_Sys_Info;
 	}
 
-
-
 R848_SysFreq_Info_Type R848_SysFreq_Sel(struct r848_priv *priv,R848_Standard_Type R848_Standard,u32 RF_freq)
 {
 	R848_SysFreq_Info_Type R848_SysFreq_Info;
@@ -3782,17 +3746,6 @@ R848_SysFreq_Info_Type R848_SysFreq_Sel(struct r848_priv *priv,R848_Standard_Typ
 	return R848_SysFreq_Info;
 }
 
-
-
-
-
-
-
-
-
-
-
-
 R848_ErrCode R848_RfGainMode( struct r848_priv *priv,R848_RF_Gain_TYPE R848_RfGainType)
 {
 	int ret;
@@ -3889,8 +3842,6 @@ R848_ErrCode R848_RfGainMode( struct r848_priv *priv,R848_RF_Gain_TYPE R848_RfGa
 
     return RT_Success;
 }
-
-
 
 R848_ErrCode R848_TF_Check( struct r848_priv *priv)
 {
@@ -4070,39 +4021,6 @@ R848_ErrCode R848_TF_Check( struct r848_priv *priv)
 
 	return RT_Success;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 R848_ErrCode R848_SetStandard(struct r848_priv *priv,R848_Standard_Type RT_Standard)
 {
@@ -4507,22 +4425,6 @@ R848_ErrCode R848_SetFrequency(struct r848_priv *priv,R848_Set_Info R848_INFO)
 	return RT_Success;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static int r848_release(struct dvb_frontend *fe)
 {
 	struct r848_priv *priv = fe->tuner_priv;
@@ -4541,14 +4443,10 @@ static int r848_init(struct dvb_frontend *fe)
 
 	u8 i;
 
-	printk("init tuner\n");
-
 	if (priv->inited == 1)
 		return 0;
 
 	priv->inited = 1;
-
-	printk("init tuner first time\n");
 
 	if(R848_InitReg(priv,R848_STD_SIZE) != RT_Success)
 		return RT_Fail;
@@ -4604,7 +4502,6 @@ static int r848_init(struct dvb_frontend *fe)
 	if (ret)
 		dev_dbg(&priv->i2c->dev, "%s() failed\n", __func__);
 
-	printk("init tuner done\n");
 	return ret;
 }
 
@@ -4691,21 +4588,12 @@ static int r848_set_params(struct dvb_frontend *fe)
 	}
 
 
-
-
-
 	if (ret) {
-		printk("[r848_lock_n_wait] Tuner lock function Failed!\n");
+		dev_dbg(&priv->i2c->dev, "%s() tuner lock failed!", __func__);
 		goto exit;
 	}
 	for (i = 0; i < 5; i++) {
 		ret = r848_get_lock_status(priv, &tuner_lock);
-		if(tuner_lock) {
-			printk("Tuner Locked.\n");
-			break;
-		} else {
-			printk("Tuner not Locked!\n");
-		}
 		msleep(20);
 	}
 
