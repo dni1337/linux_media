@@ -1219,21 +1219,22 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	p->strength.len = 1;
 	p->strength.stat[0].scale = FE_SCALE_DECIBEL;
 	p->strength.stat[0].svalue = Padc - agc;
+	
+	*status = FE_HAS_SIGNAL;
 
 	read_reg(state, RSTV0910_P2_DMDSTATE + state->regoff, &DmdState);
 
 	if (DmdState & 0x40) {
 		read_reg(state, RSTV0910_P2_DSTATUS + state->regoff, &DStatus);
+		if (DStatus & 0x80)
+			*status |= FE_HAS_CARRIER;
 		if (DStatus & 0x08)
 			CurReceiveMode = (DmdState & 0x20) ?
 				Mode_DVBS : Mode_DVBS2;
 	}
-	if (CurReceiveMode == Mode_None) {
-		*status = 0;
-		return 0;
-	}
 
-	*status = FE_HAS_SIGNAL | FE_HAS_CARRIER | FE_HAS_VITERBI | FE_HAS_SYNC;
+	if (CurReceiveMode == Mode_None)
+		return 0;
 
 	if (state->ReceiveMode == Mode_None) {
 		state->ReceiveMode = CurReceiveMode;
@@ -1265,9 +1266,14 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	}
 
 	if (!FECLock)
+	{
+		p->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+		p->post_bit_error.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+		p->post_bit_count.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		return 0;
+	}
 
-	*status |= FE_HAS_LOCK;
+	*status |= FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
 
 	if (state->FirstTimeLock) {
 		u8 tmp;

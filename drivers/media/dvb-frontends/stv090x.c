@@ -3719,15 +3719,17 @@ err:
 static int stv090x_read_status(struct dvb_frontend *fe, enum fe_status *status)
 {
 	struct stv090x_state *state = fe->demodulator_priv;
+	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
 	u32 reg, dstatus;
 	u8 search_state;
 
 	*status = FE_HAS_SIGNAL;
+	stv090x_read_rflevel(fe);
 
 	dstatus = STV090x_READ_DEMOD(state, DSTATUS);
 	if (STV090x_GETFIELD_Px(dstatus, CAR_LOCK_FIELD))
 		*status |= FE_HAS_CARRIER;
-
+	
 	reg = STV090x_READ_DEMOD(state, DMDSTATE);
 	search_state = STV090x_GETFIELD_Px(reg, HEADER_MODE_FIELD);
 
@@ -3746,7 +3748,7 @@ static int stv090x_read_status(struct dvb_frontend *fe, enum fe_status *status)
 				*status |= FE_HAS_VITERBI;
 				reg = STV090x_READ_DEMOD(state, TSSTATUS);
 				if (STV090x_GETFIELD_Px(reg, TSFIFO_LINEOK_FIELD))
-					*status |= FE_HAS_SYNC | FE_HAS_LOCK;
+					*status |= FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
 			}
 		}
 		break;
@@ -3759,17 +3761,21 @@ static int stv090x_read_status(struct dvb_frontend *fe, enum fe_status *status)
 				*status |= FE_HAS_VITERBI;
 				reg = STV090x_READ_DEMOD(state, TSSTATUS);
 				if (STV090x_GETFIELD_Px(reg, TSFIFO_LINEOK_FIELD))
-					*status |= FE_HAS_SYNC | FE_HAS_LOCK;
+					*status |= FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
 			}
 		}
 		break;
 	}
 
-	stv090x_read_rflevel(fe);
-	stv090x_read_per(fe, *status);
-
-	if (*status & FE_HAS_LOCK)
+	if (*status & FE_HAS_LOCK) {
 		stv090x_read_cnr(fe);
+		stv090x_read_per(fe, *status);
+	}
+	else {
+		p->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+		p->post_bit_error.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+		p->post_bit_count.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+	}
 
 	if (state->config->set_lock_led)
 		state->config->set_lock_led(fe, *status & FE_HAS_LOCK);
