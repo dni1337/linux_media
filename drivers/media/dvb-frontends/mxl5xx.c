@@ -470,6 +470,9 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	int stat;
 	u32 reg[8];
 
+
+	*status = FE_HAS_SIGNAL;
+
 	/* Read RF level */
 	mutex_lock(&state->base->status_lock);
 	HYDRA_DEMOD_STATUS_LOCK(state, state->demod);
@@ -483,8 +486,6 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	p->strength.stat[0].scale = FE_SCALE_DECIBEL;
 	p->strength.stat[0].svalue = (s16)reg[0] * 10;
 
-	*status = FE_HAS_SIGNAL | FE_HAS_CARRIER;
-
 	/* Read demod lock status */
 	mutex_lock(&state->base->status_lock);
 	HYDRA_DEMOD_STATUS_LOCK(state, state->demod);
@@ -495,22 +496,27 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	mutex_unlock(&state->base->status_lock);
 
 	if (reg[0] == 1)
-		*status |= FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
+		*status |= FE_HAS_CARRIER | FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
 	else
+	{
+		p->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+		p->post_bit_error.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+		p->post_bit_count.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		return 0;
+	}
 
 	/* Read SNR */
 	mutex_lock(&state->base->status_lock);
 	HYDRA_DEMOD_STATUS_LOCK(state, state->demod);
-	stat = read_register(state, (HYDRA_DMD_STATUS_INPUT_POWER_ADDR +
+	stat = read_register(state, (HYDRA_DMD_SNR_ADDR_OFFSET +
 					HYDRA_DMD_STATUS_OFFSET(state->demod)),
 					reg);
 	HYDRA_DEMOD_STATUS_UNLOCK(state, state->demod);
 	mutex_unlock(&state->base->status_lock);
 
-	p->strength.len = 1;
-	p->strength.stat[0].scale = FE_SCALE_DECIBEL;
-	p->strength.stat[0].svalue = (s16)reg[0] * 10;
+	p->cnr.len = 1;
+	p->cnr.stat[0].scale = FE_SCALE_DECIBEL;
+	p->cnr.stat[0].svalue = (s16)reg[0] * 10;
 
 	/* Read BER */
 	mutex_lock(&state->base->status_lock);
