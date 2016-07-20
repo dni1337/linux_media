@@ -3782,7 +3782,7 @@ static int stv090x_read_snr(struct dvb_frontend *fe, u16 *snr)
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
 
 	if (p->cnr.stat[0].scale == FE_SCALE_DECIBEL) {
-		 *snr = p->cnr.stat[0].svalue / 100;
+		 *snr = (s32)p->cnr.stat[0].svalue / 100;
 		 if (*snr > 200)
 			  *snr = 0xffff;
 		 else
@@ -3807,9 +3807,7 @@ static int stv090x_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 {
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
 
-	if (p->strength.stat[0].scale == FE_SCALE_DECIBEL)
-		*strength = (100 + p->strength.stat[0].svalue/1000) * 656;
-	else *strength = 0;
+	*strength = p->strength.stat[0].scale == FE_SCALE_DECIBEL ? ((100000 + (s32)p->strength.stat[0].svalue) / 1000) * 656 : 0;
 
 	return 0;
 }
