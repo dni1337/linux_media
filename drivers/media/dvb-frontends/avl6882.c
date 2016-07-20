@@ -539,9 +539,11 @@ static int avl6882_load_firmware(struct avl6882_priv *priv)
 
 	switch (priv->delivery_system) {
 	case SYS_DVBC_ANNEX_A:
+	case SYS_DVBC_ANNEX_B:
 		fw_data = AVL_Demod_Patch_DVBCFw;
 		fw_size = sizeof(AVL_Demod_Patch_DVBCFw);
 		dev_info(&priv->i2c->dev, "Load AVL6882 firmware patch for DVB-C");
+		break;
 	case SYS_DVBS:
 	case SYS_DVBS2:
 		fw_data = AVL_Demod_Patch_DVBSxFw;
@@ -781,6 +783,33 @@ static int avl6882_init_dvbc(struct dvb_frontend *fe)
 	return ret;
 }
 
+static int avl6882_init_dvbc_b(struct dvb_frontend *fe)
+{
+	struct avl6882_priv *priv = fe->demodulator_priv;
+	int ret;
+
+	ret = AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_dmd_clk_Hz_iaddr_offset, 250000000);
+	ret |= AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_fec_clk_Hz_iaddr_offset, 250000000);
+	ret |= AVL6882_WR_REG8(priv, 0x600 + rc_DVBC_rfagc_pol_caddr_offset,AVL_AGC_NORMAL);
+	ret |= AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_if_freq_Hz_iaddr_offset, 5000000);
+	ret |= AVL6882_WR_REG8(priv, 0x600 + rc_DVBC_adc_sel_caddr_offset, (u8) AVL_IF_Q);
+	ret |= AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_symbol_rate_Hz_iaddr_offset, 5360000);
+	ret |= AVL6882_WR_REG8(priv, 0x600 + rc_DVBC_j83b_mode_caddr_offset, AVL_DVBC_J83B);
+
+	//DDC configuration
+	ret |= AVL6882_WR_REG8(priv, 0x600 + rc_DVBC_input_format_caddr_offset, AVL_ADC_IN); //ADC in
+	ret |= AVL6882_WR_REG8(priv, 0x600 + rc_DVBC_input_select_caddr_offset, AVL_OFFBIN); //RX_OFFBIN
+	ret |= AVL6882_WR_REG8(priv, 0x600 + rc_DVBC_tuner_type_caddr_offset, AVL_DVBC_IF); //IF
+
+	//ADC configuration
+	ret |= AVL6882_WR_REG8(priv, 0x600 + rc_DVBC_adc_use_pll_clk_caddr_offset, 0);
+	ret |= AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_sample_rate_Hz_iaddr_offset, 30000000);
+
+	/* enable agc */
+    	ret |= AVL6882_WR_REG32(priv, REG_GPIO_BASE + GPIO_AGC_DVBTC, 6);
+
+	return ret;
+}
 
 static int avl6882_init_dvbt(struct dvb_frontend *fe)
 {
@@ -938,6 +967,9 @@ static int avl6882_set_dvbmode(struct dvb_frontend *fe,
 	switch (priv->delivery_system) {
 	case SYS_DVBC_ANNEX_A:
 		ret |= avl6882_init_dvbc(fe);
+		break;
+	case SYS_DVBC_ANNEX_B:
+		ret |= avl6882_init_dvbc_b(fe);
 		break;
 	case SYS_DVBS:
 	case SYS_DVBS2:
@@ -1308,20 +1340,12 @@ static int avl6882_read_status(struct dvb_frontend *fe, enum fe_status *status)
 {
 	struct avl6882_priv *priv = fe->demodulator_priv;
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-	int ret;
-	u32 reg, agc, snr;
+	int ret = 0;
+	u32 reg, agc, snr = 0;
 
-	*status = 0;
-	snr = 0;
-	
-	ret = AVL6882_RD_REG16(priv,0x0a4 + rs_rf_agc_saddr_offset, &agc);
-	c->strength.len = 1;
-	c->strength.stat[0].scale = FE_SCALE_DECIBEL;
-	c->strength.stat[0].svalue = agc;
-	*status = FE_HAS_SIGNAL | FE_HAS_CARRIER;
-	
-	switch (c->delivery_system) {
+	switch (priv->delivery_system) {
 	case SYS_DVBC_ANNEX_A:
+	case SYS_DVBC_ANNEX_B:
 		ret |= AVL6882_RD_REG32(priv,0x400 + rs_DVBC_mode_status_iaddr_offset, &reg);
 		if ((reg & 0xff) == 0x15)
 			reg = 1;
@@ -1342,41 +1366,88 @@ static int avl6882_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		break;
 	case SYS_DVBT:
 	case SYS_DVBT2:
-	default:
 		ret |= AVL6882_RD_REG8(priv, 0x800 + rs_DVBTx_fec_lock_caddr_offset, &reg);
 		if (reg) {
 			ret |= AVL6882_RD_REG16(priv,0x800 + rs_DVBTx_snr_dB_x100_saddr_offset, &snr);		  
 			if (ret) snr = 0;
 		}
 		break;
+	default:
+		*status = 0;
+		return 1;
 	}
+
 	if (ret) {
 	  	*status = 0;
 		return ret;
 	}
 
-	c->cnr.len = 1;
-	c->cnr.stat[0].scale = FE_SCALE_DECIBEL;
-	c->cnr.stat[0].svalue = snr*10;	
-	
-	if (reg)
-		*status |= FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
+	*status = FE_HAS_SIGNAL;
+	ret = AVL6882_RD_REG16(priv,0x0a4 + rs_rf_agc_saddr_offset, &agc);
+	c->strength.len = 1;
+	c->strength.stat[0].scale = FE_SCALE_DECIBEL;
+	c->strength.stat[0].svalue = - (s32)agc;
+
+	if (reg){
+		*status |= FE_HAS_CARRIER | FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
+		c->cnr.len = 1;
+		c->cnr.stat[0].scale = FE_SCALE_DECIBEL;
+		c->cnr.stat[0].svalue = snr * 10;
+	}
+	else
+		c->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 
 	return ret;
+}
+
+static int avl6882_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
+{
+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+
+	*strength = c->strength.stat[0].scale == FE_SCALE_DECIBEL ? ((100000 + (s32)c->strength.stat[0].svalue) / 1000) * 656 : 0;
+
+	return 0;
+
+}
+
+static int avl6882_read_snr(struct dvb_frontend *fe, u16 *snr)
+{
+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+
+	if (c->cnr.stat[0].scale == FE_SCALE_DECIBEL) {
+		 *snr = (s32)c->cnr.stat[0].svalue / 100;
+		  switch (c->delivery_system) {
+			case SYS_DVBS:
+			case SYS_DVBS2:
+				if (*snr > 200)
+					*snr = 0xffff;
+				else
+					*snr *= 328;
+				break;
+			default:
+				if (*snr > 500)
+					*snr = 0xffff;
+				else
+					*snr *= 131;
+				break;
+		  }
+	} else *snr = 0;
+
+	return 0;
 }
 
 static int avl6882_read_ber(struct dvb_frontend *fe, u32 *ber)
 {
 	struct avl6882_priv *priv = fe->demodulator_priv;
-	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	int ret;
 
 	dev_dbg(&priv->i2c->dev, "%s()\n", __func__);
 
 	*ber = 10e7;
 
-	switch (c->delivery_system) {
+	switch (priv->delivery_system) {
 	case SYS_DVBC_ANNEX_A:
+	case SYS_DVBC_ANNEX_B:
 		ret = AVL6882_RD_REG32(priv,0x400 + rs_DVBC_post_viterbi_BER_estimate_x10M_iaddr_offset, ber);
 		break;
 	case SYS_DVBS:
@@ -1443,6 +1514,7 @@ static int avl6882_set_frontend(struct dvb_frontend *fe)
 		ret = avl6882_set_dvbt(fe);
 		break;
 	case SYS_DVBC_ANNEX_A:
+	case SYS_DVBC_ANNEX_B:
 		if (demod_mode != AVL_DVBC) {
 			dev_err(&priv->i2c->dev, "%s: failed to enter DVBC mode",
 				KBUILD_MODNAME);
@@ -1491,6 +1563,7 @@ static int avl6882_set_property(struct dvb_frontend *fe,
 		ret = avl6882_set_dvbmode(fe, p->u.data);
 		switch (p->u.data) {
 		case SYS_DVBC_ANNEX_A:
+		case SYS_DVBC_ANNEX_B:
 			fe->ops.info.frequency_min = 47000000;
 			fe->ops.info.frequency_max = 862000000;
 			fe->ops.info.frequency_stepsize = 62500;
@@ -1520,7 +1593,8 @@ static int avl6882_set_property(struct dvb_frontend *fe,
 
 static int avl6882_init(struct dvb_frontend *fe)
 {
-        return avl6882_set_dvbmode(fe,SYS_DVBS);
+        /*return avl6882_set_dvbmode(fe,SYS_DVBS);*/
+	return 0;
 }
 
 static int avl6882_sleep(struct dvb_frontend *fe)
@@ -1537,7 +1611,7 @@ static void avl6882_release(struct dvb_frontend *fe)
 }
 
 static struct dvb_frontend_ops avl6882_ops = {
-	.delsys = {SYS_DVBT, SYS_DVBT2, SYS_DVBC_ANNEX_A, SYS_DVBS, SYS_DVBS2},
+	.delsys = {SYS_DVBT, SYS_DVBT2, SYS_DVBC_ANNEX_A, SYS_DVBC_ANNEX_B, SYS_DVBS, SYS_DVBS2},
 	.info = {
 		.name			= "Availink AVL6882",
 		.frequency_min		= 174000000,
@@ -1577,6 +1651,8 @@ static struct dvb_frontend_ops avl6882_ops = {
 	.i2c_gate_ctrl			= avl6882_i2c_gate_ctrl,
 
 	.read_status			= avl6882_read_status,
+	.read_signal_strength		= avl6882_read_signal_strength,
+	.read_snr			= avl6882_read_snr,
 	.read_ber			= avl6882_read_ber,
 	.set_tone			= avl6882_set_tone,
 	.set_voltage			= avl6882_set_voltage,
