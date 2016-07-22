@@ -522,7 +522,7 @@ static struct dvb_usb_device_properties tbs5880_properties;
 
 static struct cxd2820r_config cxd2820r_config = {
 	.i2c_address = 0x6c, /* (0xd8 >> 1) */
-	.ts_mode = CXD2820R_TS_PARALLEL,
+	.ts_mode = CXD2820R_TS_SERIAL,
 	.set_lock_led = tbs5880_led_ctrl,
 };
 
