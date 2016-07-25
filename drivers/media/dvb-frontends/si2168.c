@@ -95,7 +95,7 @@ static int si2168_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		goto err;
 	}
 
-	switch (c->delivery_system) {
+	switch (dev->delivery_system) {
 	case SYS_DVBT:
 		memcpy(cmd.args, "\xa0\x01", 2);
 		cmd.wlen = 2;
@@ -256,6 +256,7 @@ static int si2168_set_frontend(struct dvb_frontend *fe)
 		if (c->symbol_rate < 6000000) {
 			delivery_system = 0x10;
 			c->delivery_system = SYS_DVBC_ANNEX_B;
+			c->bandwidth_hz = 6000000;
 		}
 		break;
 	case SYS_DVBT2:
