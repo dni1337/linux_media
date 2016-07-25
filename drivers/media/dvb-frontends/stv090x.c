@@ -3818,6 +3818,23 @@ static int stv090x_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 	return 0;
 }
 
+static int stv090x_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
+{
+	struct stv090x_state *state = fe->demodulator_priv;
+	u8 err0, err1;
+
+	*ucblocks = 0;
+	switch (state->delsys) {
+	case STV090x_DVBS2:
+		err0 = STV090x_READ_DEMOD(state, UPCRCKO0);
+		err1 = STV090x_READ_DEMOD(state, UPCRCKO1);
+		*ucblocks = (err1 << 8) | err0;
+	default:
+		break;
+	}
+	return 0;
+}
+
 static int stv090x_set_tone(struct dvb_frontend *fe, enum fe_sec_tone_mode tone)
 {
 	struct stv090x_state *state = fe->demodulator_priv;
@@ -5045,9 +5062,10 @@ static struct dvb_frontend_ops stv090x_ops = {
 
 	.search				= stv090x_search,
 	.read_status			= stv090x_read_status,
-	.read_ber			= stv090x_read_ber,
 	.read_signal_strength		= stv090x_read_signal_strength,
 	.read_snr			= stv090x_read_snr,
+	.read_ber			= stv090x_read_ber,
+	.read_ucblocks			= stv090x_read_ucblocks,
 };
 
 

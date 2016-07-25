@@ -1457,6 +1457,14 @@ static int sleep(struct dvb_frontend *fe)
 	return 0;
 }
 
+static int read_signal_strength(struct dvb_frontend *fe, u16 *strength)
+{
+	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
+
+	*strength = p->strength.stat[0].scale == FE_SCALE_DECIBEL ? ((100000 + (s32)p->strength.stat[0].svalue) / 1000) * 656 : 0;
+
+	return 0;
+}
 
 static int read_snr(struct dvb_frontend *fe, u16 *snr)
 {
@@ -1484,12 +1492,9 @@ static int read_ber(struct dvb_frontend *fe, u32 *ber)
 	return 0;
 }
 
-static int read_signal_strength(struct dvb_frontend *fe, u16 *strength)
+static int read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 {
-	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
-
-	*strength = p->strength.stat[0].scale == FE_SCALE_DECIBEL ? ((100000 + (s32)p->strength.stat[0].svalue) / 1000) * 656 : 0;
-
+	*ucblocks = 0;
 	return 0;
 }
 
@@ -1516,16 +1521,17 @@ static struct dvb_frontend_ops stv0910_ops = {
 	.get_frontend_algo              = get_algo,
 	.get_frontend                   = get_frontend,
 	.tune                           = tune,
-	.read_status			= read_status,
 	.set_tone			= set_tone,
 
 	.diseqc_send_master_cmd		= send_master_cmd,
 	.diseqc_send_burst		= send_burst,
 	.diseqc_recv_slave_reply	= recv_slave_reply,
 
+	.read_status			= read_status,
+	.read_signal_strength		= read_signal_strength,
 	.read_snr			= read_snr,
 	.read_ber			= read_ber,
-	.read_signal_strength		= read_signal_strength,
+	.read_ucblocks			= read_ucblocks,
 };
 
 static struct stv_base *match_base(struct i2c_adapter  *i2c, u8 adr)
