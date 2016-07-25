@@ -253,6 +253,10 @@ static int si2168_set_frontend(struct dvb_frontend *fe)
 		break;
 	case SYS_DVBC_ANNEX_A:
 		delivery_system = 0x30;
+		if (c->symbol_rate < 6000000) {
+			delivery_system = 0x10;
+			c->delivery_system = SYS_DVBC_ANNEX_B;
+		}
 		break;
 	case SYS_DVBT2:
 		delivery_system = 0x70;
