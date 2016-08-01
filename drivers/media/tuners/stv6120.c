@@ -1,12 +1,9 @@
 /*
- * STV6120 Silicon tuner driver
+ * Driver for the ST STV6120 tuner
  *
- * Copyright (C) Chris Leee <updatelee@gmail.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 only, as published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,25 +12,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-*/
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301, USA
+ * Or, point your browser to http://www.gnu.org/copyleft/gpl.html
+ */
 
-#include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/slab.h>
-#include <linux/string.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+#include <linux/delay.h>
+#include <linux/firmware.h>
+#include <linux/i2c.h>
+#include <linux/version.h>
+#include <asm/div64.h>
 
 #include "dvb_frontend.h"
 
-#include "stv6110x.h"
-#include "stv6120_reg.h"
 #include "stv6120.h"
-#include "stv6120_priv.h"
 
-static unsigned int verbose;
-module_param(verbose, int, 0644);
-MODULE_PARM_DESC(verbose, "Set Verbosity level");
+#define REG_N0		0
+#define REG_N1_F0	1
+#define REG_F1		2
+#define REG_F2_ICP	3
+#define REG_CF_PDIV	4
+#define REG_CFHF	5
+#define REG_CAL		6
 
 struct SLookup {
 	s16 Value;
@@ -123,6 +127,447 @@ static struct SLookup Gain_RFAGC_LookUp[] = {
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
+
+static const u8 tuner_init[25] = {
+ 0x77,
+ 0x33, 0xce, 0x54, 0x55, 0x0d, 0x32, 0x44, 0x0e,
+ 0xf9, 0x1b,
+ 0x33, 0xce, 0x54, 0x55, 0x0d, 0x32, 0x44, 0x0e,
+ 0x00, 0x00, 0x4c, 0x00, 0x00, 0x4c,
+};
+
+LIST_HEAD(stvlist);
+
+static inline u32 MulDiv32(u32 a, u32 b, u32 c)
+{
+	u64 tmp64;
+
+	tmp64 = (u64)a * (u64)b;
+	do_div(tmp64, c);
+
+	return (u32) tmp64;
+}
+
+
+struct stv_base {
+	struct list_head     stvlist;
+
+	u8                   adr;
+	struct i2c_adapter  *i2c;
+	struct mutex         i2c_lock;
+	struct mutex         reg_lock;
+	int                  count;
+};
+
+
+struct stv {
+	struct stv_base     *base;
+	struct dvb_frontend *fe;
+	int                  nr;
+
+	struct stv6120_cfg *cfg;
+
+	u8 reg[7];
+};
+
+static int i2c_read(struct i2c_adapter *adap,
+		    u8 adr, u8 *msg, int len, u8 *answ, int alen)
+{
+	struct i2c_msg msgs[2] = { { .addr = adr, .flags = 0,
+				     .buf = msg, .len = len},
+				   { .addr = adr, .flags = I2C_M_RD,
+				     .buf = answ, .len = alen } };
+	if (i2c_transfer(adap, msgs, 2) != 2) {
+		pr_err("stv6120: i2c_read error\n");
+		return -1;
+	}
+	return 0;
+}
+
+static int i2c_write(struct i2c_adapter *adap, u8 adr, u8 *data, int len)
+{
+	struct i2c_msg msg = {.addr = adr, .flags = 0,
+			      .buf = data, .len = len};
+
+	if (i2c_transfer(adap, &msg, 1) != 1) {
+		pr_err("stv6120: i2c_write error\n");
+		return -1;
+	}
+	return 0;
+}
+#if 0
+static int write_regs(struct stv *state, int reg, int len)
+{
+	u8 d[8];
+
+	u8 base = 0x02 + 0xa * state->nr;
+
+	memcpy(&d[1], &state->base->reg[reg], len);
+	d[0] = reg;
+	return i2c_write(state->base->i2c, state->base->adr, d, len + 1);
+}
+#endif
+static int write_tuner_regs(struct stv *state)
+{
+	u8 d[8];
+	memcpy(&d[1], state->reg, 7);
+	d[0] = 0x02 + 0xa * state->nr;
+	return i2c_write(state->base->i2c, state->base->adr, d, 8);
+}
+
+#if 0
+static int write_reg(struct stv *state, u8 reg, u8 val)
+{
+	u8 d[2] = {reg, val};
+
+	return i2c_write(state->i2c, state->adr, d, 2);
+}
+#endif
+
+static int read_reg(struct stv *state, u8 reg, u8 *val)
+{
+	return i2c_read(state->base->i2c, state->base->adr, &reg, 1, val, 1);
+}
+
+static int read_regs(struct stv *state, u8 reg, u8 *val, int len)
+{
+	return i2c_read(state->base->i2c, state->base->adr, &reg, 1, val, len);
+}
+
+#if 0
+static void dump_regs(struct stv *state)
+{
+	u8 d[25], *c = &state->reg[0];
+
+	read_regs(state, state->nr * 0xa + 2, d, 7);
+	pr_info("stv6120_regs = %02x %02x %02x %02x %02x %02x %02x\n",
+		d[0], d[1], d[2], d[3], d[4], d[5], d[6]);
+	pr_info("reg[] =        %02x %02x %02x %02x %02x %02x %02x\n",
+		c[0], c[1], c[2], c[3], c[4], c[5], c[6]);
+
+
+	read_regs(state, 0, d, 14);
+	pr_info("global: 0=%02x a=%02x 1=%02x b=%02x\n", d[0], d[0xa], d[1], d[0xb]);
+}
+#endif
+
+static int wait_for_call_done(struct stv *state, u8 mask)
+{
+	int status = 0;
+	u32 LockRetryCount = 10;
+
+	while (LockRetryCount > 0) {
+		u8 Status;
+
+		status = read_reg(state, state->nr * 0xa + 8, &Status);
+		if (status < 0)
+			return status;
+
+		if ((Status & mask) == 0)
+			break;
+		usleep_range(4000, 6000);
+		LockRetryCount -= 1;
+
+		status = -1;
+	}
+	return status;
+}
+
+static void init_regs(struct stv *state)
+{
+	u32 clkdiv = 0;
+	u32 agcmode = 0;
+	u32 agcref = 2;
+	u32 agcset = 0xffffffff;
+	u32 bbmode = 0xffffffff;
+
+/*
+ 0f40 00770133 02ce0354 0455050d 06320744  .w.3...T.U...2.D
+ 0f50 080e09f9 0a030b33 0cce0d54 0e550f0d  .......3...T.U..
+
+ 0f60 10321144 120e1300 1400154c 16001700  .2.D.......L....
+ 0f70 184c0000 00000000 00000000 00000000  .L..............
+*/
+
+//i = 0
+// rd(i) != (i+1) ?
+//	wr(i, i+1)
+// repeat until 32
+// 
+// wr(0xa, 0x1b)
+
+	//memcpy(state->base->reg, tuner_init, 25);
+/*
+	state->ref_freq = 16000;
+
+
+	if (clkdiv <= 3)
+		state->reg[0x00] |= (clkdiv & 0x03);
+	if (agcmode <= 3) {
+		state->reg[0x03] |= (agcmode << 5);
+		if (agcmode == 0x01)
+			state->reg[0x01] |= 0x30;
+	}
+	if (bbmode <= 3)
+		state->reg[0x01] = (state->reg[0x01] & ~0x30) | (bbmode << 4);
+	if (agcref <= 7)
+		state->reg[0x03] |= agcref;
+	if (agcset <= 31)
+		state->reg[0x02] = (state->reg[0x02] & ~0x1F) | agcset | 0x40;
+*/
+}
+
+static int probe(struct stv *state)
+{
+	struct dvb_frontend *fe = state->fe;
+	int ret = 0;
+
+	u8 d[26];
+
+	init_regs(state);
+	if (fe->ops.i2c_gate_ctrl)
+		fe->ops.i2c_gate_ctrl(fe, 1);
+
+	memcpy(&d[1], tuner_init, 25);
+	d[0] = 0;
+	ret = i2c_write(state->base->i2c, state->base->adr, d, 25 + 1);
+
+
+	if (ret < 0)
+		goto err;
+//	pr_info("attach_init OK\n");
+//	dump_regs(state);
+
+err:
+	if (fe->ops.i2c_gate_ctrl)
+		fe->ops.i2c_gate_ctrl(fe, 0);
+	return ret;
+}
+
+static int sleep(struct dvb_frontend *fe)
+{
+	/* struct tda_state *state = fe->tuner_priv; */
+
+	//pr_info("tuner sleep\n");
+	return 0;
+}
+
+static int init(struct dvb_frontend *fe)
+{
+	/* struct tda_state *state = fe->tuner_priv; */
+	//pr_info("init\n");
+	return 0;
+}
+
+static int release(struct dvb_frontend *fe)
+{
+	struct stv *state = fe->tuner_priv;
+
+	state->base->count--;
+	if (state->base->count == 0) {
+		//pr_info("remove STV tuner base\n");
+		list_del(&state->base->stvlist);
+		kfree(state->base);
+	}
+	kfree(state);
+	fe->tuner_priv = NULL;
+	return 0;
+}
+#if 0
+static int set_bandwidth(struct dvb_frontend *fe, u32 CutOffFrequency)
+{
+	struct stv *state = fe->tuner_priv;
+	u32 index = (CutOffFrequency + 999999) / 1000000;
+
+	if (index < 6)
+		index = 6;
+	if (index > 50)
+		index = 50;
+	if ((state->base->reg[0x08] & ~0xFC) == ((index-6) << 2))
+		return 0;
+
+	state->base->reg[0x08] = (state->base->reg[0x08] & ~0xFC) | ((index-6) << 2);
+	state->base->reg[0x09] = (state->base->reg[0x09] & ~0x0C) | 0x08;
+	if (fe->ops.i2c_gate_ctrl)
+		fe->ops.i2c_gate_ctrl(fe, 1);
+	write_regs(state, 0x08, 2);
+	wait_for_call_done(state, 0x08);
+	if (fe->ops.i2c_gate_ctrl)
+		fe->ops.i2c_gate_ctrl(fe, 0);
+	return 0;
+}
+
+#endif
+
+
+
+static int set_lof(struct stv *state, u32 LocalFrequency, u32 CutOffFrequency)
+{
+	int cf_index = (CutOffFrequency / 1000000) - 5;
+	u32 Frequency = (LocalFrequency + 500) / 1000; // Hz -> kHz
+	u32 p = 1, psel = 0, fvco, div, frac;
+	u8 Icp, tmp;
+
+	u32 freq = Frequency;
+	u8 PDIV, P;
+
+	//pr_info("F = %u, CutOff = %u\n", Frequency, CutOffFrequency);
+
+
+	/* set PDIV and CF */
+	if (cf_index < 0)
+		cf_index = 0;
+	if (cf_index > 31)
+		cf_index = 31;
+
+	if (Frequency >= 1191000) {
+		PDIV = 0;
+		P    = 2;
+	} else if (Frequency >= 596000) {
+		PDIV = 1;
+		P    = 4;
+	} else if (Frequency >= 299000) {
+		PDIV = 2;
+		P    = 8;
+	} else {
+		PDIV = 3;
+		P    = 16;
+	}
+
+
+	fvco = Frequency * P;
+	div = (fvco * state->cfg->Rdiv) / state->cfg->xtal;
+
+	/* charge pump current */
+	Icp = 0;
+	if (fvco < 2472000)
+		Icp = 0;
+	else if (fvco < 2700000)
+		Icp = 1;
+	else if (fvco < 3021000)
+		Icp = 2;
+	else if (fvco < 3387000)
+		Icp = 3;
+	else if (fvco < 3845000)
+		Icp = 5;
+	else if (fvco < 4394000)
+		Icp = 6;
+	else
+		Icp = 7;
+
+
+
+
+
+	frac = (fvco * state->cfg->Rdiv) % state->cfg->xtal;
+	frac = MulDiv32(frac, 0x40000, state->cfg->xtal);
+
+
+	state->reg[REG_N0]    = div & 0xff;
+	state->reg[REG_N1_F0] = (((div >> 8) & 0x01) | ((frac & 0x7f) << 1)) & 0xff;
+	state->reg[REG_F1]    = (frac >> 7) & 0xff;
+	state->reg[REG_F2_ICP] &= 0x88;
+	state->reg[REG_F2_ICP] |= (Icp << 4) | ((frac >> 15) & 0x07);
+	state->reg[REG_CF_PDIV] &= 0x9f;
+	state->reg[REG_CF_PDIV] |= ((PDIV << 5) | cf_index);
+
+	/* Start cal vco,CF */
+	state->reg[REG_CAL] &= 0xf8;
+	state->reg[REG_CAL] |= 0x06;
+
+	write_tuner_regs(state);
+
+	wait_for_call_done(state, 0x06);
+
+	usleep_range(10000, 12000);
+
+#if 0
+	read_reg(state, 0x03, &tmp);
+	if (tmp & 0x10)	{
+		state->base->reg[0x02] &= ~0x80;   /* LNA NF Mode */
+		write_regs(state, 2, 1);
+	}
+	read_reg(state, 0x08, &tmp);
+#endif
+
+//	dump_regs(state);
+	return 0;
+}
+
+static int set_params(struct dvb_frontend *fe)
+{
+	struct stv *state = fe->tuner_priv;
+	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
+	int status;
+	u32 freq, symb, cutoff;
+	u32 rolloff;
+
+	if (p->delivery_system != SYS_DVBS && p->delivery_system != SYS_DVBS2)
+		return -EINVAL;
+
+	switch (p->rolloff) {
+	case ROLLOFF_20:
+		rolloff = 120;
+		break;
+	case ROLLOFF_25:
+		rolloff = 125;
+		break;
+	default:
+		rolloff = 135;
+		break;
+	}
+
+	freq = p->frequency * 1000;
+	symb = p->symbol_rate;
+	cutoff = 5000000 + MulDiv32(p->symbol_rate, rolloff, 200);
+
+	if (fe->ops.i2c_gate_ctrl)
+		fe->ops.i2c_gate_ctrl(fe, 1);
+	set_lof(state, freq, cutoff);
+	if (fe->ops.i2c_gate_ctrl)
+		fe->ops.i2c_gate_ctrl(fe, 0);
+	return status;
+}
+
+static int get_frequency(struct dvb_frontend *fe, u32 *frequency)
+{
+	*frequency = 0;
+	return 0;
+}
+
+static u32 AGC_Gain[] = {
+	000, /* 0.0 */
+	000, /* 0.1 */
+	1000, /* 0.2 */
+	2000, /* 0.3 */
+	3000, /* 0.4 */
+	4000, /* 0.5 */
+	5000, /* 0.6 */
+	6000, /* 0.7 */
+	7000, /* 0.8 */
+	14000, /* 0.9 */
+	20000, /* 1.0 */
+	27000, /* 1.1 */
+	32000, /* 1.2 */
+	37000, /* 1.3 */
+	42000, /* 1.4 */
+	47000, /* 1.5 */
+	50000, /* 1.6 */
+	53000, /* 1.7 */
+	56000, /* 1.8 */
+	58000, /* 1.9 */
+	60000, /* 2.0 */
+	62000, /* 2.1 */
+	63000, /* 2.2 */
+	64000, /* 2.3 */
+	64500, /* 2.4 */
+	65000, /* 2.5 */
+	65500, /* 2.6 */
+	66000, /* 2.7 */
+	66500, /* 2.8 */
+	67000, /* 2.9 */
+};
+
 static s32 TableLookup(struct SLookup *Table, int TableSize, u16 RegValue)
 {
 	s32 Gain;
@@ -154,514 +599,122 @@ static s32 TableLookup(struct SLookup *Table, int TableSize, u16 RegValue)
 	return Gain;
 }
 
-/* Max transfer size done by I2C transfer functions */
-#define MAX_XFER_SIZE  64
-
-static void extract_mask_pos(u32 label, u8 *mask, u8 *pos)
+static int get_rf_strength(struct dvb_frontend *fe, u16 *st)
 {
-	u8 position = 0, i = 0;
+	struct stv *state = fe->tuner_priv;
+	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
 
-	(*mask) = label & 0xff;
-
-	while ((position == 0) && (i < 8)) {
-		position = ((*mask) >> i) & 0x01;
-		i++;
-	}
-
-	(*pos) = (i - 1);
-}
-
-static int stv6120_read_regs(struct stv6120_state *state, u16 reg, u8 *data, u8 len)
-{
-	int ret;
-	u8 b0[] = { reg & 0xff };
-	struct i2c_msg msg[] = {
-		{ .addr = state->config->addr, .flags = 0,        .buf = b0,   .len = 1 },
-		{ .addr = state->config->addr, .flags = I2C_M_RD, .buf = data, .len = len }
-	};
-
-	ret = i2c_transfer(state->i2c, msg, 2);
-	if (ret != 2) {
-		pr_err("I2C Error\n");
-		return -EREMOTEIO;
-	}
-	return 0;
-}
-
-static u8 stv6120_read_reg(struct stv6120_state *state, u16 reg)
-{
-	u8 data = 0x00;
-
-	stv6120_read_regs(state, reg, &data, 1);
-	return data;
-}
-
-static u8 stv6120_read_field(struct stv6120_state *state, u32 label)
-{
-	u8 mask, pos, data;
-
-	extract_mask_pos(label, &mask, &pos);
-
-	data = stv6120_read_reg(state, label >> 16);
-	data = (data & mask) >> pos;
-
-	return data;
-}
-
-static int stv6120_write_regs(struct stv6120_state *state, u16 reg, u8 *data, u8 len)
-{
-	int ret;
-	u8 buf[MAX_XFER_SIZE];
-
-	struct i2c_msg msg = {
-		.addr  = state->config->addr,
-		.flags = 0,
-		.buf   = buf,
-		.len   = len + 1
-	};
-
-	buf[0] = reg & 0xff;
-	memcpy(&buf[1], data, len);
-
-	ret = i2c_transfer(state->i2c, &msg, 1);
-	if (ret != 1) {
-		pr_err("I2C Error\n");
-		return -EREMOTEIO;
-	}
-
-	return 0;
-}
-
-static int stv6120_write_reg(struct stv6120_state *state, u16 reg, u8 data)
-{
-	return stv6120_write_regs(state, reg, &data, 1);
-}
-
-static int stv6120_write_field(struct stv6120_state *state, u32 label, u8 data)
-{
-	u8 reg, mask, pos;
-
-	reg = stv6120_read_reg(state, (label >> 16) & 0xffff);
-	extract_mask_pos(label, &mask, &pos);
-
-	data = mask & (data << pos);
-	reg = (reg & (~mask)) | data;
-
-	return stv6120_write_reg(state, (label >> 16) & 0xffff, reg);
-}
-
-static int stv6120_init(struct dvb_frontend *fe)
-{
-	struct stv6120_state *state = fe->tuner_priv;
-
-	//pr_warn("%s: tuner: %d\n", __func__, state->tuner);
-
-	stv6120_write_reg(state, RSTV6120_STAT1,  0x0E);
-	stv6120_write_reg(state, RSTV6120_CTRL10, 0x03);
-	stv6120_write_reg(state, RSTV6120_CTRL15, 0x0D);
-	stv6120_write_reg(state, RSTV6120_STAT2,  0x0E);
-	stv6120_write_reg(state, RSTV6120_CTRL18, 0x00);
-	stv6120_write_reg(state, RSTV6120_CTRL19, 0x00);
-	stv6120_write_reg(state, RSTV6120_CTRL20, 0x4C);
-	stv6120_write_reg(state, RSTV6120_CTRL21, 0x00);
-	stv6120_write_reg(state, RSTV6120_CTRL22, 0x00);
-	stv6120_write_reg(state, RSTV6120_CTRL23, 0x4C);
-	stv6120_write_reg(state, RSTV6120_CTRL10, 0x13);
-	stv6120_write_reg(state, RSTV6120_CTRL10, 0x1B);
-
-	return 0;
-}
-
-static int stv6120_set_cutoff(struct dvb_frontend *fe, u32 frequency)
-{
-	struct stv6120_state *state = fe->tuner_priv;
-
-	u8 cfhf;
-
-	if (frequency < 6796000)
-		cfhf = 0;
-	if (frequency < 5828000)
-		cfhf = 1;
-	if (frequency < 4778000)
-		cfhf = 2;
-	if (frequency < 4118000)
-		cfhf = 3;
-	if (frequency < 3513000)
-		cfhf = 4;
-	if (frequency < 3136000)
-		cfhf = 5;
-	if (frequency < 2794000)
-		cfhf = 6;
-	if (frequency < 2562000)
-		cfhf = 7;
-	if (frequency < 2331000)
-		cfhf = 8;
-	if (frequency < 2169000)
-		cfhf = 9;
-	if (frequency < 2006000)
-		cfhf = 10;
-	if (frequency < 1890000)
-		cfhf = 11;
-	if (frequency < 1771000)
-		cfhf = 12;
-	if (frequency < 1680000)
-		cfhf = 13;
-	if (frequency < 1586000)
-		cfhf = 14;
-	if (frequency < 1514000)
-		cfhf = 15;
-	if (frequency < 1433000)
-		cfhf = 16;
-	if (frequency < 1374000)
-		cfhf = 17;
-	if (frequency < 1310000)
-		cfhf = 18;
-	if (frequency < 1262000)
-		cfhf = 19;
-	if (frequency < 1208000)
-		cfhf = 20;
-	if (frequency < 1167000)
-		cfhf = 21;
-	if (frequency < 1122000)
-		cfhf = 22;
-	if (frequency < 1087000)
-		cfhf = 23;
-	if (frequency < 1049000)
-		cfhf = 24;
-	if (frequency < 1018000)
-		cfhf = 25;
-	if (frequency < 983000)
-		cfhf = 26;
-	if (frequency < 956000)
-		cfhf = 27;
-	if (frequency < 926000)
-		cfhf = 28;
-	if (frequency < 902000)
-		cfhf = 29;
-	if (frequency < 875000)
-		cfhf = 30;
-	if (frequency < 854000)
-		cfhf = 31;
-
-	STV6120_WRITE_FIELD(state, CFHF, cfhf);
-
-	//pr_warn("%s: tuner: %d, freq: %d CFHF: %d\n", __func__, state->tuner, frequency, cfhf);
-
-	return 0;
-}
-
-static int stv6120_set_frequency(struct dvb_frontend *fe, u32 frequency)
-{
-	struct stv6120_state *state = fe->tuner_priv;
-	const struct stv6120_config *config = state->config;
-
-	u32 Fxtl, Fvco, FRdiv, N, F;
-	u8  P, PDiv, R, ICP, i;
-
-	//pr_warn("%s: tuner: %d, freq: %d\n", __func__, state->tuner, frequency);
-	
-	STV6120_WRITE_FIELD(state, BBGAIN, state->bbgain/2);
-
-	stv6120_set_cutoff(fe, frequency);
-
-	if (frequency >= 250000) {
-		P = 16;
-		PDiv = 3;
-	}
-	if (frequency >= 299000) {
-		P = 8;
-		PDiv = 2;
-	}
-	if (frequency >= 596000) {
-		P = 4;
-		PDiv = 1;
-	}
-	if (frequency >= 1191000) {
-		P = 2;
-		PDiv = 0;
-	}
-
-	Fvco = frequency * P;
-
-	if (Fvco >= 2380000) {
-		ICP = 0;
-	}
-	if (Fvco >= 2473000) {
-		ICP = 1;
-	}
-	if (Fvco >= 2701000) {
-		ICP = 2;
-	}
-	if (Fvco >= 3022000) {
-		ICP = 3; /* 3 or 4 */
-	}
-	if (Fvco >= 3388000) {
-		ICP = 5;
-	}
-	if (Fvco >= 3846000) {
-		ICP = 6;
-	}
-	if (Fvco >= 4395000) {
-		ICP = 7;
-	}
-
-	/* fLO = fVCO / P = (fXTAL / R) * (N + F / 2^18) / P */
-	Fxtl  = config->refclk / 1000; /* 30mhz */
-	R     = config->clk_div;          /* 2     */
-	FRdiv = Fxtl / R;
-	N     = Fvco / FRdiv;
-	F     = ((Fvco % FRdiv) * 0x40000) / FRdiv;
-
-//	pr_info("%s: Fvco:%02x Fxtl:%02x R:%02x FRdiv:%02x ICP:%02x PDiv:%02x\n", __func__, Fvco, Fxtl, R, FRdiv, ICP, PDiv);
-//	pr_info("%s: N:%08x F:%08x\n", __func__, N, F);
-
-	STV6120_WRITE_FIELD(state, ICP, ICP);
-	STV6120_WRITE_FIELD(state, PDIV, PDiv);
-	STV6120_WRITE_FIELD(state, NDIV_LSB, (N & 0xFF));
-	STV6120_WRITE_FIELD(state, NDIV_MSB, ((N>>8) & 0x01));
-	STV6120_WRITE_FIELD(state, F_H, ((F>>15) & 0x07));
-	STV6120_WRITE_FIELD(state, F_M, ((F>>7) & 0xFF));
-	STV6120_WRITE_FIELD(state, F_L, (F & 0x7F));
-	STV6120_WRITE_FIELD(state, CALVCOSTRT, 1); /* VCO Auto Calibration */
-
-	i = 0;
-	while((i < 10) && (STV6120_READ_FIELD(state, CALVCOSTRT) != 0)) {
-		msleep(10); /* wait for VCO auto calibration */
-		i++;
-	}
-	
-	for (i = 0; !STV6120_READ_FIELD(state, LOCK); i++) {
-		if (i > 10) {
-			pr_err("%s: VCO Lock Failed...\n", __func__);
-			return 1;
-		}
-		msleep(10);
-	}
-	
-	state->frequency = frequency;
-
-	return 0;
-}
-
-static int stv6120_get_frequency(struct dvb_frontend *fe, u32 *frequency)
-{
-	struct stv6120_state *state = fe->tuner_priv;
-	
-	*frequency = state->frequency;
-
-	return 0;
-}
-
-static int stv6120_set_bandwidth(struct dvb_frontend *fe, u32 bandwidth)
-{
-	struct stv6120_state *state = fe->tuner_priv;
-	u8 lpf;
-	s32 i;
-
-	if ((bandwidth/2) > 36000000) /* F[4:0] BW/2 max =31+5=36 mhz for F=31 */
-		lpf = 31;
-	else if ((bandwidth/2) < 5000000) /* BW/2 min = 5Mhz for F=0 */
-		lpf = 0;
-	else /* if 5 < BW/2 < 36 */
-		lpf = (bandwidth/2)/1000000 - 5;
-
-	//pr_warn("%s: tuner: %d, bw: %d, lpf: %d\n", __func__, state->tuner, bandwidth, lpf);
-
-	STV6120_WRITE_FIELD(state, CF, lpf); /* Set the LPF value */
-	STV6120_WRITE_FIELD(state, CALRCSTRT, 1); /* Start LPF auto calibration */
-
-	i = 0;
-	while((i < 10) && (STV6120_READ_FIELD(state, CALRCSTRT) != 0)) {
-		msleep(10); /* wait for LPF auto calibration */
-		i++;
-	}
-
-	state->bandwidth = bandwidth;
-	//pr_warn("%s: LPF:%d\n", __func__, lpf);
-	return 0;
-}
-
-static int stv6120_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
-{
-	struct stv6120_state *state = fe->tuner_priv;
-	
-	*bandwidth = state->bandwidth;
-
-	return 0;
-}
-static int stv6120_set_mode(struct dvb_frontend *fe, enum tuner_mode mode)
-{
-	struct stv6120_state *state = fe->tuner_priv;
-
-	switch (mode) {
-//	case TUNER_WAKE:
-//		pr_warn("%s: TUNER_WAKE\n", __func__);
-//		if (state->tuner == TUNER_1) {
-//			stv6120_write_field(state, SYN_1, 0);
-//			stv6120_write_field(state, SDOFF_1, 1);
-//			stv6120_write_field(state, PATHON_1, 0);
-//		}
-//		if (state->tuner == TUNER_2) {
-//			stv6120_write_field(state, SYN_2, 0);
-//			stv6120_write_field(state, SDOFF_1, 1);
-//			stv6120_write_field(state, PATHON_1, 0);
-//		}
-		break;
-	case TUNER_WAKE:
-//		pr_warn("%s: tuner: %d TUNER_WAKE\n", __func__, state->tuner);
-//		stv6120_write_field(state, LNABON, 1);
-//		stv6120_write_field(state, LNACON, 1);
-
-//		stv6120_write_field(state, SYN_1, 1);
-//		stv6120_write_field(state, SDOFF_1, 0);
-//		stv6120_write_field(state, PATHON_1, 1);
-//		stv6120_write_field(state, SYN_2, 1);
-//		stv6120_write_field(state, SDOFF_2, 0);
-//		stv6120_write_field(state, PATHON_2, 1);
-		break;
-	case TUNER_SLEEP: // This actually TUNER_WAKE up the tuner, fix this
-//		pr_warn("%s: tuner: %d TUNER_SLEEP\n", __func__, state->tuner);
-//		stv6120_write_field(state, SYN_1, 1);
-//		stv6120_write_field(state, SDOFF_1, 0);
-//		stv6120_write_field(state, PATHON_1, 1);
-//		stv6120_write_field(state, SYN_2, 1);
-//		stv6120_write_field(state, SDOFF_2, 0);
-//		stv6120_write_field(state, PATHON_2, 1);
-		break;
-	}
-
-	return 0;
-}
-
-static int stv6120_sleep(struct dvb_frontend *fe)
-{
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 1);
-
-	if (fe->tuner_priv)
-		return stv6120_set_mode(fe, TUNER_SLEEP);
-
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 0);
-
-	return 0;
-}
-
-static int stv6120_get_status(struct dvb_frontend *fe, u32 *status)
-{
-	struct stv6120_state *state = fe->tuner_priv;
-
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 1);
-
-	if (STV6120_READ_FIELD(state, LOCK)) {
-		*status = TUNER_PHASELOCKED;
-	} else {
-		*status = 0;
-	}
-
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 0);
-
-	return 0;
-}
-
-static int stv6120_get_rf_strength(struct dvb_frontend *fe, u16 *st)
-{
-	struct stv6120_state *state = fe->tuner_priv;
 	s32 gain = 1, ref_bbgain = 12, tilt = 6;
 	u32 freq;
 
 	gain = TableLookup(Gain_RFAGC_LookUp, ARRAY_SIZE(Gain_RFAGC_LookUp), *st);
 
-	gain += 100 * (state->bbgain - ref_bbgain); 	
+	gain += 100 * (6 - ref_bbgain); 	
 	
-	freq = state->frequency / 10000;
+	freq = p->frequency / 10000;
 	
 	if (freq<159)
 		gain -= 200; /* HMR filter 2dB gain compensation below freq=1590MHz */	
 	
 	gain-=(((freq-155)*tilt)/12)*10; 
+	//pr_warn("%s: str = %u\n", __func__, *st);
 
 	return 0;
 }
 
-static int stv6120_release(struct dvb_frontend *fe)
+static int get_if(struct dvb_frontend *fe, u32 *frequency)
 {
-	struct stv6120_state *state = fe->tuner_priv;
-
-	fe->tuner_priv = NULL;
-	kfree(state);
-
+	*frequency = 0;
 	return 0;
 }
 
-static int stv6120_set_params(struct dvb_frontend *fe)
+static int get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
 {
-	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 1);
-	
-	stv6120_set_bandwidth(fe, c->bandwidth_hz);
-	stv6120_set_frequency(fe, c->frequency);
-	
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 0);
-
 	return 0;
 }
 
-static struct dvb_tuner_ops stv6120_ops = {
+static struct dvb_tuner_ops tuner_ops = {
 	.info = {
-		.name		= "STV6120 Silicon Tuner",
-		.frequency_min	=  250000,
-		.frequency_max	= 2150000,
-		.frequency_step	= 1000,
+		.name = "STV6120",
+		.frequency_min  =  950000,
+		.frequency_max  = 2150000,
+		.frequency_step =       0
 	},
-	.init		= stv6120_init,
-	.release	= stv6120_release,
-	.sleep          = stv6120_sleep,
-	.set_frequency	= stv6120_set_frequency,
-	.get_frequency	= stv6120_get_frequency,
-	.set_bandwidth	= stv6120_set_bandwidth,
-	.get_bandwidth	= stv6120_get_bandwidth,
-	.set_params	= stv6120_set_params,
-	.get_status	= stv6120_get_status,  
-	.get_rf_strength = stv6120_get_rf_strength,
+	.init              = init,
+	.sleep             = sleep,
+	.set_params        = set_params,
+	.release           = release,
+//	.get_frequency     = get_frequency,
+//	.get_if_frequency  = get_if,
+//	.get_bandwidth     = get_bandwidth,
+	.get_rf_strength   = get_rf_strength,
+//	.set_bandwidth     = set_bandwidth,
 };
 
-extern struct dvb_frontend *stv6120_attach(struct dvb_frontend *fe, struct i2c_adapter *i2c, const struct stv6120_config *config, u8 tuner)
+static struct stv_base *match_base(struct i2c_adapter  *i2c, u8 adr)
 {
-	struct stv6120_state *state;
+	struct stv_base *p;
 
-	state = kzalloc(sizeof(struct stv6120_state), GFP_KERNEL);
+	list_for_each_entry(p, &stvlist, stvlist)
+		if (p->i2c == i2c && p->adr == adr)
+			return p;
+	return NULL;
+}
+
+
+struct dvb_frontend *stv6120_attach(struct dvb_frontend *fe,
+		    struct i2c_adapter *i2c, struct stv6120_cfg *cfg)
+{
+	struct stv *state;
+	struct stv_base *base;
+	int stat = 0;
+
+	state = kzalloc(sizeof(struct stv), GFP_KERNEL);
 	if (!state)
 		return NULL;
+	memcpy(&fe->ops.tuner_ops, &tuner_ops, sizeof(struct dvb_tuner_ops));
+	state->fe = fe;
+	memcpy(state->reg, &tuner_init[2], 7);
 
-	state->i2c    = i2c;
-	state->config = config;
-	state->tuner  = tuner;
-	state->bbgain  = config->bbgain;
+	base = match_base(i2c, cfg->adr);
+	if (base) {
+		base->count++;
+		state->base = base;
+	} else {
+		base = kzalloc(sizeof(struct stv_base), GFP_KERNEL);
+		if (!base)
+			goto fail;
+		base->i2c = i2c;
+		base->adr = cfg->adr;
+		base->count = 1;
+		mutex_init(&base->i2c_lock);
+		mutex_init(&base->reg_lock);
+		state->base = base;
+		if (probe(state) < 0) {
+			kfree(base);
+			goto fail;
+		}
+		list_add(&base->stvlist, &stvlist);
+	}
 
-	fe->tuner_priv    = state;
-	fe->ops.tuner_ops = stv6120_ops;
 
-	pr_info("%s: Attaching stv6120, tuner: %d, bbgain : %d dB\n", __func__, state->tuner, state->bbgain);
+	if (cfg->xtal == 0) {
+		printk("xtal=0!!!\n");
+		goto fail;
+	}
 
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 1);
+	state->cfg = cfg;
+	state->nr = 1-(base->count-1);
 
-	stv6120_set_mode(fe, TUNER_WAKE);
-	stv6120_init(fe);
-
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 0);
-
+	fe->tuner_priv = state;
 	return fe;
+fail:
+	kfree(state);
+	return NULL;
 }
-EXPORT_SYMBOL(stv6120_attach);
+EXPORT_SYMBOL_GPL(stv6120_attach);
 
-MODULE_AUTHOR("Chris Lee");
-MODULE_DESCRIPTION("STV6120 Silicon tuner");
+MODULE_DESCRIPTION("STV6120 driver");
+MODULE_AUTHOR("Luis Alves");
 MODULE_LICENSE("GPL");
+

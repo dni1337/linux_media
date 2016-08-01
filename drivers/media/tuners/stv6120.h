@@ -1,45 +1,17 @@
-/*
- * STV6120 Silicon tuner driver
- *
- * Copyright (C) Chris Leee <updatelee@gmail.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-*/
+#ifndef _STV6120_H_
+#define _STV6120_H_
 
-#ifndef __STV6120_H
-#define __STV6120_H
 
-struct stv6120_config {
-	u8	addr;
-	u32	refclk;
-	u8	clk_div; /* divisor value for the output clock */
-	u8      bbgain;
+struct stv6120_cfg {
+	u8 adr;
+
+	u32 xtal;
+	u8 Rdiv;
 };
 
-enum tuner_number {
-	TUNER_1,
-	TUNER_2,
-};
 
-#if IS_ENABLED(CONFIG_MEDIA_TUNER_STV6120)
-extern struct dvb_frontend *stv6120_attach(struct dvb_frontend *fe, struct i2c_adapter *i2c, const struct stv6120_config *config, u8 tuner);
-#else
-extern struct dvb_frontend *stv6120_attach(struct dvb_frontend *fe, struct i2c_adapter *i2c, const struct stv6120_config *config, u8 tuner)
-{
-	pr_info("%s: driver disabled by Kconfig\n", __func__);
-	return NULL;
-}
-#endif /* CONFIG_DVB_STV6120 */
-#endif /* __STV6120_H */
+
+
+struct dvb_frontend *stv6120_attach(struct dvb_frontend *fe,
+		    struct i2c_adapter *i2c, struct stv6120_cfg *cfg);
+#endif

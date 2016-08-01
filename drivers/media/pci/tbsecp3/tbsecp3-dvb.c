@@ -298,11 +298,10 @@ static struct stv0910_cfg tbs6903_stv0910_cfg = {
 	.clk      = 30000000,
 };
 
-static struct stv6120_config tbs6903_stv6120_cfg = {
-	.addr			= 0x60,
-	.refclk			= 30000000,
-	.clk_div		= 2,
-	.bbgain			= 6,
+static struct stv6120_cfg tbs6903_stv6120_cfg = {
+	.adr			= 0x60,
+	.xtal			= 30000,
+	.Rdiv			= 2,
 };
 
 static struct av201x_config tbs6522_av201x_cfg[] = {
@@ -317,7 +316,6 @@ static struct av201x_config tbs6522_av201x_cfg[] = {
 		.xtal_freq   = 27000,
 	},
 };
-
 
 
 static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
@@ -507,7 +505,7 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 			goto frontend_atach_fail;
 
 		if (dvb_attach(stv6120_attach, adapter->fe, i2c,
-				&tbs6903_stv6120_cfg, adapter->nr & 1 ? 0 : 1) == NULL) {
+				&tbs6903_stv6120_cfg) == NULL) {
 			dvb_frontend_detach(adapter->fe);
 			adapter->fe = NULL;
 			dev_err(&dev->pci_dev->dev,

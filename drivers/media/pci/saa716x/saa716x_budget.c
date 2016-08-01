@@ -2535,7 +2535,7 @@ static struct saa716x_config saa716x_tbs6991se_config = {
 #define SAA716x_MODEL_TBS6983	"TBS 6983"
 #define SAA716x_DEV_TBS6983	"DVB-S/S2"
 
-static struct stv0910_cfg tbs6983_stv0910_config = {
+static struct stv0910_cfg tbs6983_stv0910_cfg = {
 	.adr      = 0x68,
 	.parallel = 1,
 	.rptlvl   = 4,
@@ -2543,11 +2543,10 @@ static struct stv0910_cfg tbs6983_stv0910_config = {
 	.dual_tuner = 1,
 };
 
-static struct stv6120_config tbs6983_stv6120_config = {
-	.addr			= 0x60,
-	.refclk			= 30000000,
-	.clk_div		= 2,
-	.bbgain			= 6,
+static struct stv6120_cfg tbs6983_stv6120_cfg = {
+	.adr			= 0x60,
+	.xtal			= 30000,
+	.Rdiv			= 2,
 };
 
 static int saa716x_tbs6983_set_voltage(struct dvb_frontend *fe, enum fe_sec_voltage voltage)
@@ -2601,7 +2600,7 @@ static int saa716x_tbs6983_frontend_attach(struct saa716x_adapter *adapter, int 
 
 	adapter->fe = dvb_attach(stv0910_attach,
 				 &dev->i2c[1].i2c_adapter,
-				 &tbs6983_stv0910_config,
+				 &tbs6983_stv0910_cfg,
 				 count & 1);
 
 	if (adapter->fe == NULL) {
@@ -2609,8 +2608,7 @@ static int saa716x_tbs6983_frontend_attach(struct saa716x_adapter *adapter, int 
 	}
 
 	if (dvb_attach(stv6120_attach, adapter->fe,  &dev->i2c[1].i2c_adapter,
-			&tbs6983_stv6120_config,
-			count & 1 ? 0 : 1) == NULL) {
+			&tbs6983_stv6120_cfg) == NULL) {
 		dvb_frontend_detach(adapter->fe);
 		adapter->fe = NULL;
 		dev_dbg(&dev->pdev->dev,
