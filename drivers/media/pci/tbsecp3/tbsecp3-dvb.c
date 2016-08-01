@@ -343,7 +343,8 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 	set_mac_address(adapter);
 
 	switch (pci->subsystem_vendor) {
-	case 0x6205:
+	case TBSECP3_BOARD_TBS6205:
+	case TBSECP3_BOARD_TBS6281SE:
 		/* attach demod */
 		memset(&si2168_config, 0, sizeof(si2168_config));
 		si2168_config.i2c_adapter = &i2c;
@@ -388,7 +389,7 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		adapter->i2c_client_tuner = client_tuner;
 		break;
 
-	case 0x6522:
+	case TBSECP3_BOARD_TBS6522:
 		/* attach demod */
 		memset(&si2183_config, 0, sizeof(si2183_config));
 		si2183_config.i2c_adapter = &i2c;
@@ -415,8 +416,6 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 			goto frontend_atach_fail;
 		}
 		adapter->i2c_client_demod = client_demod;
-
-
 
 		/* dvb core doesn't support 2 tuners for 1 demod so
 		   we split the adapter in 2 frontends */
@@ -475,7 +474,7 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 
 		break;
 
-	case 0x6902:
+	case TBSECP3_BOARD_TBS6902:
 		adapter->fe = dvb_attach(tas2101_attach, &tbs6902_demod_cfg[adapter->nr], i2c);
 		if (adapter->fe == NULL)
 			goto frontend_atach_fail;
@@ -496,9 +495,10 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 				adapter->nr);
 		}
 		break;
-	case 0x6903:
-	case 0x6905:
-	case 0x6908:
+
+	case TBSECP3_BOARD_TBS6903:
+	case TBSECP3_BOARD_TBS6905:
+	case TBSECP3_BOARD_TBS6908:
 		adapter->fe = dvb_attach(stv0910_attach, i2c,
 				&tbs6903_stv0910_cfg, adapter->nr & 1);
 		if (adapter->fe == NULL)
@@ -520,7 +520,8 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		}
 
 		break;
-	case 0x6904:
+
+	case TBSECP3_BOARD_TBS6904:
 		adapter->fe = dvb_attach(tas2101_attach, &tbs6904_demod_cfg[adapter->nr], i2c);
 		if (adapter->fe == NULL)
 			goto frontend_atach_fail;
@@ -569,7 +570,8 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		adapter->i2c_client_tuner = client_tuner;
 #endif
 		break;
-	case 0x6909:
+
+	case TBSECP3_BOARD_TBS6909:
 /*
 		tmp = tbs_read(TBS_GPIO_BASE, 0x20);
 		printk("RD 0x20 = %x\n", tmp);
@@ -597,7 +599,7 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 
 		break;
 
-	case 0x6910:
+	case TBSECP3_BOARD_TBS6910:
 		adapter->fe = dvb_attach(tas2101_attach, &tbs6910_demod_cfg[adapter->nr], i2c);
 		if (adapter->fe == NULL)
 			goto frontend_atach_fail;
