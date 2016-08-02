@@ -296,6 +296,7 @@ static struct stv0910_cfg tbs6903_stv0910_cfg = {
 	.parallel = 1,
 	.rptlvl   = 4,
 	.clk      = 30000000,
+	.dual_tuner = 1,
 };
 
 static struct stv6120_cfg tbs6903_stv6120_cfg = {
