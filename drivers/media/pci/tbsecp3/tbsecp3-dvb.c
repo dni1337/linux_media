@@ -318,6 +318,23 @@ static struct av201x_config tbs6522_av201x_cfg[] = {
 };
 
 
+static void RF_switch(struct i2c_adapter *i2c,u8 rf_in,u8 flag)//flag : 0: dvbs/s2 signal 1:Terrestrial and cable signal 
+{
+	struct tbsecp3_i2c *i2c_adap = i2c_get_adapdata(i2c);
+	struct tbsecp3_dev *dev = i2c_adap->dev;
+	u32 val ,reg;
+	
+	reg = 0xc-rf_in*4;
+	
+	val = tbs_read(TBSECP3_GPIO_BASE, reg);
+	if(flag)
+		val |= 2;
+	else
+		val &= ~2;
+		
+	tbs_write(TBSECP3_GPIO_BASE, reg, val);
+}
+
 static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 {
 	struct tbsecp3_dev *dev = adapter->dev;
@@ -389,6 +406,53 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		adapter->i2c_client_tuner = client_tuner;
 		break;
 
+	case TBSECP3_BOARD_TBS6290SE:
+		/* attach demod */
+		memset(&si2168_config, 0, sizeof(si2168_config));
+		si2168_config.i2c_adapter = &i2c;
+		si2168_config.fe = &adapter->fe;
+		si2168_config.ts_mode = SI2168_TS_SERIAL;//zc2016/07/20
+		si2168_config.ts_clock_gapped = true;
+		//si2168_config.ts_clock_inv=1;//zc2016/07/20
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2168", I2C_NAME_SIZE);
+		info.addr = 0x64;
+		info.platform_data = &si2168_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+				client_demod->dev.driver == NULL)
+			goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+			i2c_unregister_device(client_demod);
+			goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+
+		/* attach tuner */
+		memset(&si2157_config, 0, sizeof(si2157_config));
+		si2157_config.fe = adapter->fe;
+		si2157_config.if_port = 1;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2157", I2C_NAME_SIZE);
+		info.addr = 0x60;
+		info.platform_data = &si2157_config;
+		request_module(info.type);
+		client_tuner = i2c_new_device(i2c, &info);
+		if (client_tuner == NULL ||
+				client_tuner->dev.driver == NULL)
+			goto frontend_atach_fail;
+
+		if (!try_module_get(client_tuner->dev.driver->owner)) {
+			i2c_unregister_device(client_tuner);
+			goto frontend_atach_fail;
+		}
+		adapter->i2c_client_tuner = client_tuner;
+		tbsecp3_ca_init(adapter, adapter->nr);
+		break;
+
 	case TBSECP3_BOARD_TBS6522:
 		/* attach demod */
 		memset(&si2183_config, 0, sizeof(si2183_config));
@@ -401,6 +465,8 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		si2183_config.agc_pin = adapter->nr ? SI2183_MP_C : SI2183_MP_D;
 		si2183_config.ter_agc_inv = 0;
 		si2183_config.sat_agc_inv = 1;
+		si2183_config.rf_in = adapter->nr;
+		si2183_config.RF_switch = NULL;
 
 		memset(&info, 0, sizeof(struct i2c_board_info));
 		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
@@ -421,7 +487,6 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		   we split the adapter in 2 frontends */
 		adapter->fe2 = &adapter->_fe2;
 		memcpy(adapter->fe2, adapter->fe, sizeof(struct dvb_frontend));
-
 
 		/* terrestrial tuner */
 		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
@@ -452,7 +517,6 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		}
 		adapter->i2c_client_tuner = client_tuner;
 
-
 		/* sattelite tuner */
 		memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
 		adapter->fe2->ops.delsys[0] = SYS_DVBS;
@@ -471,7 +535,128 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 				"error attaching lnb control on adapter %d\n",
 				adapter->nr);
 		}
+		break;
 
+	case TBSECP3_BOARD_TBS6528:
+	case TBSECP3_BOARD_TBS6590:
+		/* attach demod */
+		memset(&si2183_config, 0, sizeof(si2183_config));
+		si2183_config.i2c_adapter = &i2c;
+		si2183_config.fe = &adapter->fe;
+		si2183_config.ts_clock_gapped = true;
+		si2183_config.RF_switch = RF_switch;
+		if(pci->subsystem_vendor==TBSECP3_BOARD_TBS6528)
+		{
+			si2183_config.rf_in = 1;
+			si2183_config.ts_mode = SI2183_TS_PARALLEL;
+		}
+		else
+		{
+			si2183_config.rf_in = adapter->nr;
+			si2183_config.ts_mode = SI2183_TS_SERIAL;
+		}
+		
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
+		if(pci->subsystem_vendor==TBSECP3_BOARD_TBS6528)
+		{
+			info.addr = 0x67;
+			si2183_config.fef_pin = SI2183_MP_B;
+			si2183_config.fef_inv = 0;
+			si2183_config.agc_pin = SI2183_MP_D;
+			si2183_config.ter_agc_inv = 0;
+			si2183_config.sat_agc_inv = 1;
+
+		}
+		else{
+			info.addr = adapter->nr ? 0x67 : 0x64;
+			si2183_config.fef_pin = adapter->nr ? SI2183_MP_B : SI2183_MP_A;
+			si2183_config.fef_inv = 0;
+			si2183_config.agc_pin = adapter->nr ? SI2183_MP_D : SI2183_MP_C;
+			si2183_config.ter_agc_inv = 0;
+			si2183_config.sat_agc_inv = 1;
+		}
+		info.platform_data = &si2183_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+				client_demod->dev.driver == NULL)
+			goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+			i2c_unregister_device(client_demod);
+			goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+
+		/* dvb core doesn't support 2 tuners for 1 demod so
+		   we split the adapter in 2 frontends */
+		adapter->fe2 = &adapter->_fe2;
+		memcpy(adapter->fe2, adapter->fe, sizeof(struct dvb_frontend));
+
+		/* terrestrial tuner */
+		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe->ops.delsys[0] = SYS_DVBT;
+		adapter->fe->ops.delsys[1] = SYS_DVBT2;
+		adapter->fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
+		adapter->fe->ops.delsys[3] = SYS_ISDBT;
+		adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+
+		/* attach tuner */
+		memset(&si2157_config, 0, sizeof(si2157_config));
+		si2157_config.fe = adapter->fe;
+		si2157_config.if_port = 1;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2157", I2C_NAME_SIZE);
+		if(pci->subsystem_vendor==0x6528)info.addr = 0x61;
+		else
+		info.addr = adapter->nr ? 0x61 : 0x60;
+		
+		info.platform_data = &si2157_config;
+		request_module(info.type);
+		client_tuner = i2c_new_device(i2c, &info);
+		if (client_tuner == NULL ||
+				client_tuner->dev.driver == NULL)
+			goto frontend_atach_fail;
+
+		if (!try_module_get(client_tuner->dev.driver->owner)) {
+			i2c_unregister_device(client_tuner);
+			goto frontend_atach_fail;
+		}
+		adapter->i2c_client_tuner = client_tuner;
+
+		/* sattelite tuner */
+		memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe2->ops.delsys[0] = SYS_DVBS;
+		adapter->fe2->ops.delsys[1] = SYS_DVBS2;
+		adapter->fe2->ops.delsys[2] = SYS_DSS;
+		adapter->fe2->id = 1;
+		if(pci->subsystem_vendor==TBSECP3_BOARD_TBS6528)
+		{
+		  if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[1],
+				i2c) == NULL) {
+				dev_err(&dev->pci_dev->dev,
+				"frontend %d tuner attach failed\n",
+				adapter->nr);
+				goto frontend_atach_fail;
+			}
+		}
+		else{
+		if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[adapter->nr],
+				i2c) == NULL) {
+			dev_err(&dev->pci_dev->dev,
+				"frontend %d tuner attach failed\n",
+				adapter->nr);
+			goto frontend_atach_fail;
+		}
+		}
+		if (tbsecp3_attach_sec(adapter, adapter->fe2) == NULL) {
+			dev_warn(&dev->pci_dev->dev,
+				"error attaching lnb control on adapter %d\n",
+				adapter->nr);
+		}
+
+		tbsecp3_ca_init(adapter, adapter->nr);
 		break;
 
 	case TBSECP3_BOARD_TBS6902:

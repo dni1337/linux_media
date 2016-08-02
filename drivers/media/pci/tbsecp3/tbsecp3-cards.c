@@ -70,6 +70,28 @@ struct tbsecp3_board tbsecp3_boards[] = {
 			},
 		}
 	},	
+	[TBSECP3_BOARD_TBS6290SE] = {
+		.name		= "TurboSight TBS 6290SE (Dual DVB-T/T2/C + 2xCI) ",
+		.i2c_speed	= 39,
+		.eeprom_i2c	= 1,
+		.adapters	= 2,
+		.adap_config	= {
+			{
+				.ts_in = 0,
+				.i2c_bus_nr = 0,
+				.gpio.demod_reset.lvl = TBSECP3_GPIODEF_NONE,
+				.gpio.demod_reset.nr  = TBSECP3_GPIO_PIN(0, 0),
+
+			}, 
+			{
+				.ts_in = 1,
+				.i2c_bus_nr = 1,
+				.gpio.demod_reset.lvl = TBSECP3_GPIODEF_NONE,
+				.gpio.demod_reset.nr  = TBSECP3_GPIO_PIN(2, 0),
+
+			},
+		}
+	},	
 	[TBSECP3_BOARD_TBS6522] = {
 		.name		= "TurboSight TBS 6522 (Dual MultiStandard)",
 		.adapters	= 2,
@@ -88,6 +110,50 @@ struct tbsecp3_board tbsecp3_boards[] = {
 			},
 			{
 				.ts_in = 0,
+				.i2c_bus_nr = 0,
+				.gpio.lnb_power.lvl   = TBSECP3_GPIODEF_LOW,
+				.gpio.lnb_power.nr    = TBSECP3_GPIO_PIN(1, 2),
+				.gpio.lnb_voltage.lvl = TBSECP3_GPIODEF_HIGH,
+				.gpio.lnb_voltage.nr  = TBSECP3_GPIO_PIN(1, 1),
+			},
+		}
+	},
+	[TBSECP3_BOARD_TBS6528] = {
+		.name		= "TurboSight TBS 6528 MultiStandard + CI ",
+		.adapters	= 1,
+		.i2c_speed	= 39,
+		.eeprom_i2c	= 0,
+		.adap_config	= {
+			{
+				.ts_in = 0,
+				.i2c_bus_nr = 0,
+				.gpio.demod_reset.lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset.nr  = TBSECP3_GPIO_PIN(0, 0),
+				.gpio.lnb_power.lvl   = TBSECP3_GPIODEF_LOW,
+				.gpio.lnb_power.nr    = TBSECP3_GPIO_PIN(0, 2),
+				.gpio.lnb_voltage.lvl = TBSECP3_GPIODEF_HIGH,
+				.gpio.lnb_voltage.nr  = TBSECP3_GPIO_PIN(0, 1),
+			},
+		}
+	},	
+	[TBSECP3_BOARD_TBS6590] = {
+		.name		= "TurboSight TBS 6590 Dual MultiStandard + 2xCI ",
+		.adapters	= 2,
+		.i2c_speed	= 39,
+		.eeprom_i2c	= 0,
+		.adap_config	= {
+			{
+				.ts_in = 0,
+				.i2c_bus_nr = 0,
+				.gpio.demod_reset.lvl = TBSECP3_GPIODEF_LOW,
+				.gpio.demod_reset.nr  = TBSECP3_GPIO_PIN(0, 0),
+				.gpio.lnb_power.lvl   = TBSECP3_GPIODEF_LOW,
+				.gpio.lnb_power.nr    = TBSECP3_GPIO_PIN(0, 2),
+				.gpio.lnb_voltage.lvl = TBSECP3_GPIODEF_HIGH,
+				.gpio.lnb_voltage.nr  = TBSECP3_GPIO_PIN(0, 1),
+			},
+			{
+				.ts_in = 1,
 				.i2c_bus_nr = 0,
 				.gpio.lnb_power.lvl   = TBSECP3_GPIODEF_LOW,
 				.gpio.lnb_power.nr    = TBSECP3_GPIO_PIN(1, 2),
