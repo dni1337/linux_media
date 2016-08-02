@@ -55,6 +55,11 @@ struct si2183_config {
 	int agc_pin;
 	bool ter_agc_inv;
 	bool sat_agc_inv;
+
+	/*rf switch*/
+	void (*RF_switch)(struct i2c_adapter * i2c,u8 rf_in,u8 flag);
+	/*rf no.*/
+	u8 rf_in;
 };
 
 #endif

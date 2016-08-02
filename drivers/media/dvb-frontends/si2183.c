@@ -84,6 +84,8 @@ struct si2183_dev {
 
 	struct si_base *base;
 
+	void (*RF_switch)(struct i2c_adapter * i2c,u8 rf_in,u8 flag);
+	u8 rf_in;
 	u8 active_fe;
 };
 
@@ -731,6 +733,28 @@ static int si2183_set_frontend(struct dvb_frontend *fe)
 	if (!dev->active) {
 		ret = -EAGAIN;
 		goto err;
+	}
+
+	if(dev->RF_switch)
+	{	
+		switch (c->delivery_system) {
+		case SYS_DVBT:
+		case SYS_DVBT2:
+		case SYS_DVBC_ANNEX_A:
+		case SYS_DVBC_ANNEX_B:
+		case SYS_ISDBT:
+			dev->RF_switch(dev->base->i2c,dev->rf_in,1);
+			
+			 break;
+			
+		case SYS_DVBS:
+		case SYS_DVBS2:
+		case SYS_DSS:
+		default:
+			dev->RF_switch(dev->base->i2c,dev->rf_in,0);
+			break;
+		
+		}
 	}
 
 	if (fe->ops.tuner_ops.set_params) {
@@ -1476,6 +1500,8 @@ static int si2183_probe(struct i2c_client *client,
 	dev->agc_pin = config->agc_pin;
 	dev->ter_agc_inv = config->ter_agc_inv;
 	dev->sat_agc_inv = config->sat_agc_inv;
+	dev->RF_switch = config->RF_switch;
+	dev->rf_in  = config->rf_in;
 	dev->fw_loaded = false;
 	dev->snr = 0;
 	dev->stat_resp = 0;
