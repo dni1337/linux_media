@@ -320,7 +320,6 @@ int cxd2820r_read_snr_t(struct dvb_frontend *fe, u16 *snr)
 	int ret;
 	u8 buf[2];
 	u16 tmp;
-	/* report SNR in dB * 10 */
 
 	ret = cxd2820r_rd_regs(priv, 0x00028, buf, sizeof(buf));
 	if (ret)
@@ -340,9 +339,6 @@ int cxd2820r_read_snr_t(struct dvb_frontend *fe, u16 *snr)
 		c->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		*snr = 0;
 	}
-
-	dev_dbg(&priv->i2c->dev, "%s: dBx10=%d val=%04x\n", __func__, *snr,
-			tmp);
 
 	return ret;
 error:
