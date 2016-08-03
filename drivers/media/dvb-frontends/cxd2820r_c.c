@@ -218,10 +218,10 @@ error:
 int cxd2820r_read_snr_c(struct dvb_frontend *fe, u16 *snr)
 {
 	struct cxd2820r_priv *priv = fe->demodulator_priv;
+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	int ret;
 	u8 tmp;
 	unsigned int A, B;
-	/* report SNR in dB * 10 */
 
 	ret = cxd2820r_rd_reg(priv, 0x10019, &tmp);
 	if (ret)
@@ -241,10 +241,17 @@ int cxd2820r_read_snr_c(struct dvb_frontend *fe, u16 *snr)
 
 	#define CXD2820R_LOG2_E_24 24204406 /* log2(e) << 24 */
 	if (tmp)
-		*snr = A * (intlog2(B / tmp) >> 5) / (CXD2820R_LOG2_E_24 >> 5)
-			/ 10;
+	{
+  		c->cnr.len = 1;
+		c->cnr.stat[0].scale = FE_SCALE_DECIBEL;
+		c->cnr.stat[0].svalue = 100 * (A * (intlog2(B / tmp) >> 5) / (CXD2820R_LOG2_E_24 >> 5) / 10);
+		*snr = (c->cnr.stat[0].svalue / 500) * 656;
+	}
 	else
+	{
+		c->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		*snr = 0;
+	}
 
 	return ret;
 error:

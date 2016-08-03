@@ -367,10 +367,10 @@ error:
 int cxd2820r_read_snr_t2(struct dvb_frontend *fe, u16 *snr)
 {
 	struct cxd2820r_priv *priv = fe->demodulator_priv;
+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	int ret;
 	u8 buf[2];
 	u16 tmp;
-	/* report SNR in dB * 10 */
 
 	ret = cxd2820r_rd_regs(priv, 0x02028, buf, sizeof(buf));
 	if (ret)
@@ -379,13 +379,17 @@ int cxd2820r_read_snr_t2(struct dvb_frontend *fe, u16 *snr)
 	tmp = (buf[0] & 0x0f) << 8 | buf[1];
 	#define CXD2820R_LOG10_8_24 15151336 /* log10(8) << 24 */
 	if (tmp)
-		*snr = (intlog10(tmp) - CXD2820R_LOG10_8_24) / ((1 << 24)
-			/ 100);
+	{
+  		c->cnr.len = 1;
+		c->cnr.stat[0].scale = FE_SCALE_DECIBEL;
+		c->cnr.stat[0].svalue = 100 * ((intlog10(tmp) - CXD2820R_LOG10_8_24) / ((1 << 24) / 100));
+		*snr = (c->cnr.stat[0].svalue / 500) * 656;
+	}
 	else
+	{
+		c->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		*snr = 0;
-
-	dev_dbg(&priv->i2c->dev, "%s: dBx10=%d val=%04x\n", __func__, *snr,
-			tmp);
+	}
 
 	return ret;
 error:
