@@ -98,10 +98,25 @@ struct rc_map_list {
 
 /* Routines from rc-map.c */
 
+/**
+ * rc_map_register() - Registers a Remote Controler scancode map
+ *
+ * @map:	pointer to struct rc_map_list
+ */
 int rc_map_register(struct rc_map_list *map);
+
+/**
+ * rc_map_unregister() - Unregisters a Remote Controler scancode map
+ *
+ * @map:	pointer to struct rc_map_list
+ */
 void rc_map_unregister(struct rc_map_list *map);
+
+/**
+ * rc_map_get - gets an RC map from its name
+ * @name: name of the RC scancode map
+ */
 struct rc_map *rc_map_get(const char *name);
-void rc_map_init(void);
 
 /* Names of the several keytables defined in-kernel */
 
@@ -136,6 +151,7 @@ void rc_map_init(void);
 #define RC_MAP_DM1105_NEC                "rc-dm1105-nec"
 #define RC_MAP_DNTV_LIVE_DVBT_PRO        "rc-dntv-live-dvbt-pro"
 #define RC_MAP_DNTV_LIVE_DVB_T           "rc-dntv-live-dvb-t"
+#define RC_MAP_DTT200U                   "rc-dtt200u"
 #define RC_MAP_DVBSKY                    "rc-dvbsky"
 #define RC_MAP_EMPTY                     "rc-empty"
 #define RC_MAP_EM_TERRATEC               "rc-em-terratec"

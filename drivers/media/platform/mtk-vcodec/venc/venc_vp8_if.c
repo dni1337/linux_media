@@ -210,9 +210,9 @@ static int vp8_enc_alloc_work_buf(struct venc_vp8_inst *inst)
 		wb[i].iova = inst->work_bufs[i].dma_addr;
 
 		mtk_vcodec_debug(inst,
-				 "work_bufs[%d] va=0x%p,iova=0x%p,size=%zu",
+				 "work_bufs[%d] va=0x%p,iova=%pad,size=%zu",
 				 i, inst->work_bufs[i].va,
-				 (void *)inst->work_bufs[i].dma_addr,
+				 &inst->work_bufs[i].dma_addr,
 				 inst->work_bufs[i].size);
 	}
 
@@ -252,13 +252,18 @@ static int vp8_enc_compose_one_frame(struct venc_vp8_inst *inst,
 	u32 bs_hdr_len;
 	unsigned int ac_tag_size;
 	u8 ac_tag[MAX_AC_TAG_SIZE];
+	u32 tag;
 
 	bs_frm_size = vp8_enc_read_reg(inst, VENC_BITSTREAM_FRAME_SIZE);
 	bs_hdr_len = vp8_enc_read_reg(inst, VENC_BITSTREAM_HEADER_LEN);
 
 	/* if a frame is key frame, not_key is 0 */
 	not_key = !inst->vpu_inst.is_key_frm;
-	*(u32 *)ac_tag = __cpu_to_le32((bs_hdr_len << 5) | 0x10 | not_key);
+	tag = (bs_hdr_len << 5) | 0x10 | not_key;
+	ac_tag[0] = tag & 0xff;
+	ac_tag[1] = (tag >> 8) & 0xff;
+	ac_tag[2] = (tag >> 16) & 0xff;
+
 	/* key frame */
 	if (not_key == 0) {
 		ac_tag_size = MAX_AC_TAG_SIZE;
