@@ -332,7 +332,7 @@ int cxd2820r_read_snr_t(struct dvb_frontend *fe, u16 *snr)
   		c->cnr.len = 1;
 		c->cnr.stat[0].scale = FE_SCALE_DECIBEL;
 		c->cnr.stat[0].svalue = 100 * ((intlog10(tmp) - CXD2820R_LOG10_8_24) / ((1 << 24) / 100));
-		*snr = (c->cnr.stat[0].svalue / 500) * 656;
+		*snr = ((s32)c->cnr.stat[0].svalue / 500) * 656;
 	}
 	else
 	{

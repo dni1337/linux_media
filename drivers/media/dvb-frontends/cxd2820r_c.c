@@ -245,7 +245,7 @@ int cxd2820r_read_snr_c(struct dvb_frontend *fe, u16 *snr)
   		c->cnr.len = 1;
 		c->cnr.stat[0].scale = FE_SCALE_DECIBEL;
 		c->cnr.stat[0].svalue = 100 * (A * (intlog2(B / tmp) >> 5) / (CXD2820R_LOG2_E_24 >> 5) / 10);
-		*snr = (c->cnr.stat[0].svalue / 500) * 656;
+		*snr = ((s32)c->cnr.stat[0].svalue / 500) * 656;
 	}
 	else
 	{
