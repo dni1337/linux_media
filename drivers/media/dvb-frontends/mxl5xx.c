@@ -617,7 +617,7 @@ static int read_ber(struct dvb_frontend *fe, u32 *ber)
 
 	if ( p->post_bit_error.stat[0].scale == FE_SCALE_COUNTER &&
 		p->post_bit_count.stat[0].scale == FE_SCALE_COUNTER )	  
-	      *ber = p->post_bit_count.stat[0].uvalue ? p->post_bit_error.stat[0].uvalue / p->post_bit_count.stat[0].uvalue : 0;
+	      *ber = (u32)p->post_bit_count.stat[0].uvalue ? (u32)p->post_bit_error.stat[0].uvalue / (u32)p->post_bit_count.stat[0].uvalue : 0;
 
 	return 0;
 }
