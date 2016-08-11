@@ -20,7 +20,6 @@
 struct tbsecp3_board tbsecp3_boards[] = {
 	[TBSECP3_BOARD_TBS6205] = {
 		.name		= "TurboSight TBS 6205 (Quad DVB-T/T2/C)",
-		.i2c_speed	= 39,
 		.eeprom_i2c	= 1,
 		.adapters	= 4,
 		.adap_config	= {
@@ -52,7 +51,6 @@ struct tbsecp3_board tbsecp3_boards[] = {
 	},
 	[TBSECP3_BOARD_TBS6281SE] = {
 		.name		= "TurboSight TBS 6281SE (Dual DVB-T/T2/C)",
-		.i2c_speed	= 39,
 		.eeprom_i2c	= 1,
 		.adapters	= 2,
 		.adap_config	= {
@@ -72,7 +70,6 @@ struct tbsecp3_board tbsecp3_boards[] = {
 	},	
 	[TBSECP3_BOARD_TBS6290SE] = {
 		.name		= "TurboSight TBS 6290SE (Dual DVB-T/T2/C + 2xCI) ",
-		.i2c_speed	= 39,
 		.eeprom_i2c	= 1,
 		.adapters	= 2,
 		.adap_config	= {
@@ -95,7 +92,6 @@ struct tbsecp3_board tbsecp3_boards[] = {
 	[TBSECP3_BOARD_TBS6522] = {
 		.name		= "TurboSight TBS 6522 (Dual MultiStandard)",
 		.adapters	= 2,
-		.i2c_speed	= 39,
 		.eeprom_i2c	= 0,
 		.adap_config	= {
 			{
@@ -121,7 +117,6 @@ struct tbsecp3_board tbsecp3_boards[] = {
 	[TBSECP3_BOARD_TBS6528] = {
 		.name		= "TurboSight TBS 6528 MultiStandard + CI ",
 		.adapters	= 1,
-		.i2c_speed	= 39,
 		.eeprom_i2c	= 0,
 		.adap_config	= {
 			{
@@ -139,7 +134,6 @@ struct tbsecp3_board tbsecp3_boards[] = {
 	[TBSECP3_BOARD_TBS6590] = {
 		.name		= "TurboSight TBS 6590 Dual MultiStandard + 2xCI ",
 		.adapters	= 2,
-		.i2c_speed	= 39,
 		.eeprom_i2c	= 0,
 		.adap_config	= {
 			{
@@ -381,7 +375,6 @@ struct tbsecp3_board tbsecp3_boards[] = {
 	[TBSECP3_BOARD_TBS6910] = {
 		.name		= "TurboSight TBS 6910 (Dual DVB-S/S2 + 2xCI)",
 		.adapters	= 2,
-		.i2c_speed	= 39,
 		.eeprom_i2c	= 1,
 		.adap_config	= {
 			{

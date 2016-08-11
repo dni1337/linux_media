@@ -169,9 +169,9 @@ void tbsecp3_i2c_reg_init(struct tbsecp3_dev *dev)
 	int i;
 	u32 baud = dev->info->i2c_speed;
 
-	/* default to 400kbps */
+	/* default to 100kbps */
 	if (!baud)
-		baud = 9;
+		baud = 39;
 
 	for (i = 0; i < 4; i++) {
 		tbs_write(dev->i2c_bus[i].base, TBSECP3_I2C_BAUD, baud);
