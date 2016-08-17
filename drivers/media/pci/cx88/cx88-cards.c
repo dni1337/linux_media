@@ -2080,6 +2080,19 @@ static const struct cx88_board cx88_boards[] = {
 		} },
 		.mpeg           = CX88_MPEG_DVB,
 	},
+	[CX88_BOARD_TBS_8922] = {
+		.name           = "TBS 8922 DVB-S/S2",
+		.tuner_type     = UNSET,
+		.radio_type     = UNSET,
+		.tuner_addr     = ADDR_UNSET,
+		.radio_addr     = ADDR_UNSET,
+		.input          = { {
+			.type   = CX88_VMUX_DVB,
+			.vmux   = 0,
+			.gpio0  = 0x4343,
+		} },
+		.mpeg           = CX88_MPEG_DVB,
+	},
 	[CX88_BOARD_PROF_6200] = {
 		.name           = "Prof 6200 DVB-S",
 		.tuner_type     = UNSET,
@@ -2727,6 +2740,11 @@ static const struct cx88_subid cx88_subids[] = {
 		.subvendor = 0x8920,
 		.subdevice = 0x8888,
 		.card      = CX88_BOARD_TBS_8920,
+	}, {
+	}, {
+		.subvendor = 0x8922,
+		.subdevice = 0x8888,
+		.card      = CX88_BOARD_TBS_8922,
 	}, {
 		.subvendor = 0xb022,
 		.subdevice = 0x3022,
@@ -3549,6 +3567,14 @@ static void cx88_card_setup(struct cx88_core *core)
 		cx_write(MO_GP0_IO, 0x8080);
 		msleep(100);
 		cx_write(MO_SRST_IO, 1);
+		msleep(100);
+		break;
+        case  CX88_BOARD_TBS_8922:
+		cx_write(MO_GP0_IO, 0x4340);
+		msleep(10);
+		cx_write(MO_GP0_IO, 0x4342);
+		msleep(200);
+		cx_write(MO_GP0_IO, 0x4343);
 		msleep(100);
 		break;
 	} /*end switch() */
