@@ -743,31 +743,24 @@ static void unregister_dvb(struct cx231xx_dvb *dvb)
 
 static int tbs_cx_mac(struct i2c_adapter *i2c_adap, u8 count, u8 *mac)
 {
-	u8 b[64], e[256];
-	int ret, i;
+	int ret;
+	u8 buf[64];
 
 	struct i2c_msg msg[] = {
 		{ .addr = 0x50, .flags = 0,
-			.buf = b, .len = 1 },
+			.buf = 0x60 + 0x10*count, .len = 1 },
 		{ .addr = 0x50, .flags = I2C_M_RD,
-			.buf = b, .len = 64 }
+			.buf = buf, .len = 6 }
 	};
 
-	for (i = 0; i < 4; i++) {
-		b[0] = 0x40 * i;
-
-		ret = i2c_transfer(i2c_adap, msg, 2);
-
-		if (ret != 2) {
-			printk("TBS CX read MAC failed\n");
-			return -1;
-		}
-
-		memcpy(&e[0x40 * i], b , 64);
+	ret = i2c_transfer(i2c_adap, msg, 2);
+	if (ret != 2) {
+		printk("TBS CX read MAC failed\n");
+		return -1;
 	}
-	
-	memcpy(mac, &e[0x58 + 6 + 0x10*count], 6);
-	
+
+	memcpy(mac, buf, 6);
+
 	return 0;
 }
 
@@ -1231,7 +1224,7 @@ static int dvb_init(struct cx231xx *dev)
 
 		msleep(100);
 
-		tbs_cx_mac(demod_i2c, i, mac);
+		tbs_cx_mac(cx231xx_get_i2c_adap(dev, dev->board.demod_i2c_master[I2C_1_MUX_3]), i, mac);
 		dev_info(dev->dev, "MAC address %pM\n", mac);
 		memcpy(dev->dvb[i]->adapter.proposed_mac, mac, 6);
 
