@@ -1188,6 +1188,7 @@ static int dvb_init(struct cx231xx *dev)
 
 		/* define general-purpose callback pointer */
 		dvb->frontend->callback = cx231xx_tuner_callback;
+		tbscxci_init(dev->dvb[i], i);
 
 		break;
 	}
@@ -1206,13 +1207,6 @@ static int dvb_init(struct cx231xx *dev)
 
 	/* register everything */
 	result = register_dvb(dvb, THIS_MODULE, dev, dev->dev);
-
-	/* post init frontend */
-	switch (dev->model) {
-	case CX231XX_BOARD_TBS_5990:
-		tbscxci_init(dev->dvb[i], i);
-		break;
-	}
 
 	mutex_unlock(&dev->lock);
 	if (result < 0)
