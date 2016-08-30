@@ -15,7 +15,8 @@ MEDIA_IOC_DEVICE_INFO - Query device information
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct media_device_info *argp )
+.. c:function:: int ioctl( int fd, MEDIA_IOC_DEVICE_INFO, struct media_device_info *argp )
+    :name: MEDIA_IOC_DEVICE_INFO
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <media-func-open>`.
-
-``request``
-    MEDIA_IOC_DEVICE_INFO
 
 ``argp``
 
@@ -41,6 +39,8 @@ ioctl never fails.
 
 
 .. _media-device-info:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct media_device_info
     :header-rows:  0

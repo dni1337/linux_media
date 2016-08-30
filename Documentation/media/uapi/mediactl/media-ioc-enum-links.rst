@@ -15,7 +15,8 @@ MEDIA_IOC_ENUM_LINKS - Enumerate all pads and links for a given entity
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct media_links_enum *argp )
+.. c:function:: int ioctl( int fd, MEDIA_IOC_ENUM_LINKS, struct media_links_enum *argp )
+    :name: MEDIA_IOC_ENUM_LINKS
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <media-func-open>`.
-
-``request``
-    MEDIA_IOC_ENUM_LINKS
 
 ``argp``
 
@@ -56,6 +54,8 @@ returned during the enumeration process.
 
 
 .. _media-links-enum:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct media_links_enum
     :header-rows:  0
@@ -93,6 +93,8 @@ returned during the enumeration process.
 
 .. _media-pad-desc:
 
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
+
 .. flat-table:: struct media_pad_desc
     :header-rows:  0
     :stub-columns: 0
@@ -126,6 +128,8 @@ returned during the enumeration process.
 
 
 .. _media-link-desc:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct media_link_desc
     :header-rows:  0

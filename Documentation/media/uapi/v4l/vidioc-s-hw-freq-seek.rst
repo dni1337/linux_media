@@ -15,7 +15,8 @@ VIDIOC_S_HW_FREQ_SEEK - Perform a hardware frequency seek
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_hw_freq_seek *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_S_HW_FREQ_SEEK, struct v4l2_hw_freq_seek *argp )
+    :name: VIDIOC_S_HW_FREQ_SEEK
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_S_HW_FREQ_SEEK
 
 ``argp``
 
@@ -60,6 +58,8 @@ set.
 If this ioctl is called from a non-blocking filehandle, then ``EAGAIN``
 error code is returned and no seek takes place.
 
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _v4l2-hw-freq-seek:
 

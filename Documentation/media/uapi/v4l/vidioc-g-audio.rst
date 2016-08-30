@@ -15,9 +15,11 @@ VIDIOC_G_AUDIO - VIDIOC_S_AUDIO - Query or select the current audio input and it
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_audio *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_AUDIO, struct v4l2_audio *argp )
+    :name: VIDIOC_G_AUDIO
 
-.. cpp:function:: int ioctl( int fd, int request, const struct v4l2_audio *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_S_AUDIO, const struct v4l2_audio *argp )
+    :name: VIDIOC_S_AUDIO
 
 
 Arguments
@@ -25,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_G_AUDIO, VIDIOC_S_AUDIO
 
 ``argp``
 
@@ -49,6 +48,8 @@ ioctl. Drivers may switch to a different audio mode if the request
 cannot be satisfied. However, this is a write-only ioctl, it does not
 return the actual new audio mode.
 
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _v4l2-audio:
 
@@ -104,6 +105,8 @@ return the actual new audio mode.
 
 
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
+
 .. _audio-capability:
 
 .. flat-table:: Audio Capability Flags
@@ -132,6 +135,8 @@ return the actual new audio mode.
        -  Automatic Volume Level mode is supported.
 
 
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _audio-mode:
 

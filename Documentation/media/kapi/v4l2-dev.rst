@@ -166,7 +166,7 @@ something.
 In the case of :ref:`videobuf2 <vb2_framework>` you will need to implement the
 ``wait_prepare()`` and ``wait_finish()`` callbacks to unlock/lock if applicable.
 If you use the ``queue->lock`` pointer, then you can use the helper functions
-:c:func:`vb2_ops_wait_prepare` and :cpp:func:`vb2_ops_wait_finish`.
+:c:func:`vb2_ops_wait_prepare` and :c:func:`vb2_ops_wait_finish`.
 
 The implementation of a hotplug disconnect should also take the lock from
 :c:type:`video_device` before calling v4l2_device_disconnect. If you are also
@@ -200,6 +200,7 @@ types exist:
 - ``VFL_TYPE_VBI``: ``/dev/vbiX`` for vertical blank data (i.e. closed captions, teletext)
 - ``VFL_TYPE_RADIO``: ``/dev/radioX`` for radio tuners
 - ``VFL_TYPE_SDR``: ``/dev/swradioX`` for Software Defined Radio tuners
+- ``VFL_TYPE_TOUCH``: ``/dev/v4l-touchX`` for touch sensors
 
 The last argument gives you a certain amount of control over the device
 device node number used (i.e. the X in ``videoX``). Normally you will pass -1
@@ -262,6 +263,7 @@ file operations.
 
 It is a bitmask and the following bits can be set:
 
+.. tabularcolumns:: |p{5ex}|L|
 
 ===== ================================================================
 Mask  Description
@@ -334,7 +336,7 @@ And this function:
 
 returns the video_device belonging to the file struct.
 
-The :c:func:`video_devdata` function combines :cpp:func:`video_get_drvdata`
+The :c:func:`video_devdata` function combines :c:func:`video_get_drvdata`
 with :c:func:`video_devdata`:
 
 	:c:func:`video_drvdata <video_drvdata>`

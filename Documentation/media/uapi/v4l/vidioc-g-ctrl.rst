@@ -15,7 +15,11 @@ VIDIOC_G_CTRL - VIDIOC_S_CTRL - Get or set the value of a control
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_control *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_CTRL, struct v4l2_control *argp )
+    :name: VIDIOC_G_CTRL
+
+.. c:function:: int ioctl( int fd, VIDIOC_S_CTRL, struct v4l2_control *argp )
+    :name: VIDIOC_S_CTRL
 
 
 Arguments
@@ -23,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_G_CTRL, VIDIOC_S_CTRL
 
 ``argp``
 
@@ -55,6 +56,8 @@ These ioctls work only with user controls. For other control classes the
 
 
 .. _v4l2-control:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct v4l2_control
     :header-rows:  0

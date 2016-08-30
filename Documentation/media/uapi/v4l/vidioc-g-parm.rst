@@ -15,7 +15,11 @@ VIDIOC_G_PARM - VIDIOC_S_PARM - Get or set streaming parameters
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, v4l2_streamparm *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_PARM, v4l2_streamparm *argp )
+    :name: VIDIOC_G_PARM
+
+.. c:function:: int ioctl( int fd, VIDIOC_S_PARM, v4l2_streamparm *argp )
+    :name: VIDIOC_S_PARM
 
 
 Arguments
@@ -23,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_G_PARM, VIDIOC_S_PARM
 
 ``argp``
 
@@ -49,6 +50,8 @@ To get and set the streaming parameters applications call the
 pointer to a struct :ref:`struct v4l2_streamparm <v4l2-streamparm>` which contains a
 union holding separate parameters for input and output devices.
 
+
+.. tabularcolumns:: |p{3.5cm}|p{3.5cm}|p{3.5cm}|p{7.0cm}|
 
 .. _v4l2-streamparm:
 
@@ -108,6 +111,8 @@ union holding separate parameters for input and output devices.
        -  A place holder for future extensions.
 
 
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _v4l2-captureparm:
 
@@ -189,6 +194,8 @@ union holding separate parameters for input and output devices.
 	  the array to zero.
 
 
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _v4l2-outputparm:
 
@@ -278,6 +285,8 @@ union holding separate parameters for input and output devices.
 
 
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
+
 .. _parm-caps:
 
 .. flat-table:: Streaming Parameters Capabilites
@@ -296,6 +305,8 @@ union holding separate parameters for input and output devices.
 	  field is supported.
 
 
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _parm-flags:
 

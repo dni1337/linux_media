@@ -15,17 +15,20 @@ VIDIOC_G_FMT - VIDIOC_S_FMT - VIDIOC_TRY_FMT - Get or set the data format, try a
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_format *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_FMT, struct v4l2_format *argp )
+    :name: VIDIOC_G_FMT
 
+.. c:function:: int ioctl( int fd, VIDIOC_S_FMT, struct v4l2_format *argp )
+    :name: VIDIOC_S_FMT
+
+.. c:function:: int ioctl( int fd, VIDIOC_TRY_FMT, struct v4l2_format *argp )
+    :name: VIDIOC_TRY_FMT
 
 Arguments
 =========
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_G_FMT, VIDIOC_S_FMT, VIDIOC_TRY_FMT
 
 ``argp``
 
@@ -83,6 +86,8 @@ The format as returned by :ref:`VIDIOC_TRY_FMT <VIDIOC_G_FMT>` must be identical
 
 
 .. _v4l2-format:
+
+.. tabularcolumns::  |p{1.2cm}|p{4.3cm}|p{3.0cm}|p{9.0cm}|
 
 .. flat-table:: struct v4l2_format
     :header-rows:  0

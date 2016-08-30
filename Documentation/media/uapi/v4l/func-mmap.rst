@@ -21,8 +21,8 @@ Synopsis
     #include <sys/mman.h>
 
 
-.. cpp:function:: void *mmap( void *start, size_t length, int prot, int flags, int fd, off_t offset )
-
+.. c:function:: void *mmap( void *start, size_t length, int prot, int flags, int fd, off_t offset )
+    :name: v4l2-mmap
 
 Arguments
 =========
@@ -78,7 +78,9 @@ Arguments
     ``MAP_SHARED`` allows applications to share the mapped memory with
     other (e. g. child-) processes.
 
-    .. note:: The Linux ``videobuf`` module  which is used by some
+    .. note::
+
+       The Linux ``videobuf`` module  which is used by some
        drivers supports only ``MAP_SHARED``. ``MAP_PRIVATE`` requests
        copy-on-write semantics. V4L2 applications should not set the
        ``MAP_PRIVATE``, ``MAP_DENYWRITE``, ``MAP_EXECUTABLE`` or ``MAP_ANON``

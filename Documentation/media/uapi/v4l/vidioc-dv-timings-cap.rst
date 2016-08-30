@@ -15,7 +15,11 @@ VIDIOC_DV_TIMINGS_CAP - VIDIOC_SUBDEV_DV_TIMINGS_CAP - The capabilities of the D
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_dv_timings_cap *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_DV_TIMINGS_CAP, struct v4l2_dv_timings_cap *argp )
+    :name: VIDIOC_DV_TIMINGS_CAP
+
+.. c:function:: int ioctl( int fd, VIDIOC_SUBDEV_DV_TIMINGS_CAP, struct v4l2_dv_timings_cap *argp )
+    :name: VIDIOC_SUBDEV_DV_TIMINGS_CAP
 
 
 Arguments
@@ -23,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_DV_TIMINGS_CAP, VIDIOC_SUBDEV_DV_TIMINGS_CAP
 
 ``argp``
 
@@ -39,7 +40,9 @@ initialize the ``pad`` field to 0, zero the reserved array of struct
 ``VIDIOC_DV_TIMINGS_CAP`` ioctl on a video node and the driver will fill
 in the structure.
 
-.. note:: Drivers may return different values after
+.. note::
+
+   Drivers may return different values after
    switching the video input or output.
 
 When implemented by the driver DV capabilities of subdevices can be
@@ -51,6 +54,8 @@ the desired pad number in the struct
 zero the ``reserved`` array. Attempts to query capabilities on a pad
 that doesn't support them will return an ``EINVAL`` error code.
 
+
+.. tabularcolumns:: |p{1.2cm}|p{3.0cm}|p{13.3cm}|
 
 .. _v4l2-bt-timings-cap:
 
@@ -132,10 +137,12 @@ that doesn't support them will return an ``EINVAL`` error code.
 
        -  ``reserved``\ [16]
 
-       -  Reserved for future extensions. Drivers must set the array to
-	  zero.
+       -  Reserved for future extensions.
+	  Drivers must set the array to zero.
 
 
+
+.. tabularcolumns:: |p{1.0cm}|p{3.5cm}|p{3.5cm}|p{9.5cm}|
 
 .. _v4l2-dv-timings-cap:
 
@@ -169,8 +176,9 @@ that doesn't support them will return an ``EINVAL`` error code.
 
        -  ``reserved``\ [2]
 
-       -  Reserved for future extensions. Drivers and applications must set
-	  the array to zero.
+       -  Reserved for future extensions.
+
+	  Drivers and applications must set the array to zero.
 
     -  .. row 4
 
@@ -197,7 +205,7 @@ that doesn't support them will return an ``EINVAL`` error code.
 
        -
 
-
+.. tabularcolumns:: |p{7.0cm}|p{10.5cm}|
 
 .. _dv-bt-cap-capabilities:
 

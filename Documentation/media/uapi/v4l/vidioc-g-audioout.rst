@@ -15,9 +15,11 @@ VIDIOC_G_AUDOUT - VIDIOC_S_AUDOUT - Query or select the current audio output
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_audioout *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_AUDOUT, struct v4l2_audioout *argp )
+    :name: VIDIOC_G_AUDOUT
 
-.. cpp:function:: int ioctl( int fd, int request, const struct v4l2_audioout *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_S_AUDOUT, const struct v4l2_audioout *argp )
+    :name: VIDIOC_S_AUDOUT
 
 
 Arguments
@@ -25,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_G_AUDOUT, VIDIOC_S_AUDOUT
 
 ``argp``
 
@@ -51,11 +50,15 @@ return the ``EINVAL`` error code when the index is out of bounds. This is a
 write-only ioctl, it does not return the current audio output attributes
 as ``VIDIOC_G_AUDOUT`` does.
 
-.. note:: Connectors on a TV card to loop back the received audio signal
+.. note::
+
+   Connectors on a TV card to loop back the received audio signal
    to a sound card are not audio outputs in this sense.
 
 
 .. _v4l2-audioout:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct v4l2_audioout
     :header-rows:  0

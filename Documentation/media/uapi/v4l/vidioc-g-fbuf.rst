@@ -15,9 +15,11 @@ VIDIOC_G_FBUF - VIDIOC_S_FBUF - Get or set frame buffer overlay parameters
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_framebuffer *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_FBUF, struct v4l2_framebuffer *argp )
+    :name: VIDIOC_G_FBUF
 
-.. cpp:function:: int ioctl( int fd, int request, const struct v4l2_framebuffer *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_S_FBUF, const struct v4l2_framebuffer *argp )
+    :name: VIDIOC_S_FBUF
 
 
 Arguments
@@ -25,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_G_FBUF, VIDIOC_S_FBUF
 
 ``argp``
 
@@ -76,7 +75,11 @@ hardware, therefore only the superuser can set the parameters for a
 destructive video overlay.
 
 
+.. tabularcolumns:: |p{3.5cm}|p{3.5cm}|p{3.5cm}|p{7.0cm}|
+
 .. _v4l2-framebuffer:
+
+.. cssclass:: longtable
 
 .. flat-table:: struct v4l2_framebuffer
     :header-rows:  0
@@ -280,6 +283,7 @@ destructive video overlay.
        -  Reserved. Drivers and applications must set this field to zero.
 
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _framebuffer-cap:
 
@@ -368,8 +372,11 @@ destructive video overlay.
 	  exactly opposite of ``V4L2_FBUF_CAP_CHROMAKEY``
 
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _framebuffer-flags:
+
+.. cssclass:: longtable
 
 .. flat-table:: Frame Buffer Flags
     :header-rows:  0

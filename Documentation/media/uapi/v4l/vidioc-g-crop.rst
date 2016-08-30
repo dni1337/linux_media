@@ -15,9 +15,11 @@ VIDIOC_G_CROP - VIDIOC_S_CROP - Get or set the current cropping rectangle
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_crop *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_CROP, struct v4l2_crop *argp )
+    :name: VIDIOC_G_CROP
 
-.. cpp:function:: int ioctl( int fd, int request, const struct v4l2_crop *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_S_CROP, const struct v4l2_crop *argp )
+    :name: VIDIOC_S_CROP
 
 
 Arguments
@@ -25,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_G_CROP, VIDIOC_S_CROP
 
 ``argp``
 
@@ -78,6 +77,8 @@ When cropping is not supported then no parameters are changed and
 
 .. _v4l2-crop:
 
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
+
 .. flat-table:: struct v4l2_crop
     :header-rows:  0
     :stub-columns: 0
@@ -111,3 +112,6 @@ Return Value
 On success 0 is returned, on error -1 and the ``errno`` variable is set
 appropriately. The generic error codes are described at the
 :ref:`Generic Error Codes <gen-errors>` chapter.
+
+ENODATA
+    Cropping is not supported for this input or output.

@@ -15,7 +15,8 @@ VIDIOC_ENUM_FRAMEINTERVALS - Enumerate frame intervals
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_frmivalenum *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_ENUM_FRAMEINTERVALS, struct v4l2_frmivalenum *argp )
+    :name: VIDIOC_ENUM_FRAMEINTERVALS
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_ENUM_FRAMEINTERVALS
 
 ``argp``
     Pointer to a struct :ref:`v4l2_frmivalenum <v4l2-frmivalenum>`
@@ -73,7 +71,9 @@ the device supports. Only for the ``V4L2_FRMIVAL_TYPE_DISCRETE`` type
 does it make sense to increase the index value to receive more frame
 intervals.
 
-.. note:: The order in which the frame intervals are returned has no
+.. note::
+
+   The order in which the frame intervals are returned has no
    special meaning. In particular does it not say anything about potential
    default frame intervals.
 
@@ -102,6 +102,8 @@ application should zero out all members except for the *IN* fields.
 
 
 .. _v4l2-frmival-stepwise:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct v4l2_frmival_stepwise
     :header-rows:  0
@@ -230,6 +232,8 @@ Enums
 
 
 .. _v4l2-frmivaltypes:
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. flat-table:: enum v4l2_frmivaltypes
     :header-rows:  0

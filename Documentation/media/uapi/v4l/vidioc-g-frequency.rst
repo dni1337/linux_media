@@ -15,9 +15,11 @@ VIDIOC_G_FREQUENCY - VIDIOC_S_FREQUENCY - Get or set tuner or modulator radio fr
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_frequency *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_FREQUENCY, struct v4l2_frequency *argp )
+    :name: VIDIOC_G_FREQUENCY
 
-.. cpp:function:: int ioctl( int fd, int request, const struct v4l2_frequency *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_S_FREQUENCY, const struct v4l2_frequency *argp )
+    :name: VIDIOC_S_FREQUENCY
 
 
 Arguments
@@ -25,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_G_FREQUENCY, VIDIOC_S_FREQUENCY
 
 ``argp``
 
@@ -51,6 +50,8 @@ structure. When the requested frequency is not possible the driver
 assumes the closest possible value. However :ref:`VIDIOC_S_FREQUENCY <VIDIOC_G_FREQUENCY>` is a
 write-only ioctl, it does not return the actual new frequency.
 
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _v4l2-frequency:
 

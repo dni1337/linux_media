@@ -16,24 +16,27 @@ CEC_RECEIVE, CEC_TRANSMIT - Receive or transmit a CEC message
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct cec_msg *argp )
+.. c:function:: int ioctl( int fd, CEC_RECEIVE, struct cec_msg *argp )
+    :name: CEC_RECEIVE
+
+.. c:function:: int ioctl( int fd, CEC_TRANSMIT, struct cec_msg *argp )
+    :name: CEC_TRANSMIT
 
 Arguments
 =========
 
 ``fd``
-    File descriptor returned by :ref:`open() <cec-func-open>`.
-
-``request``
-    CEC_RECEIVE, CEC_TRANSMIT
+    File descriptor returned by :c:func:`open() <cec-open>`.
 
 ``argp``
-
+    Pointer to struct cec_msg.
 
 Description
 ===========
 
-.. note:: This documents the proposed CEC API. This API is not yet finalized
+.. note::
+
+   This documents the proposed CEC API. This API is not yet finalized
    and is currently only available as a staging kernel module.
 
 To receive a CEC message the application has to fill in the
@@ -71,7 +74,11 @@ checked against the received messages to find the corresponding transmit
 result.
 
 
+.. tabularcolumns:: |p{1.0cm}|p{3.5cm}|p{13.0cm}|
+
 .. _cec-msg:
+
+.. cssclass:: longtable
 
 .. flat-table:: struct cec_msg
     :header-rows:  0
@@ -247,6 +254,7 @@ result.
 	  valid if the :ref:`CEC_TX_STATUS_ERROR <CEC-TX-STATUS-ERROR>` status bit is set.
 
 
+.. tabularcolumns:: |p{5.6cm}|p{0.9cm}|p{11.0cm}|
 
 .. _cec-tx-status:
 
@@ -315,6 +323,7 @@ result.
 	  be set to explain which failures were seen.
 
 
+.. tabularcolumns:: |p{5.6cm}|p{0.9cm}|p{11.0cm}|
 
 .. _cec-rx-status:
 

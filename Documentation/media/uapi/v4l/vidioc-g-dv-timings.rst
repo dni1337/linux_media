@@ -15,7 +15,17 @@ VIDIOC_G_DV_TIMINGS - VIDIOC_S_DV_TIMINGS - VIDIOC_SUBDEV_G_DV_TIMINGS - VIDIOC_
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_dv_timings *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_DV_TIMINGS, struct v4l2_dv_timings *argp )
+    :name: VIDIOC_G_DV_TIMINGS
+
+.. c:function:: int ioctl( int fd, VIDIOC_S_DV_TIMINGS, struct v4l2_dv_timings *argp )
+    :name: VIDIOC_S_DV_TIMINGS
+
+.. c:function:: int ioctl( int fd, VIDIOC_SUBDEV_G_DV_TIMINGS, struct v4l2_dv_timings *argp )
+    :name: VIDIOC_SUBDEV_G_DV_TIMINGS
+
+.. c:function:: int ioctl( int fd, VIDIOC_SUBDEV_S_DV_TIMINGS, struct v4l2_dv_timings *argp )
+    :name: VIDIOC_SUBDEV_S_DV_TIMINGS
 
 
 Arguments
@@ -23,10 +33,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_G_DV_TIMINGS, VIDIOC_S_DV_TIMINGS,
-    VIDIOC_SUBDEV_G_DV_TIMINGS, VIDIOC_SUBDEV_S_DV_TIMINGS
 
 ``argp``
 
@@ -67,6 +73,8 @@ ENODATA
 EBUSY
     The device is busy and therefore can not change the timings.
 
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _v4l2-bt-timings:
 
@@ -219,7 +227,17 @@ EBUSY
        -  Several flags giving more information about the format. See
 	  :ref:`dv-bt-flags` for a description of the flags.
 
+    -  .. row 17
 
+       -  __u32
+
+       -  ``reserved[14]``
+
+       -  Reserved for future extensions. Drivers and applications must set
+          the array to zero.
+
+
+.. tabularcolumns:: |p{3.5cm}|p{3.5cm}|p{7.0cm}|p{3.5cm}|
 
 .. _v4l2-dv-timings:
 
@@ -263,7 +281,7 @@ EBUSY
 
        -
 
-
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _dv-timing-types:
 
@@ -310,11 +328,6 @@ EBUSY
 
        -  Description
 
-    -  .. row 2
-
-       -
-       -
-
     -  .. row 3
 
        -  ``V4L2_DV_BT_STD_CEA861``
@@ -340,6 +353,7 @@ EBUSY
        -  The timings follow the VESA Generalized Timings Formula standard
 
 
+.. tabularcolumns:: |p{6.0cm}|p{11.5cm}|
 
 .. _dv-bt-flags:
 
@@ -353,11 +367,6 @@ EBUSY
        -  Flag
 
        -  Description
-
-    -  .. row 2
-
-       -
-       -
 
     -  .. row 3
 

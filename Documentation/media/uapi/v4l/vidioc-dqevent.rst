@@ -15,7 +15,8 @@ VIDIOC_DQEVENT - Dequeue event
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_event *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_DQEVENT, struct v4l2_event *argp )
+    :name: VIDIOC_DQEVENT
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_DQEVENT
 
 ``argp``
 
@@ -40,7 +38,11 @@ exceptions which the application may get by e.g. using the select system
 call.
 
 
+.. tabularcolumns:: |p{3.0cm}|p{4.3cm}|p{2.5cm}|p{7.7cm}|
+
 .. _v4l2-event:
+
+.. cssclass: longtable
 
 .. flat-table:: struct v4l2_event
     :header-rows:  0
@@ -175,6 +177,10 @@ call.
 
 
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
+
+.. cssclass:: longtable
+
 .. _event-type:
 
 .. flat-table:: Event Types
@@ -302,6 +308,8 @@ call.
 
 
 
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
+
 .. _v4l2-event-vsync:
 
 .. flat-table:: struct v4l2_event_vsync
@@ -319,6 +327,8 @@ call.
        -  The upcoming field. See enum :ref:`v4l2_field <v4l2-field>`.
 
 
+
+.. tabularcolumns:: |p{3.5cm}|p{3.0cm}|p{1.8cm}|p{8.5cm}|
 
 .. _v4l2-event-ctrl:
 
@@ -427,6 +437,8 @@ call.
 
 
 
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
+
 .. _v4l2-event-frame-sync:
 
 .. flat-table:: struct v4l2_event_frame_sync
@@ -444,6 +456,8 @@ call.
        -  The sequence number of the frame being received.
 
 
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _v4l2-event-src-change:
 
@@ -463,6 +477,8 @@ call.
 	  :ref:`src-changes-flags`.
 
 
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _v4l2-event-motion-det:
 
@@ -507,6 +523,8 @@ call.
 
 
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
+
 .. _ctrl-changes-flags:
 
 .. flat-table:: Control Changes
@@ -545,6 +563,8 @@ call.
 	  step or the default value of the control changed.
 
 
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _src-changes-flags:
 

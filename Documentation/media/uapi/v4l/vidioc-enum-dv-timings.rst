@@ -15,7 +15,11 @@ VIDIOC_ENUM_DV_TIMINGS - VIDIOC_SUBDEV_ENUM_DV_TIMINGS - Enumerate supported Dig
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_enum_dv_timings *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_ENUM_DV_TIMINGS, struct v4l2_enum_dv_timings *argp )
+    :name: VIDIOC_ENUM_DV_TIMINGS
+
+.. c:function:: int ioctl( int fd, VIDIOC_SUBDEV_ENUM_DV_TIMINGS, struct v4l2_enum_dv_timings *argp )
+    :name: VIDIOC_SUBDEV_ENUM_DV_TIMINGS
 
 
 Arguments
@@ -23,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_ENUM_DV_TIMINGS, VIDIOC_SUBDEV_ENUM_DV_TIMINGS
 
 ``argp``
 
@@ -49,7 +50,9 @@ error code when the index is out of bounds. To enumerate all supported
 DV timings, applications shall begin at index zero, incrementing by one
 until the driver returns ``EINVAL``.
 
-.. note:: Drivers may enumerate a different set of DV timings after
+.. note::
+
+   Drivers may enumerate a different set of DV timings after
    switching the video input or output.
 
 When implemented by the driver DV timings of subdevices can be queried
@@ -63,6 +66,8 @@ return an ``EINVAL`` error code.
 
 
 .. _v4l2-enum-dv-timings:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct v4l2_enum_dv_timings
     :header-rows:  0

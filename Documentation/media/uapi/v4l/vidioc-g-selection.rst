@@ -15,7 +15,12 @@ VIDIOC_G_SELECTION - VIDIOC_S_SELECTION - Get or set one of the selection rectan
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_selection *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_SELECTION, struct v4l2_selection *argp )
+    :name: VIDIOC_G_SELECTION
+
+
+.. c:function:: int ioctl( int fd, VIDIOC_S_SELECTION, struct v4l2_selection *argp )
+    :name: VIDIOC_S_SELECTION
 
 
 Arguments
@@ -137,6 +142,8 @@ Selection targets and flags are documented in
 
 .. _v4l2-selection:
 
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
+
 .. flat-table:: struct v4l2_selection
     :header-rows:  0
     :stub-columns: 0
@@ -203,6 +210,9 @@ ERANGE
     It is not possible to adjust struct :ref:`v4l2_rect <v4l2-rect>`
     ``r`` rectangle to satisfy all constraints given in the ``flags``
     argument.
+
+ENODATA
+    Selection is not supported for this input or output.
 
 EBUSY
     It is not possible to apply change of the selection rectangle at the

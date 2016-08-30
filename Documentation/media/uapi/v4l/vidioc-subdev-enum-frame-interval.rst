@@ -15,7 +15,8 @@ VIDIOC_SUBDEV_ENUM_FRAME_INTERVAL - Enumerate frame intervals
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_subdev_frame_interval_enum * argp )
+.. c:function:: int ioctl( int fd, VIDIOC_SUBDEV_ENUM_FRAME_INTERVAL, struct v4l2_subdev_frame_interval_enum * argp )
+    :name: VIDIOC_SUBDEV_ENUM_FRAME_INTERVAL
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_SUBDEV_ENUM_FRAME_INTERVAL
 
 ``argp``
 
@@ -63,6 +61,8 @@ multiple pads of the same sub-device is not defined.
 
 
 .. _v4l2-subdev-frame-interval-enum:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct v4l2_subdev_frame_interval_enum
     :header-rows:  0

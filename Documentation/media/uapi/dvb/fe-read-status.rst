@@ -15,7 +15,8 @@ FE_READ_STATUS - Returns status information about the front-end. This call only 
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, unsigned int *status )
+.. c:function:: int ioctl( int fd, FE_READ_STATUS, unsigned int *status )
+    :name: FE_READ_STATUS
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <frontend_f_open>`.
-
-``request``
-    FE_READ_STATUS
 
 ``status``
     pointer to a bitmask integer filled with the values defined by enum
@@ -40,7 +38,9 @@ used to check about the locking status of the frontend after being
 tuned. The ioctl takes a pointer to an integer where the status will be
 written.
 
-.. note:: The size of status is actually sizeof(enum fe_status), with
+.. note::
+
+   The size of status is actually sizeof(enum fe_status), with
    varies according with the architecture. This needs to be fixed in the
    future.
 
@@ -54,6 +54,7 @@ The fe_status parameter is used to indicate the current state and/or
 state changes of the frontend hardware. It is produced using the enum
 :ref:`fe_status <fe-status>` values on a bitmask
 
+.. tabularcolumns:: |p{3.5cm}|p{14.0cm}|
 
 .. _fe-status:
 

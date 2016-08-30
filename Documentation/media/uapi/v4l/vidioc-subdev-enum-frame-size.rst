@@ -15,7 +15,8 @@ VIDIOC_SUBDEV_ENUM_FRAME_SIZE - Enumerate media bus frame sizes
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_subdev_frame_size_enum * argp )
+.. c:function:: int ioctl( int fd, VIDIOC_SUBDEV_ENUM_FRAME_SIZE, struct v4l2_subdev_frame_size_enum * argp )
+    :name: VIDIOC_SUBDEV_ENUM_FRAME_SIZE
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_SUBDEV_ENUM_FRAME_SIZE
 
 ``argp``
 
@@ -65,6 +63,8 @@ information about try formats.
 
 
 .. _v4l2-subdev-frame-size-enum:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct v4l2_subdev_frame_size_enum
     :header-rows:  0

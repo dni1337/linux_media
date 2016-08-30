@@ -15,9 +15,11 @@ VIDIOC_G_MODULATOR - VIDIOC_S_MODULATOR - Get or set modulator attributes
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_modulator *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_G_MODULATOR, struct v4l2_modulator *argp )
+    :name: VIDIOC_G_MODULATOR
 
-.. cpp:function:: int ioctl( int fd, int request, const struct v4l2_modulator *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_S_MODULATOR, const struct v4l2_modulator *argp )
+    :name: VIDIOC_S_MODULATOR
 
 
 Arguments
@@ -25,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_G_MODULATOR, VIDIOC_S_MODULATOR
 
 ``argp``
 
@@ -61,6 +60,8 @@ To change the radio frequency the
 :ref:`VIDIOC_S_FREQUENCY <VIDIOC_G_FREQUENCY>` ioctl is available.
 
 
+.. tabularcolumns:: |p{2.9cm}|p{2.9cm}|p{5.8cm}|p{2.9cm}|p{3.0cm}|
+
 .. _v4l2-modulator:
 
 .. flat-table:: struct v4l2_modulator
@@ -83,8 +84,9 @@ To change the radio frequency the
 
        -  ``name``\ [32]
 
-       -  Name of the modulator, a NUL-terminated ASCII string. This
-	  information is intended for the user.
+       -  Name of the modulator, a NUL-terminated ASCII string.
+
+	  This information is intended for the user.
 
     -  .. row 3
 
@@ -130,7 +132,9 @@ To change the radio frequency the
 	  shall be modulated. It contains a set of flags as defined in
 	  :ref:`modulator-txsubchans`.
 
-	  .. note:: The tuner ``rxsubchans`` flags  are reused, but the
+	  .. note::
+
+	     The tuner ``rxsubchans`` flags  are reused, but the
 	     semantics are different. Video output devices
 	     are assumed to have an analog or PCM audio input with 1-3
 	     channels. The ``txsubchans`` flags select one or more channels
@@ -151,10 +155,13 @@ To change the radio frequency the
 
        -  ``reserved``\ [3]
 
-       -  Reserved for future extensions. Drivers and applications must set
-	  the array to zero.
+       -  Reserved for future extensions.
+
+	  Drivers and applications must set the array to zero.
 
 
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _modulator-txsubchans:
 

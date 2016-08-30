@@ -33,7 +33,7 @@ struct vb2_threadio_data;
 /**
  * struct vb2_mem_ops - memory handling/memory allocator operations
  * @alloc:	allocate video memory and, optionally, allocator private data,
- *		return NULL on failure or a pointer to allocator private,
+ *		return ERR_PTR() on failure or a pointer to allocator private,
  *		per-buffer data on success; the returned private structure
  *		will then be passed as buf_priv argument to other ops in this
  *		structure. Additional gfp_flags to use when allocating the
@@ -50,14 +50,14 @@ struct vb2_threadio_data;
  *		 USERPTR memory types; vaddr is the address passed to the
  *		 videobuf layer when queuing a video buffer of USERPTR type;
  *		 should return an allocator private per-buffer structure
- *		 associated with the buffer on success, NULL on failure;
+ *		 associated with the buffer on success, ERR_PTR() on failure;
  *		 the returned private structure will then be passed as buf_priv
  *		 argument to other ops in this structure.
  * @put_userptr: inform the allocator that a USERPTR buffer will no longer
  *		 be used.
  * @attach_dmabuf: attach a shared struct dma_buf for a hardware operation;
  *		   used for DMABUF memory types; dev is the alloc device
- *		   dbuf is the shared dma_buf; returns NULL on failure;
+ *		   dbuf is the shared dma_buf; returns ERR_PTR() on failure;
  *		   allocator private per-buffer structure on success;
  *		   this needs to be used for further accesses to the buffer.
  * @detach_dmabuf: inform the exporter of the buffer that the current DMABUF
@@ -98,7 +98,7 @@ struct vb2_threadio_data;
  *    #) Required ops for DMABUF types: attach_dmabuf, detach_dmabuf, map_dmabuf, unmap_dmabuf.
  */
 struct vb2_mem_ops {
-	void		*(*alloc)(struct device *dev, const struct dma_attrs *attrs,
+	void		*(*alloc)(struct device *dev, unsigned long attrs,
 				  unsigned long size, enum dma_data_direction dma_dir,
 				  gfp_t gfp_flags);
 	void		(*put)(void *buf_priv);
@@ -408,7 +408,7 @@ struct vb2_buf_ops {
  * @io_modes:	supported io methods (see vb2_io_modes enum)
  * @dev:	device to use for the default allocation context if the driver
  *		doesn't fill in the @alloc_devs array.
- * @dma_attrs:	DMA attributes to use for the DMA. May be NULL.
+ * @dma_attrs:	DMA attributes to use for the DMA.
  * @fileio_read_once:		report EOF after reading the first buffer
  * @fileio_write_immediately:	queue buffer after each write() call
  * @allow_zero_bytesused:	allow bytesused == 0 to be passed to the driver
@@ -476,7 +476,7 @@ struct vb2_queue {
 	unsigned int			type;
 	unsigned int			io_modes;
 	struct device			*dev;
-	const struct dma_attrs		*dma_attrs;
+	unsigned long			dma_attrs;
 	unsigned			fileio_read_once:1;
 	unsigned			fileio_write_immediately:1;
 	unsigned			allow_zero_bytesused:1;

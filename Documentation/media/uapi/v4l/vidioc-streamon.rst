@@ -15,7 +15,11 @@ VIDIOC_STREAMON - VIDIOC_STREAMOFF - Start or stop streaming I/O
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, const int *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_STREAMON, const int *argp )
+    :name: VIDIOC_STREAMON
+
+.. c:function:: int ioctl( int fd, VIDIOC_STREAMOFF, const int *argp )
+    :name: VIDIOC_STREAMOFF
 
 
 Arguments
@@ -23,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_STREAMON, VIDIOC_STREAMOFF
 
 ``argp``
 
@@ -76,7 +77,9 @@ then 0 is returned. Nothing happens in the case of ``VIDIOC_STREAMON``,
 but ``VIDIOC_STREAMOFF`` will return queued buffers to their starting
 state as mentioned above.
 
-.. note:: Applications can be preempted for unknown periods right before
+.. note::
+
+   Applications can be preempted for unknown periods right before
    or after the ``VIDIOC_STREAMON`` or ``VIDIOC_STREAMOFF`` calls, there is
    no notion of starting or stopping "now". Buffer timestamps can be used
    to synchronize with other events.

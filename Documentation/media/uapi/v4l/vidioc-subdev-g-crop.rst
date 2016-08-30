@@ -15,9 +15,11 @@ VIDIOC_SUBDEV_G_CROP - VIDIOC_SUBDEV_S_CROP - Get or set the crop rectangle on a
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_subdev_crop *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_SUBDEV_G_CROP, struct v4l2_subdev_crop *argp )
+    :name: VIDIOC_SUBDEV_G_CROP
 
-.. cpp:function:: int ioctl( int fd, int request, const struct v4l2_subdev_crop *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_SUBDEV_S_CROP, const struct v4l2_subdev_crop *argp )
+    :name: VIDIOC_SUBDEV_S_CROP
 
 
 Arguments
@@ -25,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_SUBDEV_G_CROP, VIDIOC_SUBDEV_S_CROP
 
 ``argp``
 
@@ -73,6 +72,8 @@ modified format should be as close as possible to the original request.
 
 
 .. _v4l2-subdev-crop:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct v4l2_subdev_crop
     :header-rows:  0

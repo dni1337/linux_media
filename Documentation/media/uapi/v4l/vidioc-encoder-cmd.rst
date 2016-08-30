@@ -15,7 +15,11 @@ VIDIOC_ENCODER_CMD - VIDIOC_TRY_ENCODER_CMD - Execute an encoder command
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_encoder_cmd *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_ENCODER_CMD, struct v4l2_encoder_cmd *argp )
+    :name: VIDIOC_ENCODER_CMD
+
+.. c:function:: int ioctl( int fd, VIDIOC_TRY_ENCODER_CMD, struct v4l2_encoder_cmd *argp )
+    :name: VIDIOC_TRY_ENCODER_CMD
 
 
 Arguments
@@ -23,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_ENCODER_CMD, VIDIOC_TRY_ENCODER_CMD
 
 ``argp``
 
@@ -64,6 +65,8 @@ These ioctls are optional, not all drivers may support them. They were
 introduced in Linux 2.6.21.
 
 
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
+
 .. _v4l2-encoder-cmd:
 
 .. flat-table:: struct v4l2_encoder_cmd
@@ -100,6 +103,8 @@ introduced in Linux 2.6.21.
 	  the array to zero.
 
 
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _encoder-cmds:
 
@@ -161,6 +166,7 @@ introduced in Linux 2.6.21.
 	  flags are defined for this command.
 
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _encoder-flags:
 

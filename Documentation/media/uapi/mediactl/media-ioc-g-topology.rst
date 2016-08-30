@@ -15,7 +15,8 @@ MEDIA_IOC_G_TOPOLOGY - Enumerate the graph topology and graph element properties
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct media_v2_topology *argp )
+.. c:function:: int ioctl( int fd, MEDIA_IOC_G_TOPOLOGY, struct media_v2_topology *argp )
+    :name: MEDIA_IOC_G_TOPOLOGY
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <media-func-open>`.
-
-``request``
-    MEDIA_IOC_G_TOPOLOGY
 
 ``argp``
 
@@ -48,6 +46,7 @@ other values untouched.
 If the ``topology_version`` remains the same, the ioctl should fill the
 desired arrays with the media graph elements.
 
+.. tabularcolumns:: |p{1.6cm}|p{3.2cm}|p{12.7cm}|
 
 .. _media-v2-topology:
 
@@ -142,6 +141,7 @@ desired arrays with the media graph elements.
 	  won't store the links. It will just update ``num_links``
 
 
+.. tabularcolumns:: |p{1.6cm}|p{3.2cm}|p{12.7cm}|
 
 .. _media-v2-entity:
 
@@ -185,6 +185,7 @@ desired arrays with the media graph elements.
 	  this array to zero.
 
 
+.. tabularcolumns:: |p{1.6cm}|p{3.2cm}|p{12.7cm}|
 
 .. _media-v2-interface:
 
@@ -236,6 +237,7 @@ desired arrays with the media graph elements.
 	  :ref:`media-v2-intf-devnode` for details..
 
 
+.. tabularcolumns:: |p{1.6cm}|p{3.2cm}|p{12.7cm}|
 
 .. _media-v2-intf-devnode:
 
@@ -262,6 +264,7 @@ desired arrays with the media graph elements.
        -  Device node minor number.
 
 
+.. tabularcolumns:: |p{1.6cm}|p{3.2cm}|p{12.7cm}|
 
 .. _media-v2-pad:
 
@@ -305,6 +308,7 @@ desired arrays with the media graph elements.
 	  this array to zero.
 
 
+.. tabularcolumns:: |p{1.6cm}|p{3.2cm}|p{12.7cm}|
 
 .. _media-v2-link:
 

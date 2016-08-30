@@ -15,7 +15,8 @@ VIDIOC_ENUMINPUT - Enumerate video inputs
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_input *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_ENUMINPUT, struct v4l2_input *argp )
+    :name: VIDIOC_ENUMINPUT
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_ENUMINPUT
 
 ``argp``
 
@@ -40,6 +38,8 @@ fill the rest of the structure or return an ``EINVAL`` error code when the
 index is out of bounds. To enumerate all inputs applications shall begin
 at index zero, incrementing by one until the driver returns ``EINVAL``.
 
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _v4l2-input:
 
@@ -148,6 +148,8 @@ at index zero, incrementing by one until the driver returns ``EINVAL``.
 
 
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
+
 .. _input-type:
 
 .. flat-table:: Input Types
@@ -173,7 +175,17 @@ at index zero, incrementing by one until the driver returns ``EINVAL``.
        -  Analog baseband input, for example CVBS / Composite Video,
 	  S-Video, RGB.
 
+    -  .. row 3
 
+       -  ``V4L2_INPUT_TYPE_TOUCH``
+
+       -  3
+
+       -  This input is a touch device for capturing raw touch data.
+
+
+
+.. tabularcolumns:: |p{4.8cm}|p{2.6cm}|p{10.1cm}|
 
 .. _input-status:
 
@@ -317,6 +329,8 @@ at index zero, incrementing by one until the driver returns ``EINVAL``.
        -  VTR time constant. [?]
 
 
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _input-capabilities:
 

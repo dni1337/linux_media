@@ -15,7 +15,11 @@ VIDIOC_QBUF - VIDIOC_DQBUF - Exchange a buffer with the driver
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_buffer *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_QBUF, struct v4l2_buffer *argp )
+    :name: VIDIOC_QBUF
+
+.. c:function:: int ioctl( int fd, VIDIOC_DQBUF, struct v4l2_buffer *argp )
+    :name: VIDIOC_DQBUF
 
 
 Arguments
@@ -23,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_QBUF, VIDIOC_DQBUF
 
 ``argp``
 
@@ -137,7 +138,9 @@ EIO
     ``VIDIOC_DQBUF`` failed due to an internal error. Can also indicate
     temporary problems like signal loss.
 
-    .. note:: The driver might dequeue an (empty) buffer despite returning
+    .. note::
+
+       The driver might dequeue an (empty) buffer despite returning
        an error, or even stop capturing. Reusing such buffer may be unsafe
        though and its details (e.g. ``index``) may not be returned either.
        It is recommended that drivers indicate recoverable errors by setting

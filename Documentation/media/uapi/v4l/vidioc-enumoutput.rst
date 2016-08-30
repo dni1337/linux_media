@@ -15,7 +15,8 @@ VIDIOC_ENUMOUTPUT - Enumerate video outputs
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_output *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_ENUMOUTPUT, struct v4l2_output *argp )
+    :name: VIDIOC_ENUMOUTPUT
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_ENUMOUTPUT
 
 ``argp``
 
@@ -41,6 +39,8 @@ when the index is out of bounds. To enumerate all outputs applications
 shall begin at index zero, incrementing by one until the driver returns
 EINVAL.
 
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. _v4l2-output:
 
@@ -138,6 +138,8 @@ EINVAL.
 
 
 
+.. tabularcolumns:: |p{7.0cm}|p{1.8cm}|p{8.7cm}|
+
 .. _output-type:
 
 .. flat-table:: Output Type
@@ -172,6 +174,8 @@ EINVAL.
        -  [?]
 
 
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _output-capabilities:
 

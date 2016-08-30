@@ -15,7 +15,8 @@ MEDIA_IOC_ENUM_ENTITIES - Enumerate entities and their properties
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct media_entity_desc *argp )
+.. c:function:: int ioctl( int fd, MEDIA_IOC_ENUM_ENTITIES, struct media_entity_desc *argp )
+    :name: MEDIA_IOC_ENUM_ENTITIES
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <media-func-open>`.
-
-``request``
-    MEDIA_IOC_ENUM_ENTITIES
 
 ``argp``
 
@@ -52,6 +50,8 @@ id's until they get an error.
 
 
 .. _media-entity-desc:
+
+.. tabularcolumns:: |p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{11.5cm}|
 
 .. flat-table:: struct media_entity_desc
     :header-rows:  0

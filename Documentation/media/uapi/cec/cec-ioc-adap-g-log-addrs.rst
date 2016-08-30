@@ -17,25 +17,27 @@ CEC_ADAP_G_LOG_ADDRS, CEC_ADAP_S_LOG_ADDRS - Get or set the logical addresses
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct cec_log_addrs *argp )
+.. c:function:: int ioctl( int fd, CEC_ADAP_G_LOG_ADDRS, struct cec_log_addrs *argp )
+   :name: CEC_ADAP_G_LOG_ADDRS
 
+.. c:function:: int ioctl( int fd, CEC_ADAP_S_LOG_ADDRS, struct cec_log_addrs *argp )
+   :name: CEC_ADAP_S_LOG_ADDRS
 
 Arguments
 =========
 
 ``fd``
-    File descriptor returned by :ref:`open() <cec-func-open>`.
-
-``request``
-    CEC_ADAP_G_LOG_ADDRS, CEC_ADAP_S_LOG_ADDRS
+    File descriptor returned by :c:func:`open() <cec-open>`.
 
 ``argp``
-
+    Pointer to struct cec_log_addrs
 
 Description
 ===========
 
-.. note:: This documents the proposed CEC API. This API is not yet finalized
+.. note::
+
+   This documents the proposed CEC API. This API is not yet finalized
    and is currently only available as a staging kernel module.
 
 To query the current CEC logical addresses, applications call
@@ -64,8 +66,11 @@ logical addresses are claimed or cleared.
 Attempting to call :ref:`ioctl CEC_ADAP_S_LOG_ADDRS <CEC_ADAP_S_LOG_ADDRS>` when
 logical address types are already defined will return with error ``EBUSY``.
 
+.. tabularcolumns:: |p{1.0cm}|p{7.5cm}|p{8.0cm}|
 
 .. _cec-log-addrs:
+
+.. cssclass:: longtable
 
 .. flat-table:: struct cec_log_addrs
     :header-rows:  0
@@ -201,6 +206,8 @@ logical address types are already defined will return with error ``EBUSY``.
           give the CEC framework more information about the device type, even
           though the framework won't use it directly in the CEC message.
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
+
 .. _cec-versions:
 
 .. flat-table:: CEC Versions
@@ -234,6 +241,7 @@ logical address types are already defined will return with error ``EBUSY``.
        -  CEC version according to the HDMI 2.0 standard.
 
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _cec-prim-dev-types:
 
@@ -300,6 +308,7 @@ logical address types are already defined will return with error ``EBUSY``.
        -  Use for a video processor device.
 
 
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _cec-log-addr-types:
 
@@ -368,6 +377,8 @@ logical address types are already defined will return with error ``EBUSY``.
 	  Control).
 
 
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _cec-all-dev-types-flags:
 

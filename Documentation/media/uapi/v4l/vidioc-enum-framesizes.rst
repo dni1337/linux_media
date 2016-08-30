@@ -15,7 +15,8 @@ VIDIOC_ENUM_FRAMESIZES - Enumerate frame sizes
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_frmsizeenum *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_ENUM_FRAMESIZES, struct v4l2_frmsizeenum *argp )
+    :name: VIDIOC_ENUM_FRAMESIZES
 
 
 Arguments
@@ -23,9 +24,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_ENUM_FRAMESIZES
 
 ``argp``
     Pointer to a struct :ref:`v4l2_frmsizeenum <v4l2-frmsizeenum>`
@@ -72,7 +70,9 @@ the ``type`` field to determine the type of frame size enumeration the
 device supports. Only for the ``V4L2_FRMSIZE_TYPE_DISCRETE`` type does
 it make sense to increase the index value to receive more frame sizes.
 
-.. note:: The order in which the frame sizes are returned has no special
+.. note::
+
+   The order in which the frame sizes are returned has no special
    meaning. In particular does it not say anything about potential default
    format sizes.
 
@@ -91,6 +91,8 @@ application should zero out all members except for the *IN* fields.
 
 
 .. _v4l2-frmsize-discrete:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct v4l2_frmsize_discrete
     :header-rows:  0
@@ -117,6 +119,8 @@ application should zero out all members except for the *IN* fields.
 
 
 .. _v4l2-frmsize-stepwise:
+
+.. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
 .. flat-table:: struct v4l2_frmsize_stepwise
     :header-rows:  0
@@ -251,6 +255,8 @@ Enums
 
 
 .. _v4l2-frmsizetypes:
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. flat-table:: enum v4l2_frmsizetypes
     :header-rows:  0

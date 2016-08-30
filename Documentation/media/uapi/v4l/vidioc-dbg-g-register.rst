@@ -15,9 +15,11 @@ VIDIOC_DBG_G_REGISTER - VIDIOC_DBG_S_REGISTER - Read or write hardware registers
 Synopsis
 ========
 
-.. cpp:function:: int ioctl( int fd, int request, struct v4l2_dbg_register *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_DBG_G_REGISTER, struct v4l2_dbg_register *argp )
+    :name: VIDIOC_DBG_G_REGISTER
 
-.. cpp:function:: int ioctl( int fd, int request, const struct v4l2_dbg_register *argp )
+.. c:function:: int ioctl( int fd, VIDIOC_DBG_S_REGISTER, const struct v4l2_dbg_register *argp )
+    :name: VIDIOC_DBG_S_REGISTER
 
 
 Arguments
@@ -25,9 +27,6 @@ Arguments
 
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
-
-``request``
-    VIDIOC_DBG_G_REGISTER, VIDIOC_DBG_S_REGISTER
 
 ``argp``
 
@@ -85,6 +84,8 @@ It is available from the LinuxTV v4l-dvb repository; see
 `https://linuxtv.org/repo/ <https://linuxtv.org/repo/>`__ for access
 instructions.
 
+
+.. tabularcolumns:: |p{3.5cm}|p{3.5cm}|p{3.5cm}|p{7.0cm}|
 
 .. _v4l2-dbg-match:
 
@@ -170,6 +171,8 @@ instructions.
        -  The value read from, or to be written into the register.
 
 
+
+.. tabularcolumns:: |p{6.6cm}|p{2.2cm}|p{8.7cm}|
 
 .. _chip-match-types:
 
