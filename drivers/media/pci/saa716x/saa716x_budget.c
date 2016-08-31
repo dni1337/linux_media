@@ -52,6 +52,9 @@
 #include "stv6120.h"
 #include "stv0910.h"
 
+#include "tbsci-i2c.h"
+#include "tbsci.h"
+
 unsigned int verbose;
 module_param(verbose, int, 0644);
 MODULE_PARM_DESC(verbose, "verbose startup messages, default is 1 (yes)");
@@ -157,6 +160,16 @@ fail0:
 static void saa716x_budget_pci_remove(struct pci_dev *pdev)
 {
 	struct saa716x_dev *saa716x = pci_get_drvdata(pdev);
+	struct saa716x_adapter *saa716x_adap = saa716x->saa716x_adap;
+	int i;
+
+	for (i = 0; i < saa716x->config->adapters; i++) {
+		if (saa716x_adap->tbsci) {
+			tbsci_release(saa716x_adap);
+			tbsci_i2c_remove(saa716x_adap);
+		}
+		saa716x_adap++;
+	}
 
 	saa716x_dvb_exit(saa716x);
 	saa716x_i2c_exit(saa716x);
@@ -2415,6 +2428,14 @@ static int saa716x_tbs6991_frontend_attach(
 		dev_notice(&dev->pdev->dev, "%s MAC=%pM\n", dev->config->model_name, adapter->dvb_adapter.proposed_mac);
 	}
 
+	saa716x_gpio_set_input(dev, count ? 3 : 14);
+	msleep(1);
+	saa716x_gpio_set_input(dev, count ? 6 : 2);
+	msleep(1);
+
+	if (!tbsci_i2c_probe(adapter, count ? 3 : 4)) 
+		tbsci_init(adapter, count, 2);
+
 	return 0;
 err:
 	dev_err(&dev->pdev->dev, "%s frontend %d attach failed\n",
@@ -2501,6 +2522,16 @@ static int saa716x_tbs6991se_frontend_attach(
 		memcpy(adapter->dvb_adapter.proposed_mac, mac, 6);
 		dev_notice(&dev->pdev->dev, "%s MAC=%pM\n", dev->config->model_name, adapter->dvb_adapter.proposed_mac);
 	}
+
+	saa716x_gpio_set_input(dev, count ? 6 : 2);
+	msleep(1);
+	saa716x_gpio_set_input(dev, count ? 3 : 14);
+	msleep(1);
+	saa716x_gpio_set_output(dev, count ? 17 : 20);
+	msleep(1);
+
+	if (!tbsci_i2c_probe(adapter, count ? 3 : 4)) 
+		tbsci_init(adapter, count, 8);
 
 	return 0;
 err:
