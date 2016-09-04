@@ -18,12 +18,12 @@ saa716x_ff-objs		:= saa716x_ff_main.o	\
                            saa716x_ff_cmd.o	\
 			   saa716x_ff_ir.o
 
-saa716x_budget-objs	:= saa716x_budget.o	\
+saa716x_dvb-objs	:= saa716x_budget.o	\
 			   tbsci-i2c.o \
 			   tbsci.o
 
 obj-$(CONFIG_SAA716X_CORE)	  += saa716x_core.o
-obj-$(CONFIG_DVB_SAA716X_BUDGET)  += saa716x_budget.o
+obj-$(CONFIG_DVB_SAA716X_BUDGET)  += saa716x_dvb.o
 obj-$(CONFIG_DVB_SAA716X_HYBRID)  += saa716x_hybrid.o
 obj-$(CONFIG_DVB_SAA716X_FF)	  += saa716x_ff.o
 
