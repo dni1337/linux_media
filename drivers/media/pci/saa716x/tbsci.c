@@ -430,10 +430,22 @@ int tbsci_init(struct saa716x_adapter *adap, int tbsci_nr, int tbsci_mode)
 			break;
 		case 0x66:
 		case 0x68:
-			if (state->mode == 8)
+			if (state->mode == 8){
 				printk("tbsci: Initializing TBS 6991SE CI %d slot\n",
 					tbsci_nr);
-			else
+				//Fix Data Rate
+				data = 0;
+				tbsci_i2c_write(state, 0xd0, &data, 1);
+
+				data = 1;
+				tbsci_i2c_write(state, 0xcd, &data, 1);
+				data = 8;
+				tbsci_i2c_write(state, 0xce, &data, 1);
+
+				data = 0;
+				tbsci_i2c_write(state, 0xcf, &data, 1);	
+					
+			}else
                         if (state->mode == 9) {
                                 printk("tbsci: Initializing TBS 6290 CI %d slot\n",
                                         tbsci_nr);
@@ -445,8 +457,9 @@ int tbsci_init(struct saa716x_adapter *adap, int tbsci_nr, int tbsci_mode)
 
 				data = 0;
 				tbsci_i2c_write(state, 0xd0, &data, 1);
-
+				data = 1;
 				tbsci_i2c_write(state, 0xcc, &data, 1);
+				data = 0;
 				tbsci_i2c_write(state, 0xcd, &data, 1);
 
 				data = 2;
