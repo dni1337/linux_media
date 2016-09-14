@@ -13,5 +13,5 @@ struct stv6120_cfg {
 
 
 struct dvb_frontend *stv6120_attach(struct dvb_frontend *fe,
-		    struct i2c_adapter *i2c, struct stv6120_cfg *cfg);
+		    struct i2c_adapter *i2c, struct stv6120_cfg *cfg, int nr);
 #endif
