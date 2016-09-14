@@ -95,6 +95,9 @@ struct stv_base {
 	u32                  mclk;
 	
 	u8                   dual_tuner;
+	
+	/* Hook for Lock LED */
+	void (*set_lock_led) (struct dvb_frontend *fe, int offon);
 };
 
 struct stv {
@@ -1070,6 +1073,7 @@ static int gate_ctrl(struct dvb_frontend *fe, int enable)
 {
 	struct stv *state = fe->demodulator_priv;
 	u8 i2crpt = state->i2crpt & ~0x86;
+	u16 reg;
 
 	if (enable)
 		mutex_lock(&state->base->i2c_lock);
@@ -1078,8 +1082,22 @@ static int gate_ctrl(struct dvb_frontend *fe, int enable)
 		i2crpt |= 0x80;
 	else
 		i2crpt |= 0x02;
+	
+	switch (state->base->dual_tuner)
+	{
+	  case 1:
+	    reg = RSTV0910_P1_I2CRPT;
+	    break;
+	  case 2:
+	    reg = RSTV0910_P2_I2CRPT;
+	    break;
+	  default:
+	    reg = state->nr ? RSTV0910_P2_I2CRPT : RSTV0910_P1_I2CRPT;
+	}
 
-	if (write_reg(state, state->base->dual_tuner ? RSTV0910_P1_I2CRPT : state->nr ? RSTV0910_P2_I2CRPT : RSTV0910_P1_I2CRPT, i2crpt) < 0)
+	/* pr_info("stv0910: gate_ctrl %d\n", enable); */
+
+	if (write_reg(state, reg , i2crpt) < 0)
 		return -EIO;
 
 	state->i2crpt = i2crpt;
@@ -1093,6 +1111,9 @@ static void release(struct dvb_frontend *fe)
 {
 	struct stv *state = fe->demodulator_priv;
 
+	if (state->base->set_lock_led)
+		state->base->set_lock_led(fe, 0);
+	
 	state->base->count--;
 	if (state->base->count == 0) {
 		list_del(&state->base->stvlist);
@@ -1214,7 +1235,7 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 
 	Padc = TableLookup(PADC_Lookup, ARRAY_SIZE(PADC_Lookup), power) + 352;	
 
-	//pr_warn("%s: power = %d  Padc = %d  str = %u\n", __func__, power, Padc, *strength);
+	/*pr_warn("%s: power = %d  Padc = %d\n", __func__, power, Padc);*/
 	
 	p->strength.len = 1;
 	p->strength.stat[0].scale = FE_SCALE_DECIBEL;
@@ -1234,7 +1255,11 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	}
 
 	if (CurReceiveMode == Mode_None)
+	{
+ 		if (state->base->set_lock_led)
+			state->base->set_lock_led(fe, 0);
 		return 0;
+	}
 
 	if (state->ReceiveMode == Mode_None) {
 		state->ReceiveMode = CurReceiveMode;
@@ -1267,6 +1292,9 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 
 	if (!FECLock)
 	{
+		if (state->base->set_lock_led)
+			state->base->set_lock_led(fe, 0);
+
 		p->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		p->post_bit_error.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		p->post_bit_count.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
@@ -1274,6 +1302,9 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	}
 
 	*status |= FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
+	
+	if (state->base->set_lock_led)
+		state->base->set_lock_led(fe, *status & FE_HAS_LOCK);
 
 	if (state->FirstTimeLock) {
 		u8 tmp;
@@ -1578,6 +1609,7 @@ struct dvb_frontend *stv0910_attach(struct i2c_adapter *i2c,
 		base->count = 1;
 		base->extclk = cfg->clk ? cfg->clk : 30000000;
 		base->dual_tuner = cfg->dual_tuner;
+		base->set_lock_led = cfg->set_lock_led;
 
 		mutex_init(&base->i2c_lock);
 		mutex_init(&base->reg_lock);

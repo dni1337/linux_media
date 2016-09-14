@@ -10,6 +10,9 @@ struct stv0910_cfg {
 	u8  parallel;
 	u8  rptlvl;
 	u8  dual_tuner;
+	
+	/* Hook for Lock LED */
+	void (*set_lock_led) (struct dvb_frontend *fe, int offon);
 };
 
 #if IS_REACHABLE(CONFIG_DVB_STV0910)
