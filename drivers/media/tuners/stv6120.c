@@ -215,15 +215,6 @@ static int write_tuner_regs(struct stv *state)
 	return i2c_write(state->base->i2c, state->base->adr, d, 8);
 }
 
-#if 0
-static int write_reg(struct stv *state, u8 reg, u8 val)
-{
-	u8 d[2] = {reg, val};
-
-	return i2c_write(state->i2c, state->adr, d, 2);
-}
-#endif
-
 static int read_reg(struct stv *state, u8 reg, u8 *val)
 {
 	return i2c_read(state->base->i2c, state->base->adr, &reg, 1, val, 1);
@@ -332,11 +323,12 @@ static int probe(struct stv *state)
 	d[0] = 0;
 	ret = i2c_write(state->base->i2c, state->base->adr, d, 25 + 1);
 
-
 	if (ret < 0)
 		goto err;
-//	pr_info("attach_init OK\n");
-//	dump_regs(state);
+#if 0
+	pr_info("attach_init OK\n");
+	dump_regs(state);
+#endif
 
 err:
 	if (fe->ops.i2c_gate_ctrl)
@@ -663,7 +655,7 @@ static struct stv_base *match_base(struct i2c_adapter  *i2c, u8 adr)
 
 
 struct dvb_frontend *stv6120_attach(struct dvb_frontend *fe,
-		    struct i2c_adapter *i2c, struct stv6120_cfg *cfg)
+		    struct i2c_adapter *i2c, struct stv6120_cfg *cfg, int nr)
 {
 	struct stv *state;
 	struct stv_base *base;
@@ -704,7 +696,7 @@ struct dvb_frontend *stv6120_attach(struct dvb_frontend *fe,
 	}
 
 	state->cfg = cfg;
-	state->nr = 1-(base->count-1);
+	state->nr = nr;
 
 	fe->tuner_priv = state;
 	return fe;

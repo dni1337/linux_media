@@ -2569,7 +2569,7 @@ static struct saa716x_config saa716x_tbs6991se_config = {
 static struct stv0910_cfg tbs6983_stv0910_cfg = {
 	.adr      = 0x68,
 	.parallel = 1,
-	.rptlvl   = 4,
+	.rptlvl   = 3,
 	.clk      = 30000000,
 	.dual_tuner = 1,
 };
@@ -2632,14 +2632,14 @@ static int saa716x_tbs6983_frontend_attach(struct saa716x_adapter *adapter, int 
 	adapter->fe = dvb_attach(stv0910_attach,
 				 &dev->i2c[1].i2c_adapter,
 				 &tbs6983_stv0910_cfg,
-				 count & 1);
+				 count);
 
 	if (adapter->fe == NULL) {
 		goto err;
 	}
 
 	if (dvb_attach(stv6120_attach, adapter->fe,  &dev->i2c[1].i2c_adapter,
-			&tbs6983_stv6120_cfg) == NULL) {
+			&tbs6983_stv6120_cfg,1-count) == NULL) {
 		dvb_frontend_detach(adapter->fe);
 		adapter->fe = NULL;
 		dev_dbg(&dev->pdev->dev,

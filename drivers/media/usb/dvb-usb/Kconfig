@@ -349,7 +349,6 @@ config DVB_USB_TBSQBOX22
 	help
 	  Say Y here to support the TurboSight QBOX22 DVB-S USB2.0 receivers
 
-
 config DVB_USB_TBS5922SE
         tristate "TurboSight 5922SE DVB-S2 USB2.0 support"
         depends on DVB_USB
@@ -420,3 +419,12 @@ config DVB_USB_TBS5520
 	select MEDIA_TUNER_R848 if MEDIA_SUBDRV_AUTOSELECT
 	help
 	  Say Y here to support the Turbosight TBS5520 USB2 DVB-T/T2/C/S/S2 device
+
+config DVB_USB_TBS5927
+	tristate "TurboSight TBS5927 DVB-S2 USB2.0 support"
+	depends on DVB_USB
+	select DVB_PLL if MEDIA_SUBDRV_AUTOSELECT
+	select DVB_STV0910 if MEDIA_SUBDRV_AUTOSELECT
+	select MEDIA_TUNER_STV6120 if MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Say Y here to support the TurboSight TBS5927 DVB-S USB2.0 receivers
