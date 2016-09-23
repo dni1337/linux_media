@@ -2406,7 +2406,7 @@ static int saa716x_tbs6991_frontend_attach(
 		goto err;
 
 	adapter->fe = dvb_attach(tas2101_attach, &tbs6991_cfg[count],
-				&dev->i2c[count].i2c_adapter);
+				&dev->i2c[1-count].i2c_adapter);
 	if (adapter->fe == NULL)
 		goto err;
 
