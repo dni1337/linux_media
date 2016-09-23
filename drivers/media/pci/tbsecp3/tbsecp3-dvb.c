@@ -454,6 +454,67 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		tbsecp3_ca_init(adapter, adapter->nr);
 		break;
 
+	case TBSECP3_BOARD_TBS6209:
+		/* attach demod */
+		memset(&si2183_config, 0, sizeof(si2183_config));
+		si2183_config.i2c_adapter = &i2c;
+		si2183_config.fe = &adapter->fe;
+		si2183_config.ts_mode = SI2183_TS_SERIAL;
+		si2183_config.ts_clock_gapped = true;
+		si2183_config.rf_in = adapter->nr;
+		si2183_config.RF_switch = NULL;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
+		info.addr = (adapter->nr%2)? 0x67 : 0x64;
+		si2183_config.fef_pin = (adapter->nr%2) ? SI2183_MP_B : SI2183_MP_A;
+		si2183_config.fef_inv = 0;
+		si2183_config.agc_pin = (adapter->nr%2) ? SI2183_MP_D : SI2183_MP_B;
+		si2183_config.ter_agc_inv = 0;
+		si2183_config.sat_agc_inv = 1;
+		info.platform_data = &si2183_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+				client_demod->dev.driver == NULL)
+			goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+			i2c_unregister_device(client_demod);
+			goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+
+		/* terrestrial tuner */
+		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe->ops.delsys[0] = SYS_DVBT;
+		adapter->fe->ops.delsys[1] = SYS_DVBT2;
+		adapter->fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
+		adapter->fe->ops.delsys[3] = SYS_ISDBT;
+		adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+
+		/* attach tuner */
+		memset(&si2157_config, 0, sizeof(si2157_config));
+		si2157_config.fe = adapter->fe;
+		si2157_config.if_port = 1;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2157", I2C_NAME_SIZE);
+		info.addr = (adapter->nr %2)? 0x60 : 0x63;
+		info.platform_data = &si2157_config;
+		request_module(info.type);
+		client_tuner = i2c_new_device(i2c, &info);
+
+		if (client_tuner == NULL ||
+				client_tuner->dev.driver == NULL)
+			goto frontend_atach_fail;
+
+		if (!try_module_get(client_tuner->dev.driver->owner)) {
+			i2c_unregister_device(client_tuner);
+			goto frontend_atach_fail;
+		}
+		adapter->i2c_client_tuner = client_tuner;
+			break;
+
 	case TBSECP3_BOARD_TBS6522:
 		/* attach demod */
 		memset(&si2183_config, 0, sizeof(si2183_config));
