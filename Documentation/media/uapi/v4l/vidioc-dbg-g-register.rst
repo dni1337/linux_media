@@ -49,7 +49,7 @@ superuser privileges. Additionally the Linux kernel must be compiled
 with the ``CONFIG_VIDEO_ADV_DEBUG`` option to enable these ioctls.
 
 To write a register applications must initialize all fields of a struct
-:ref:`v4l2_dbg_register <v4l2-dbg-register>` except for ``size`` and
+:c:type:`v4l2_dbg_register` except for ``size`` and
 call ``VIDIOC_DBG_S_REGISTER`` with a pointer to this structure. The
 ``match.type`` and ``match.addr`` or ``match.name`` fields select a chip
 on the TV card, the ``reg`` field specifies a register number and the
@@ -87,88 +87,49 @@ instructions.
 
 .. tabularcolumns:: |p{3.5cm}|p{3.5cm}|p{3.5cm}|p{7.0cm}|
 
-.. _v4l2-dbg-match:
+.. c:type:: v4l2_dbg_match
 
 .. flat-table:: struct v4l2_dbg_match
     :header-rows:  0
     :stub-columns: 0
     :widths:       1 1 1 2
 
-
-    -  .. row 1
-
-       -  __u32
-
-       -  ``type``
-
-       -  See :ref:`chip-match-types` for a list of possible types.
-
-    -  .. row 2
-
-       -  union
-
-       -  (anonymous)
-
-    -  .. row 3
-
-       -
-       -  __u32
-
-       -  ``addr``
-
-       -  Match a chip by this number, interpreted according to the ``type``
-	  field.
-
-    -  .. row 4
-
-       -
-       -  char
-
-       -  ``name[32]``
-
-       -  Match a chip by this name, interpreted according to the ``type``
-	  field. Currently unused.
+    * - __u32
+      - ``type``
+      - See :ref:`chip-match-types` for a list of possible types.
+    * - union
+      - (anonymous)
+    * -
+      - __u32
+      - ``addr``
+      - Match a chip by this number, interpreted according to the ``type``
+	field.
+    * -
+      - char
+      - ``name[32]``
+      - Match a chip by this name, interpreted according to the ``type``
+	field. Currently unused.
 
 
 
-.. _v4l2-dbg-register:
+.. c:type:: v4l2_dbg_register
 
 .. flat-table:: struct v4l2_dbg_register
     :header-rows:  0
     :stub-columns: 0
 
-
-    -  .. row 1
-
-       -  struct v4l2_dbg_match
-
-       -  ``match``
-
-       -  How to match the chip, see :ref:`v4l2-dbg-match`.
-
-    -  .. row 2
-
-       -  __u32
-
-       -  ``size``
-
-       -  The register size in bytes.
-
-    -  .. row 3
-
-       -  __u64
-
-       -  ``reg``
-
-       -  A register number.
-
-    -  .. row 4
-
-       -  __u64
-
-       -  ``val``
-
-       -  The value read from, or to be written into the register.
+    * - struct v4l2_dbg_match
+      - ``match``
+      - How to match the chip, see :c:type:`v4l2_dbg_match`.
+    * - __u32
+      - ``size``
+      - The register size in bytes.
+    * - __u64
+      - ``reg``
+      - A register number.
+    * - __u64
+      - ``val``
+      - The value read from, or to be written into the register.
 
 
 
@@ -181,23 +142,13 @@ instructions.
     :stub-columns: 0
     :widths:       3 1 4
 
-
-    -  .. row 1
-
-       -  ``V4L2_CHIP_MATCH_BRIDGE``
-
-       -  0
-
-       -  Match the nth chip on the card, zero for the bridge chip. Does not
-	  match sub-devices.
-
-    -  .. row 2
-
-       -  ``V4L2_CHIP_MATCH_SUBDEV``
-
-       -  4
-
-       -  Match the nth sub-device.
+    * - ``V4L2_CHIP_MATCH_BRIDGE``
+      - 0
+      - Match the nth chip on the card, zero for the bridge chip. Does not
+	match sub-devices.
+    * - ``V4L2_CHIP_MATCH_SUBDEV``
+      - 4
+      - Match the nth sub-device.
 
 
 Return Value

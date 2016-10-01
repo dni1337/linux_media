@@ -65,7 +65,7 @@ Selection targets and flags are documented in
 :ref:`v4l2-selections-common`.
 
 
-.. _v4l2-subdev-selection:
+.. c:type:: v4l2_subdev_selection
 
 .. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
@@ -74,56 +74,26 @@ Selection targets and flags are documented in
     :stub-columns: 0
     :widths:       1 1 2
 
-
-    -  .. row 1
-
-       -  __u32
-
-       -  ``which``
-
-       -  Active or try selection, from enum
-	  :ref:`v4l2_subdev_format_whence <v4l2-subdev-format-whence>`.
-
-    -  .. row 2
-
-       -  __u32
-
-       -  ``pad``
-
-       -  Pad number as reported by the media framework.
-
-    -  .. row 3
-
-       -  __u32
-
-       -  ``target``
-
-       -  Target selection rectangle. See :ref:`v4l2-selections-common`.
-
-    -  .. row 4
-
-       -  __u32
-
-       -  ``flags``
-
-       -  Flags. See :ref:`v4l2-selection-flags`.
-
-    -  .. row 5
-
-       -  struct :ref:`v4l2_rect <v4l2-rect>`
-
-       -  ``r``
-
-       -  Selection rectangle, in pixels.
-
-    -  .. row 6
-
-       -  __u32
-
-       -  ``reserved``\ [8]
-
-       -  Reserved for future extensions. Applications and drivers must set
-	  the array to zero.
+    * - __u32
+      - ``which``
+      - Active or try selection, from enum
+	:ref:`v4l2_subdev_format_whence <v4l2-subdev-format-whence>`.
+    * - __u32
+      - ``pad``
+      - Pad number as reported by the media framework.
+    * - __u32
+      - ``target``
+      - Target selection rectangle. See :ref:`v4l2-selections-common`.
+    * - __u32
+      - ``flags``
+      - Flags. See :ref:`v4l2-selection-flags`.
+    * - struct :c:type:`v4l2_rect`
+      - ``r``
+      - Selection rectangle, in pixels.
+    * - __u32
+      - ``reserved``\ [8]
+      - Reserved for future extensions. Applications and drivers must set
+	the array to zero.
 
 
 Return Value
@@ -141,7 +111,7 @@ EBUSY
     ``VIDIOC_SUBDEV_S_SELECTION``
 
 EINVAL
-    The struct :ref:`v4l2_subdev_selection <v4l2-subdev-selection>`
+    The struct :c:type:`v4l2_subdev_selection`
     ``pad`` references a non-existing pad, the ``which`` field
     references a non-existing format, or the selection target is not
     supported on the given subdev pad.

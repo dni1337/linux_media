@@ -56,7 +56,7 @@ You should also set these fields of :c:type:`video_device`:
   :c:type:`video_device`->vfl_dir fields are used to disable ops that do not
   match the type/dir combination. E.g. VBI ops are disabled for non-VBI nodes,
   and output ops  are disabled for a capture device. This makes it possible to
-  provide just one :c:type:`v4l2_ioctl_ops struct` for both vbi and
+  provide just one :c:type:`v4l2_ioctl_ops` struct for both vbi and
   video nodes.
 
 - :c:type:`video_device`->lock: leave to ``NULL`` if you want to do all the
@@ -173,7 +173,7 @@ The implementation of a hotplug disconnect should also take the lock from
 using :c:type:`video_device`->queue->lock, then you have to first lock
 :c:type:`video_device`->queue->lock followed by :c:type:`video_device`->lock.
 That way you can be sure no ioctl is running when you call
-:c:type:`v4l2_device_disconnect`.
+:c:func:`v4l2_device_disconnect`.
 
 Video device registration
 -------------------------

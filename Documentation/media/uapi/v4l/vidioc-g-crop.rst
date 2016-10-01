@@ -35,13 +35,13 @@ Description
 ===========
 
 To query the cropping rectangle size and position applications set the
-``type`` field of a :ref:`struct v4l2_crop <v4l2-crop>` structure to the
+``type`` field of a struct :c:type:`v4l2_crop` structure to the
 respective buffer (stream) type and call the :ref:`VIDIOC_G_CROP <VIDIOC_G_CROP>` ioctl
 with a pointer to this structure. The driver fills the rest of the
 structure or returns the ``EINVAL`` error code if cropping is not supported.
 
 To change the cropping rectangle applications initialize the ``type``
-and struct :ref:`v4l2_rect <v4l2-rect>` substructure named ``c`` of a
+and struct :c:type:`v4l2_rect` substructure named ``c`` of a
 v4l2_crop structure and call the :ref:`VIDIOC_S_CROP <VIDIOC_G_CROP>` ioctl with a pointer
 to this structure.
 
@@ -75,7 +75,7 @@ When cropping is not supported then no parameters are changed and
 :ref:`VIDIOC_S_CROP <VIDIOC_G_CROP>` returns the ``EINVAL`` error code.
 
 
-.. _v4l2-crop:
+.. c:type:: v4l2_crop
 
 .. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 
@@ -84,26 +84,16 @@ When cropping is not supported then no parameters are changed and
     :stub-columns: 0
     :widths:       1 1 2
 
-
-    -  .. row 1
-
-       -  __u32
-
-       -  ``type``
-
-       -  Type of the data stream, set by the application. Only these types
-	  are valid here: ``V4L2_BUF_TYPE_VIDEO_CAPTURE``,
-	  ``V4L2_BUF_TYPE_VIDEO_OUTPUT`` and
-	  ``V4L2_BUF_TYPE_VIDEO_OVERLAY``. See :ref:`v4l2-buf-type`.
-
-    -  .. row 2
-
-       -  struct :ref:`v4l2_rect <v4l2-rect>`
-
-       -  ``c``
-
-       -  Cropping rectangle. The same co-ordinate system as for struct
-	  :ref:`v4l2_cropcap <v4l2-cropcap>` ``bounds`` is used.
+    * - __u32
+      - ``type``
+      - Type of the data stream, set by the application. Only these types
+	are valid here: ``V4L2_BUF_TYPE_VIDEO_CAPTURE``,
+	``V4L2_BUF_TYPE_VIDEO_OUTPUT`` and
+	``V4L2_BUF_TYPE_VIDEO_OVERLAY``. See :c:type:`v4l2_buf_type`.
+    * - struct :c:type:`v4l2_rect`
+      - ``c``
+      - Cropping rectangle. The same co-ordinate system as for struct
+	:c:type:`v4l2_cropcap` ``bounds`` is used.
 
 
 Return Value

@@ -27,7 +27,7 @@ Arguments
 
 ``argp``
     pointer to struct
-    :ref:`dvb_diseqc_master_cmd <dvb-diseqc-master-cmd>`
+    :c:type:`dvb_diseqc_master_cmd`
 
 
 Description
@@ -35,10 +35,8 @@ Description
 
 Sends a DiSEqC command to the antenna subsystem.
 
-.. _dvb-diseqc-master-cmd:
 
-struct dvb_diseqc_master_cmd
-============================
+.. c:type:: dvb_diseqc_master_cmd
 
 .. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
 

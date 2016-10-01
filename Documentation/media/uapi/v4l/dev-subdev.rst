@@ -215,85 +215,41 @@ list entity names and pad numbers).
     :stub-columns: 0
     :widths: 5 5 5 5 5 5 5
 
-
-    -  .. row 1
-
-       -
-       -  Sensor/0 format
-
-       -  Frontend/0 format
-
-       -  Frontend/1 format
-
-       -  Scaler/0 format
-
-       -  Scaler/0 compose selection rectangle
-
-       -  Scaler/1 format
-
-    -  .. row 2
-
-       -  Initial state
-
-       -  2048x1536/SGRBG8_1X8
-
-       -  (default)
-
-       -  (default)
-
-       -  (default)
-
-       -  (default)
-
-       -  (default)
-
-    -  .. row 3
-
-       -  Configure frontend sink format
-
-       -  2048x1536/SGRBG8_1X8
-
-       -  *2048x1536/SGRBG8_1X8*
-
-       -  *2046x1534/SGRBG8_1X8*
-
-       -  (default)
-
-       -  (default)
-
-       -  (default)
-
-    -  .. row 4
-
-       -  Configure scaler sink format
-
-       -  2048x1536/SGRBG8_1X8
-
-       -  2048x1536/SGRBG8_1X8
-
-       -  2046x1534/SGRBG8_1X8
-
-       -  *2046x1534/SGRBG8_1X8*
-
-       -  *0,0/2046x1534*
-
-       -  *2046x1534/SGRBG8_1X8*
-
-    -  .. row 5
-
-       -  Configure scaler sink compose selection
-
-       -  2048x1536/SGRBG8_1X8
-
-       -  2048x1536/SGRBG8_1X8
-
-       -  2046x1534/SGRBG8_1X8
-
-       -  2046x1534/SGRBG8_1X8
-
-       -  *0,0/1280x960*
-
-       -  *1280x960/SGRBG8_1X8*
+    * -
+      - Sensor/0 format
+      - Frontend/0 format
+      - Frontend/1 format
+      - Scaler/0 format
+      - Scaler/0 compose selection rectangle
+      - Scaler/1 format
+    * - Initial state
+      - 2048x1536/SGRBG8_1X8
+      - (default)
+      - (default)
+      - (default)
+      - (default)
+      - (default)
+    * - Configure frontend sink format
+      - 2048x1536/SGRBG8_1X8
+      - *2048x1536/SGRBG8_1X8*
+      - *2046x1534/SGRBG8_1X8*
+      - (default)
+      - (default)
+      - (default)
+    * - Configure scaler sink format
+      - 2048x1536/SGRBG8_1X8
+      - 2048x1536/SGRBG8_1X8
+      - 2046x1534/SGRBG8_1X8
+      - *2046x1534/SGRBG8_1X8*
+      - *0,0/2046x1534*
+      - *2046x1534/SGRBG8_1X8*
+    * - Configure scaler sink compose selection
+      - 2048x1536/SGRBG8_1X8
+      - 2048x1536/SGRBG8_1X8
+      - 2046x1534/SGRBG8_1X8
+      - 2046x1534/SGRBG8_1X8
+      - *0,0/1280x960*
+      - *1280x960/SGRBG8_1X8*
 
 .. raw:: latex
 
@@ -341,7 +297,7 @@ It can also be used as part of digital zoom implementations to select
 the area of the image that will be scaled up.
 
 Crop settings are defined by a crop rectangle and represented in a
-struct :ref:`v4l2_rect <v4l2-rect>` by the coordinates of the top
+struct :c:type:`v4l2_rect` by the coordinates of the top
 left corner and the rectangle size. Both the coordinates and sizes are
 expressed in pixels.
 
@@ -357,7 +313,7 @@ sub-device for processing.
 The scaling operation changes the size of the image by scaling it to new
 dimensions. The scaling ratio isn't specified explicitly, but is implied
 from the original and scaled image sizes. Both sizes are represented by
-struct :ref:`v4l2_rect <v4l2-rect>`.
+struct :c:type:`v4l2_rect`.
 
 Scaling support is optional. When supported by a subdev, the crop
 rectangle on the subdev's sink pad is scaled to the size configured
