@@ -58,24 +58,6 @@ DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 #define CX231XX_DVB_MAX_PACKETSIZE 564
 #define CX231XX_DVB_MAX_PACKETS 64
 
-struct cx231xx_dvb {
-	struct dvb_frontend *frontend;
-
-	/* feed count management */
-	struct mutex lock;
-	int nfeeds;
-
-	/* general boilerplate stuff */
-	struct dvb_adapter adapter;
-	struct dvb_demux demux;
-	struct dmxdev dmxdev;
-	struct dmx_frontend fe_hw;
-	struct dmx_frontend fe_mem;
-	struct dvb_net net;
-	struct i2c_client *i2c_client_demod;
-	struct i2c_client *i2c_client_tuner;
-};
-
 static struct s5h1432_config dvico_s5h1432_config = {
 	.output_mode   = S5H1432_SERIAL_OUTPUT,
 	.gpio          = S5H1432_GPIO_ON,
@@ -546,17 +528,17 @@ static int attach_xc5000(u8 addr, struct cx231xx *dev)
 	cfg.i2c_adap = cx231xx_get_i2c_adap(dev, dev->board.tuner_i2c_master);
 	cfg.i2c_addr = addr;
 
-	if (!dev->dvb->frontend) {
+	if (!dev->dvb[0]->frontend) {
 		dev_err(dev->dev, "%s/2: dvb frontend not attached. "
 		       "Can't attach xc5000\n", dev->name);
 		return -EINVAL;
 	}
 
-	fe = dvb_attach(xc5000_attach, dev->dvb->frontend, &cfg);
+	fe = dvb_attach(xc5000_attach, dev->dvb[0]->frontend, &cfg);
 	if (!fe) {
 		dev_err(dev->dev, "%s/2: xc5000 attach failed\n", dev->name);
-		dvb_frontend_detach(dev->dvb->frontend);
-		dev->dvb->frontend = NULL;
+		dvb_frontend_detach(dev->dvb[0]->frontend);
+		dev->dvb[0]->frontend = NULL;
 		return -EINVAL;
 	}
 
@@ -976,7 +958,7 @@ static int dvb_init(struct cx231xx *dev)
 
 		/* attach demod */
 		memset(&si2165_pdata, 0, sizeof(si2165_pdata));
-		si2165_pdata.fe = &dev->dvb->frontend;
+		si2165_pdata.fe = &dev->dvb[i]->frontend;
 		si2165_pdata.chip_mode = SI2165_MODE_PLL_XTAL,
 		si2165_pdata.ref_freq_Hz = 16000000,
 
@@ -986,7 +968,7 @@ static int dvb_init(struct cx231xx *dev)
 		info.platform_data = &si2165_pdata;
 		request_module(info.type);
 		client = i2c_new_device(demod_i2c, &info);
-		if (client == NULL || client->dev.driver == NULL || dev->dvb->frontend == NULL) {
+		if (client == NULL || client->dev.driver == NULL || dev->dvb[i]->frontend == NULL) {
 			dev_err(dev->dev,
 				"Failed to attach SI2165 front end\n");
 			result = -EINVAL;
@@ -1001,7 +983,7 @@ static int dvb_init(struct cx231xx *dev)
 
 		dvb->i2c_client_demod = client;
 
-		dev->dvb->frontend->ops.i2c_gate_ctrl = NULL;
+		dev->dvb[i]->frontend->ops.i2c_gate_ctrl = NULL;
 
 		/* define general-purpose callback pointer */
 		dvb->frontend->callback = cx231xx_tuner_callback;
@@ -1023,7 +1005,7 @@ static int dvb_init(struct cx231xx *dev)
 
 		/* attach demod */
 		memset(&si2165_pdata, 0, sizeof(si2165_pdata));
-		si2165_pdata.fe = &dev->dvb->frontend;
+		si2165_pdata.fe = &dev->dvb[i]->frontend;
 		si2165_pdata.chip_mode = SI2165_MODE_PLL_EXT,
 		si2165_pdata.ref_freq_Hz = 24000000,
 
@@ -1033,7 +1015,7 @@ static int dvb_init(struct cx231xx *dev)
 		info.platform_data = &si2165_pdata;
 		request_module(info.type);
 		client = i2c_new_device(demod_i2c, &info);
-		if (client == NULL || client->dev.driver == NULL || dev->dvb->frontend == NULL) {
+		if (client == NULL || client->dev.driver == NULL || dev->dvb[i]->frontend == NULL) {
 			dev_err(dev->dev,
 				"Failed to attach SI2165 front end\n");
 			result = -EINVAL;
@@ -1050,7 +1032,7 @@ static int dvb_init(struct cx231xx *dev)
 
 		memset(&info, 0, sizeof(struct i2c_board_info));
 
-		dev->dvb->frontend->ops.i2c_gate_ctrl = NULL;
+		dev->dvb[i]->frontend->ops.i2c_gate_ctrl = NULL;
 
 		/* define general-purpose callback pointer */
 		dvb->frontend->callback = cx231xx_tuner_callback;
