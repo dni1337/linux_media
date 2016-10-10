@@ -739,7 +739,6 @@ static void unregister_dvb(struct cx231xx_dvb *dvb)
 	dvb_dmxdev_release(&dvb->dmxdev);
 	dvb_dmx_release(&dvb->demux);
 
-	client = dvb->i2c_client_tuner;
 	/* remove I2C tuner */
 	client = dvb->i2c_client_tuner;
 	if (client) {
@@ -968,6 +967,7 @@ static int dvb_init(struct cx231xx *dev)
 		info.platform_data = &si2165_pdata;
 		request_module(info.type);
 		client = i2c_new_device(demod_i2c, &info);
+
 		if (client == NULL || client->dev.driver == NULL || dev->dvb[i]->frontend == NULL) {
 			dev_err(dev->dev,
 				"Failed to attach SI2165 front end\n");
@@ -1005,6 +1005,7 @@ static int dvb_init(struct cx231xx *dev)
 
 		/* attach demod */
 		memset(&si2165_pdata, 0, sizeof(si2165_pdata));
+
 		si2165_pdata.fe = &dev->dvb[i]->frontend;
 		si2165_pdata.chip_mode = SI2165_MODE_PLL_EXT,
 		si2165_pdata.ref_freq_Hz = 24000000,
@@ -1015,6 +1016,7 @@ static int dvb_init(struct cx231xx *dev)
 		info.platform_data = &si2165_pdata;
 		request_module(info.type);
 		client = i2c_new_device(demod_i2c, &info);
+
 		if (client == NULL || client->dev.driver == NULL || dev->dvb[i]->frontend == NULL) {
 			dev_err(dev->dev,
 				"Failed to attach SI2165 front end\n");
