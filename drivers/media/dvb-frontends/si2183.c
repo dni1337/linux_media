@@ -1512,7 +1512,7 @@ static int si2183_probe(struct i2c_client *client,
 
 #ifndef SI2183_USE_I2C_MUX
 	/* leave gate open for tuner to init */
-	i2c_gate_ctrl(&dev->fe, 1);
+	si2183_i2c_gate_ctrl(&dev->fe, 1);
 #endif
 	dev_info(&client->dev, "Silicon Labs Si2183 successfully attached\n");
 	return 0;
