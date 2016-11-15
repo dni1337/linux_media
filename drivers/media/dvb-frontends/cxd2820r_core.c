@@ -256,7 +256,7 @@ static int cxd2820r_read_snr(struct dvb_frontend *fe, u16 *snr)
 	dev_dbg(&client->dev, "delivery_system=%d\n", c->delivery_system);
 
 	if (c->cnr.stat[0].scale == FE_SCALE_DECIBEL)
-		*snr = div_s64(c->cnr.stat[0].svalue, 100);
+		*snr = div_s64(c->cnr.stat[0].svalue, 250) *  328;
 	else
 		*snr = 0;
 
