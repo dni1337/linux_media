@@ -641,12 +641,13 @@ static int tune(struct dvb_frontend *fe, bool re_tune,
 		if (r)
 			return r;
 	}
-	if (*status & FE_HAS_LOCK)
-		return 0;
 
 	r = read_status(fe, status);
 	if (r)
 		return r;
+
+	if (*status & FE_HAS_LOCK)
+		return 0;
 
 	return 0;
 }
