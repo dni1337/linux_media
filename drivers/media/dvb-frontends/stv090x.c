@@ -3587,9 +3587,12 @@ static int stv090x_read_rflevel(struct dvb_frontend *fe)
 	else if (agc < stv090x_rf_tab[ARRAY_SIZE(stv090x_rf_tab) - 1].read)
 		rflevel = -100;
 
-	p->strength.len = 1;
+	p->strength.len = 2;
 	p->strength.stat[0].scale = FE_SCALE_DECIBEL;
 	p->strength.stat[0].svalue = rflevel * 1000;
+
+	p->strength.stat[1].scale = FE_SCALE_RELATIVE;
+	p->strength.stat[1].uvalue = (100 + rflevel) * 656;
 
 	return 0;
 }
@@ -3647,9 +3650,14 @@ static int stv090x_read_cnr(struct dvb_frontend *fe)
 		break;
 	}
 
-	p->cnr.len = 1;
+	p->cnr.len = 2;
 	p->cnr.stat[0].scale = FE_SCALE_DECIBEL;
 	p->cnr.stat[0].svalue = 100 * snr;
+
+	p->cnr.stat[1].scale = FE_SCALE_RELATIVE;
+	p->cnr.stat[1].uvalue = snr*328;
+	if (p->cnr.stat[1].uvalue > 0xffff)
+		p->cnr.stat[1].uvalue = 0xffff;
 
 	return 0;
 }
@@ -3782,14 +3790,12 @@ static int stv090x_read_status(struct dvb_frontend *fe, enum fe_status *status)
 static int stv090x_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
+	int i;
 
-	if (p->cnr.stat[0].scale == FE_SCALE_DECIBEL) {
-		 *snr = (s32)p->cnr.stat[0].svalue / 100;
-		 if (*snr > 200)
-			  *snr = 0xffff;
-		 else
-			  *snr *= 328;
-	} else *snr = 0;
+	*snr = 0;
+	for (i=0; i < p->cnr.len; i++)
+		if (p->cnr.stat[i].scale == FE_SCALE_RELATIVE)
+		  *snr = (u16)p->cnr.stat[i].uvalue;
 
 	return 0;
 }
@@ -3808,8 +3814,12 @@ static int stv090x_read_ber(struct dvb_frontend *fe, u32 *ber)
 static int stv090x_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 {
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
+	int i;
 
-	*strength = p->strength.stat[0].scale == FE_SCALE_DECIBEL ? ((100000 + (s32)p->strength.stat[0].svalue) / 1000) * 656 : 0;
+	*strength = 0;
+	for (i=0; i < p->cnr.len; i++)
+		if (p->strength.stat[i].scale == FE_SCALE_RELATIVE)
+		  *strength = (u16)p->strength.stat[i].uvalue;
 
 	return 0;
 }
