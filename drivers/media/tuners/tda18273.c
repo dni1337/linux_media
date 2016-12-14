@@ -2082,7 +2082,7 @@ static int tda18273_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
 	return 0;
 }
 
-static int tda18273_release(struct dvb_frontend *fe)
+static void tda18273_release(struct dvb_frontend *fe)
 {
 	struct tda18273_state *priv = fe->tuner_priv;
 
@@ -2094,7 +2094,6 @@ static int tda18273_release(struct dvb_frontend *fe)
 	
 	fe->tuner_priv = NULL;
 	kfree(priv);
-	return 0;
 }
 
 static struct dvb_tuner_ops tda18273_ops = {
