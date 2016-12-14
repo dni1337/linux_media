@@ -1341,7 +1341,7 @@ static int avl6882_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	struct avl6882_priv *priv = fe->demodulator_priv;
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	int ret = 0;
-	u32 reg, agc, snr = 0;
+	u32 reg, agc, mul, snr = 0;
 
 	switch (priv->delivery_system) {
 	case SYS_DVBC_ANNEX_A:
@@ -1355,6 +1355,7 @@ static int avl6882_read_status(struct dvb_frontend *fe, enum fe_status *status)
 			ret |= AVL6882_RD_REG16(priv,0x400 + rs_DVBC_snr_dB_x100_saddr_offset, &snr);		  
 			if (ret) snr = 0;
 		}
+		mul = 131;
 		break;
 	case SYS_DVBS:
 	case SYS_DVBS2:
@@ -1363,6 +1364,7 @@ static int avl6882_read_status(struct dvb_frontend *fe, enum fe_status *status)
 			ret |= AVL6882_RD_REG32(priv,0xc00 + rs_DVBSx_int_SNR_dB_iaddr_offset, &snr);		  
 			if (ret || snr > 10000) snr = 0;
 		}
+		mul = 328;
 		break;
 	case SYS_DVBT:
 	case SYS_DVBT2:
@@ -1371,6 +1373,7 @@ static int avl6882_read_status(struct dvb_frontend *fe, enum fe_status *status)
 			ret |= AVL6882_RD_REG16(priv,0x800 + rs_DVBTx_snr_dB_x100_saddr_offset, &snr);		  
 			if (ret) snr = 0;
 		}
+		mul = 131;
 		break;
 	default:
 		*status = 0;
@@ -1384,18 +1387,27 @@ static int avl6882_read_status(struct dvb_frontend *fe, enum fe_status *status)
 
 	*status = FE_HAS_SIGNAL;
 	ret = AVL6882_RD_REG16(priv,0x0a4 + rs_rf_agc_saddr_offset, &agc);
-	c->strength.len = 1;
+	c->strength.len = 2;
 	c->strength.stat[0].scale = FE_SCALE_DECIBEL;
 	c->strength.stat[0].svalue = - (s32)agc;
+	c->strength.stat[1].scale = FE_SCALE_RELATIVE;
+	c->strength.stat[1].uvalue = (100 - agc/1000) * 656;
 
 	if (reg){
 		*status |= FE_HAS_CARRIER | FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
-		c->cnr.len = 1;
+		c->cnr.len = 2;
 		c->cnr.stat[0].scale = FE_SCALE_DECIBEL;
 		c->cnr.stat[0].svalue = snr * 10;
+		c->cnr.stat[1].scale = FE_SCALE_RELATIVE;
+		c->cnr.stat[1].uvalue = (snr / 10) * mul;
+		if (c->cnr.stat[1].uvalue > 0xffff)
+			c->cnr.stat[1].uvalue = 0xffff;
 	}
 	else
+	{
+		c->cnr.len = 1;
 		c->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+	}
 
 	return ret;
 }
@@ -1403,8 +1415,12 @@ static int avl6882_read_status(struct dvb_frontend *fe, enum fe_status *status)
 static int avl6882_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 {
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+	int i;
 
-	*strength = c->strength.stat[0].scale == FE_SCALE_DECIBEL ? ((100000 + (s32)c->strength.stat[0].svalue) / 1000) * 656 : 0;
+	*strength = 0;
+	for (i=0; i < c->cnr.len; i++)
+		if (c->strength.stat[i].scale == FE_SCALE_RELATIVE)
+		  *strength = (u16)c->strength.stat[i].uvalue;
 
 	return 0;
 
@@ -1413,25 +1429,12 @@ static int avl6882_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 static int avl6882_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+	int i;
 
-	if (c->cnr.stat[0].scale == FE_SCALE_DECIBEL) {
-		 *snr = (s32)c->cnr.stat[0].svalue / 100;
-		  switch (c->delivery_system) {
-			case SYS_DVBS:
-			case SYS_DVBS2:
-				if (*snr > 200)
-					*snr = 0xffff;
-				else
-					*snr *= 328;
-				break;
-			default:
-				if (*snr > 500)
-					*snr = 0xffff;
-				else
-					*snr *= 131;
-				break;
-		  }
-	} else *snr = 0;
+	*snr = 0;
+	for (i=0; i < c->cnr.len; i++)
+		if (c->cnr.stat[i].scale == FE_SCALE_RELATIVE)
+		  *snr = (u16)c->cnr.stat[i].uvalue;
 
 	return 0;
 }
