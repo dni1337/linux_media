@@ -321,6 +321,7 @@ static void release(struct dvb_frontend *fe)
 	kfree(state);
 	fe->tuner_priv = NULL;
 }
+
 #if 0
 static int set_bandwidth(struct dvb_frontend *fe, u32 CutOffFrequency)
 {
@@ -346,8 +347,6 @@ static int set_bandwidth(struct dvb_frontend *fe, u32 CutOffFrequency)
 }
 
 #endif
-
-
 
 static int set_lof(struct stv *state, u32 LocalFrequency, u32 CutOffFrequency)
 {
@@ -503,24 +502,25 @@ static s32 TableLookup(struct SLookup *Table, int TableSize, u16 RegValue)
 	return Gain;
 }
 
-static int get_rf_strength(struct dvb_frontend *fe, u16 *st)
+static int get_rf_strength(struct dvb_frontend *fe, u16 *agc)
 {
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
 
 	s32 gain = 1, ref_bbgain = 12, tilt = 6;
-	u32 freq;
+	s32 freq;
 
-	gain = TableLookup(Gain_RFAGC_LookUp, ARRAY_SIZE(Gain_RFAGC_LookUp), *st);
+	gain = TableLookup(Gain_RFAGC_LookUp, ARRAY_SIZE(Gain_RFAGC_LookUp), *agc);
 
 	gain += 100 * (6 - ref_bbgain); 	
-	
+
 	freq = p->frequency / 10000;
-	
+
 	if (freq<159)
 		gain -= 200; /* HMR filter 2dB gain compensation below freq=1590MHz */	
 	
-	gain-=(((freq-155)*tilt)/12)*10; 
-	//pr_warn("%s: str = %u\n", __func__, *st);
+	gain -= (((freq-155)*tilt)/12)*10;
+	
+	*agc = gain;
 
 	return 0;
 }
