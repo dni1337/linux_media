@@ -1418,7 +1418,7 @@ static int avl6882_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 	int i;
 
 	*strength = 0;
-	for (i=0; i < c->cnr.len; i++)
+	for (i=0; i < c->strength.len; i++)
 		if (c->strength.stat[i].scale == FE_SCALE_RELATIVE)
 		  *strength = (u16)c->strength.stat[i].uvalue;
 

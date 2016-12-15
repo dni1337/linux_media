@@ -3817,9 +3817,13 @@ static int stv090x_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 	int i;
 
 	*strength = 0;
-	for (i=0; i < p->cnr.len; i++)
+	for (i=0; i < p->strength.len; i++)
+	{
 		if (p->strength.stat[i].scale == FE_SCALE_RELATIVE)
-		  *strength = (u16)p->strength.stat[i].uvalue;
+			*strength = (u16)p->strength.stat[i].uvalue;
+		else if (p->strength.stat[i].scale == FE_SCALE_DECIBEL)
+			*strength = ((100000 + (s32)p->strength.stat[i].svalue)/1000) * 656;
+	}
 
 	return 0;
 }
