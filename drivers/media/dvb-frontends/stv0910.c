@@ -319,21 +319,22 @@ struct SLookup S2_SN_Lookup[] = {
 };
 
 struct SLookup PADC_Lookup[] = {
-	{-2000, 1179 }, /*PADC=-20dBm*/
-	{-1900, 1485 }, /*PADC=-19dBm*/
-	{-1700, 2354 }, /*PADC=-17dBm*/
+	{    0,	118000},  /*PADC=+0dBm*/
+	{- 100,	93600}, /*PADC=-1dBm*/
+	{- 200,	74500}, /*PADC=-2dBm*/
+	{- 300,	59100}, /*PADC=-3dBm*/
+	{- 400,	47000}, /*PADC=-4dBm*/
+	{- 500,	37300}, /*PADC=-5dBm*/
+	{- 600,	29650}, /*PADC=-6dBm*/
+	{- 700,	23520}, /*PADC=-7dBm*/
+	{- 900,	14850}, /*PADC=-9dBm*/
+	{-1100,	9380 }, /*PADC=-11dBm*/
 	{-1500, 3730 }, /*PADC=-15dBm*/
 	{-1300,	5910 }, /*PADC=-13dBm*/
-	{-1100,	9380 }, /*PADC=-11dBm*/
-	{- 900,	14850}, /*PADC=-9dBm*/
-	{- 700,	23520}, /*PADC=-7dBm*/
-	{- 600,	29650}, /*PADC=-6dBm*/
-	{- 500,	37300}, /*PADC=-5dBm*/
-	{- 400,	47000}, /*PADC=-4dBm*/
-	{- 300,	59100}, /*PADC=-3dBm*/
-	{- 200,	74500}, /*PADC=-2dBm*/
-	{- 100,	93600}, /*PADC=-1dBm*/
-	{    0,	118000}  /*PADC=+0dBm*/
+	{-1700, 2354 }, /*PADC=-17dBm*/
+	{-1900, 1485 }, /*PADC=-19dBm*/
+	{-2000, 1179 }, /*PADC=-20dBm*/
+	{-2100, 1000 }, /*PADC=-21dBm*/
 };
   
 
@@ -1223,8 +1224,6 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	
 	if (fe->ops.tuner_ops.get_rf_strength)
 		fe->ops.tuner_ops.get_rf_strength(fe, &agc);
-	else
-		agc = 0;
 
 	for (i = 0; i < 5; i += 1) {
 		read_regs(state, RSTV0910_P2_POWERI + state->regoff, Reg, 2);
@@ -1235,11 +1234,14 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 
 	Padc = TableLookup(PADC_Lookup, ARRAY_SIZE(PADC_Lookup), power) + 352;	
 
-	/*pr_warn("%s: power = %d  Padc = %d\n", __func__, power, Padc);*/
+	/*pr_warn("%s: agc = %d power = %d  Padc = %d\n", __func__, agc, power, Padc);*/
 	
-	p->strength.len = 1;
+	p->strength.len = 2;
 	p->strength.stat[0].scale = FE_SCALE_DECIBEL;
-	p->strength.stat[0].svalue = Padc - agc;
+	p->strength.stat[0].svalue = (Padc - agc) * 10;
+	
+	p->strength.stat[1].scale = FE_SCALE_RELATIVE;
+	p->strength.stat[1].uvalue = (100 + (Padc - agc)/100) * 656;
 	
 	*status = FE_HAS_SIGNAL;
 
@@ -1295,6 +1297,7 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 		if (state->base->set_lock_led)
 			state->base->set_lock_led(fe, 0);
 
+		p->cnr.len = p->post_bit_error.len = p->post_bit_count.len = 1;
 		p->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		p->post_bit_error.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		p->post_bit_count.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
@@ -1355,9 +1358,14 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	if (GetSignalToNoise(state, &snr))
 		return -EIO;
 
-	p->cnr.len = 1;
+	p->cnr.len = 2;
 	p->cnr.stat[0].scale = FE_SCALE_DECIBEL;
 	p->cnr.stat[0].svalue = snr * 100;
+
+	p->cnr.stat[1].scale = FE_SCALE_RELATIVE;
+	p->cnr.stat[1].uvalue = snr*328;
+	if (p->cnr.stat[1].uvalue > 0xffff)
+		p->cnr.stat[1].uvalue = 0xffff;
 
 	if (GetBitErrorRate(state, &n, &d))
 		return -EIO;
@@ -1491,8 +1499,16 @@ static int sleep(struct dvb_frontend *fe)
 static int read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 {
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
+	int i;
 
-	*strength = p->strength.stat[0].scale == FE_SCALE_DECIBEL ? ((100000 + (s32)p->strength.stat[0].svalue) / 1000) * 656 : 0;
+	*strength = 0;
+	for (i=0; i < p->strength.len; i++)
+	{
+		if (p->strength.stat[i].scale == FE_SCALE_RELATIVE)
+			*strength = (u16)p->strength.stat[i].uvalue;
+		else if (p->strength.stat[i].scale == FE_SCALE_DECIBEL)
+			*strength = ((100000 + (s32)p->strength.stat[i].svalue)/1000) * 656;
+	}
 
 	return 0;
 }
@@ -1500,15 +1516,12 @@ static int read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 static int read_snr(struct dvb_frontend *fe, u16 *snr)
 {
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
+	int i;
 
-	if (p->cnr.stat[0].scale == FE_SCALE_DECIBEL) {
-		 *snr = (s32)p->cnr.stat[0].svalue / 100;
-		 if (*snr > 200)
-			  *snr = 0xffff;
-		 else
-			  *snr *= 328;
-	} else *snr = 0;
-
+	*snr = 0;
+	for (i=0; i < p->cnr.len; i++)
+		if (p->cnr.stat[i].scale == FE_SCALE_RELATIVE)
+		  *snr = (u16)p->cnr.stat[i].uvalue;
 	return 0;
 }
 
