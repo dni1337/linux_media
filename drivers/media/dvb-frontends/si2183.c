@@ -69,7 +69,6 @@ struct si2183_dev {
 	enum fe_delivery_system delivery_system;
 	enum fe_status fe_status;
 	u8 stat_resp;
-	u16 snr;
 	bool active;
 	bool fw_loaded;
 	u8 ts_mode;
@@ -227,7 +226,7 @@ static int si2183_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	int ret;
 	struct si2183_cmd cmd;
-	u16 agc;
+	u16 agc, snr_mul;
 
 	*status = 0;
 
@@ -244,43 +243,43 @@ static int si2183_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		memcpy(cmd.args, "\xa0\x01", 2);
 		cmd.wlen = 2;
 		cmd.rlen = 13;
-		dev->snr = 2;
+		snr_mul = 2;
 		break;
 	case SYS_DVBC_ANNEX_A:
 		memcpy(cmd.args, "\x90\x01", 2);
 		cmd.wlen = 2;
 		cmd.rlen = 9;
-		dev->snr = 2;
+		snr_mul = 2;
 		break;
 	case SYS_DVBC_ANNEX_B:
 		memcpy(cmd.args, "\x98\x01", 2);
 		cmd.wlen = 2;
 		cmd.rlen = 10;
-		dev->snr = 2;
+		snr_mul = 2;
 		break;
 	case SYS_DVBT2:
 		memcpy(cmd.args, "\x50\x01", 2);
 		cmd.wlen = 2;
 		cmd.rlen = 14;
-		dev->snr = 2;
+		snr_mul = 2;
 		break;
 	case SYS_DVBS:
 		memcpy(cmd.args, "\x60\x01", 2);
 		cmd.wlen = 2;
 		cmd.rlen = 10;
-		dev->snr = 5;
+		snr_mul = 5;
 		break;
 	case SYS_DVBS2:
 		memcpy(cmd.args, "\x70\x01", 2);
 		cmd.wlen = 2;
 		cmd.rlen = 13;
-		dev->snr = 5;
+		snr_mul = 5;
 		break;
 	case SYS_ISDBT:
 		memcpy(cmd.args, "\xa4\x01", 2);
 		cmd.wlen = 2;
 		cmd.rlen = 14;
-		dev->snr = 2;
+		snr_mul = 2;
 		break;
 	default:
 		ret = -EINVAL;
@@ -297,17 +296,20 @@ static int si2183_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	switch ((dev->stat_resp >> 1) & 0x03) {
 	case 0x01:
 		*status = FE_HAS_SIGNAL | FE_HAS_CARRIER;
+		c->cnr.len = 1;
 		c->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		break;
 	case 0x03:
 		*status = FE_HAS_SIGNAL | FE_HAS_CARRIER | FE_HAS_VITERBI |
 				FE_HAS_SYNC | FE_HAS_LOCK;
-		c->cnr.len = 1;
+		c->cnr.len = 2;
 		c->cnr.stat[0].scale = FE_SCALE_DECIBEL;			
-		c->cnr.stat[0].svalue = (s64) cmd.args[3] * 250;
-		dev->snr *= cmd.args[3] * 164;
+		c->cnr.stat[0].svalue = (s64)cmd.args[3] * 250;
+		c->cnr.stat[1].scale = FE_SCALE_RELATIVE;
+		c->cnr.stat[1].uvalue = (s64)cmd.args[3] * 164 * snr_mul;
 		break;
 	default:
+		c->cnr.len = 1;
 		c->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 		break;
 	}
@@ -343,20 +345,29 @@ err:
 
 static int si2183_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
-	struct i2c_client *client = fe->demodulator_priv;
-	struct si2183_dev *dev = i2c_get_clientdata(client);
-	
-	*snr = (dev->fe_status & FE_HAS_LOCK) ? dev->snr : 0;
+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+	int i;
 
+	*snr = 0;
+	for (i=0; i < c->cnr.len; i++)
+		if (c->cnr.stat[i].scale == FE_SCALE_RELATIVE)
+		  *snr = (u16)c->cnr.stat[i].uvalue;
 	return 0;
 }
 
 static int si2183_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 {
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-	
-	*strength = c->strength.stat[0].scale == FE_SCALE_DECIBEL ? ((100000 + (s32)c->strength.stat[0].svalue) / 1000) * 656 : 0;
+	int i;
 
+	*strength = 0;
+	for (i=0; i < c->strength.len; i++)
+	{
+		if (c->strength.stat[i].scale == FE_SCALE_RELATIVE)
+			*strength = (u16)c->strength.stat[i].uvalue;
+		else if (c->strength.stat[i].scale == FE_SCALE_DECIBEL)
+			*strength = ((100000 + (s32)c->strength.stat[i].svalue)/1000) * 656;
+	}
 	return 0;
 }
 
@@ -1503,7 +1514,6 @@ static int si2183_probe(struct i2c_client *client,
 	dev->RF_switch = config->RF_switch;
 	dev->rf_in  = config->rf_in;
 	dev->fw_loaded = false;
-	dev->snr = 0;
 	dev->stat_resp = 0;
 
 	dev->active_fe = 0;
