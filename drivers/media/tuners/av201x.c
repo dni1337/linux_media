@@ -248,9 +248,11 @@ static int av201x_get_rf_strength(struct dvb_frontend *fe, u16 *st)
 	/* Linear approximation of rssi value in segment (rssi values will be in 0.1dBm unit: '-523' means -52.3 dBm) */
 	*st = 1000 + ((y[index-1] + ((if_agc - x[index-1])*slope + 500)/1000))/10;
 
-	c->strength.len = 1;
+	c->strength.len = 2;
 	c->strength.stat[0].scale = FE_SCALE_DECIBEL;
 	c->strength.stat[0].svalue = ((y[index-1] + ((if_agc - x[index-1])*slope + 500)/1000)) * 100;
+	c->strength.stat[1].scale = FE_SCALE_RELATIVE;
+	c->strength.stat[1].uvalue = ((100000 + (s32)c->strength.stat[0].svalue)/1000) * 656;;
 
 	return 0;
 }
