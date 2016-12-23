@@ -957,7 +957,7 @@ static void dw210x_led_ctrl(struct dvb_frontend *fe, int offon)
 	i2c_transfer(&udev_adap->dev->i2c_adap, &msg, 1);
 }
 
-static int tt_s2_4600_read_status(struct dvb_frontend *fe,
+static int su3000_read_status(struct dvb_frontend *fe,
 				  enum fe_status *status)
 {
 	struct dvb_usb_adapter *d =
@@ -1310,19 +1310,21 @@ static int prof_7500_frontend_attach(struct dvb_usb_adapter *d)
 	return 0;
 }
 
-static int su3000_frontend_attach(struct dvb_usb_adapter *d)
+static int su3000_frontend_attach(struct dvb_usb_adapter *adap)
 {
+	struct dvb_usb_device *d = adap->dev;
+	struct dw2102_state *state = d->priv;
 	u8 obuf[3] = { 0xe, 0x80, 0 };
 	u8 ibuf[] = { 0 };
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	obuf[0] = 0xe;
 	obuf[1] = 0x02;
 	obuf[2] = 1;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 	msleep(300);
 
@@ -1330,57 +1332,63 @@ static int su3000_frontend_attach(struct dvb_usb_adapter *d)
 	obuf[1] = 0x83;
 	obuf[2] = 0;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	obuf[0] = 0xe;
 	obuf[1] = 0x83;
 	obuf[2] = 1;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	obuf[0] = 0x51;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 1, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 1, ibuf, 1, 0) < 0)
 		err("command 0x51 transfer failed.");
 
-	d->fe_adap[0].fe = dvb_attach(ds3000_attach, &su3000_ds3000_config,
-					&d->dev->i2c_adap);
-	if (d->fe_adap[0].fe == NULL)
+	adap->fe_adap[0].fe = dvb_attach(ds3000_attach, &su3000_ds3000_config,
+					&d->i2c_adap);
+	if (adap->fe_adap[0].fe == NULL)
 		return -EIO;
 
-	if (dvb_attach(ts2020_attach, d->fe_adap[0].fe,
+	if (!dvb_attach(ts2020_attach, adap->fe_adap[0].fe,
 				&dw2104_ts2020_config,
-				&d->dev->i2c_adap)) {
-		info("Attached DS3000/TS2020!");
-		return 0;
+				&d->i2c_adap)) {
+		info("Failed to attach DS3000/TS2020!");
+		return -EIO;
 	}
 
-	info("Failed to attach DS3000/TS2020!");
-	return -EIO;
+	/* hook fe: need to resync the slave fifo when signal locks */
+	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
+	adap->fe_adap[0].fe->ops.read_status = su3000_read_status;
+
+	info("Attached DS3000/TS2020!");
+	return 0;
 }
 
-static int t220_frontend_attach(struct dvb_usb_adapter *d)
+static int t220_frontend_attach(struct dvb_usb_adapter *adap)
 {
+	struct dvb_usb_device *d = adap->dev;
+	struct dw2102_state *state = d->priv;
 	u8 obuf[3] = { 0xe, 0x87, 0 };
 	u8 ibuf[] = { 0 };
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	obuf[0] = 0xe;
 	obuf[1] = 0x86;
 	obuf[2] = 1;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	obuf[0] = 0xe;
 	obuf[1] = 0x80;
 	obuf[2] = 0;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	msleep(50);
@@ -1389,48 +1397,56 @@ static int t220_frontend_attach(struct dvb_usb_adapter *d)
 	obuf[1] = 0x80;
 	obuf[2] = 1;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	obuf[0] = 0x51;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 1, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 1, ibuf, 1, 0) < 0)
 		err("command 0x51 transfer failed.");
 
-	d->fe_adap[0].fe = dvb_attach(cxd2820r_attach, &cxd2820r_config,
-					&d->dev->i2c_adap, NULL);
-	if (d->fe_adap[0].fe != NULL) {
-		if (dvb_attach(tda18271_attach, d->fe_adap[0].fe, 0x60,
-					&d->dev->i2c_adap, &tda18271_config)) {
-			info("Attached TDA18271HD/CXD2820R!");
-			return 0;
-		}
+	adap->fe_adap[0].fe = dvb_attach(cxd2820r_attach, &cxd2820r_config,
+					&d->i2c_adap, NULL);
+
+	if (adap->fe_adap[0].fe == NULL)
+		return -EIO;
+
+	if (!dvb_attach(tda18271_attach, adap->fe_adap[0].fe, 0x60,
+		&d->i2c_adap, &tda18271_config)) {
+		info("Failed to attach TDA18271HD/CXD2820R!");
+		return -EIO;
 	}
 
-	info("Failed to attach TDA18271HD/CXD2820R!");
-	return -EIO;
+	/* hook fe: need to resync the slave fifo when signal locks */
+	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
+	adap->fe_adap[0].fe->ops.read_status = su3000_read_status;
+
+	info("Attached TDA18271HD/CXD2820R!");
+	return 0;
 }
 
-static int t220a_frontend_attach(struct dvb_usb_adapter *d)
+static int t220a_frontend_attach(struct dvb_usb_adapter *adap)
 {
+	struct dvb_usb_device *d = adap->dev;
+	struct dw2102_state *state = d->priv;
 	u8 obuf[3] = { 0xe, 0x87, 0 };
 	u8 ibuf[] = { 0 };
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	obuf[0] = 0xe;
 	obuf[1] = 0x86;
 	obuf[2] = 1;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	obuf[0] = 0xe;
 	obuf[1] = 0x80;
 	obuf[2] = 0;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	msleep(50);
@@ -1439,26 +1455,32 @@ static int t220a_frontend_attach(struct dvb_usb_adapter *d)
 	obuf[1] = 0x80;
 	obuf[2] = 1;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 3, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 3, ibuf, 1, 0) < 0)
 		err("command 0x0e transfer failed.");
 
 	obuf[0] = 0x51;
 
-	if (dvb_usb_generic_rw(d->dev, obuf, 1, ibuf, 1, 0) < 0)
+	if (dvb_usb_generic_rw(d, obuf, 1, ibuf, 1, 0) < 0)
 		err("command 0x51 transfer failed.");
 
-	d->fe_adap[0].fe = dvb_attach(cxd2820r_attach, &cxd2820r_config,
-					&d->dev->i2c_adap, NULL);
-	if (d->fe_adap[0].fe != NULL) {
-		if (dvb_attach(tda18273_attach, d->fe_adap[0].fe,
-					&d->dev->i2c_adap, 0x60)) {
-			info("Attached TDA18273/CXD2820R!\n");
-			return 0;
-		}
+	adap->fe_adap[0].fe = dvb_attach(cxd2820r_attach, &cxd2820r_config,
+					&d->i2c_adap, NULL);
+
+	if (adap->fe_adap[0].fe == NULL)
+		return -EIO;
+
+	if (!dvb_attach(tda18273_attach, adap->fe_adap[0].fe,
+				&d->i2c_adap, 0x60)) {
+		info("Failed to attach TDA18273/CXD2820R!");
+		 return -EIO;
 	}
 
-	info("Failed to attach TDA18273/CXD2820R!\n");
-	return -EIO;
+	/* hook fe: need to resync the slave fifo when signal locks */
+	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
+	adap->fe_adap[0].fe->ops.read_status = su3000_read_status;
+
+	info("Attached TDA18273/CXD2820R!");
+	return 0;
 }
 
 static int m88rs2000_frontend_attach(struct dvb_usb_adapter *d)
@@ -1586,7 +1608,7 @@ static int tt_s2_4600_frontend_attach(struct dvb_usb_adapter *adap)
 
 	/* hook fe: need to resync the slave fifo when signal locks */
 	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
-	adap->fe_adap[0].fe->ops.read_status = tt_s2_4600_read_status;
+	adap->fe_adap[0].fe->ops.read_status = su3000_read_status;
 
 	state->last_lock = 0;
 
