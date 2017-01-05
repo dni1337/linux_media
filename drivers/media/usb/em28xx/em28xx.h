@@ -147,6 +147,8 @@
 #define EM2884_BOARD_ELGATO_EYETV_HYBRID_2008     97
 #define EM28178_BOARD_PLEX_PX_BCUD                98
 #define EM28174_BOARD_HAUPPAUGE_WINTV_DUALHD_DVB  99
+#define EM28174_BOARD_HAUPPAUGE_WINTV_DUALHD_ATSC 100
+
 
 /* Limits minimum and default number of buffers */
 #define EM28XX_MIN_BUF 4
@@ -189,7 +191,7 @@
    USB 2.0 spec says bulk packet size is always 512 bytes
  */
 #define EM28XX_BULK_PACKET_MULTIPLIER 384
-#define EM28XX_DVB_BULK_PACKET_MULTIPLIER 384
+#define EM28XX_DVB_BULK_PACKET_MULTIPLIER 240
 
 #define EM28XX_INTERLACED_DEFAULT 1
 
@@ -214,6 +216,9 @@
 
 /* max. number of button state polling addresses */
 #define EM28XX_NUM_BUTTON_ADDRESSES_MAX		5
+
+#define PRIMARY_TS	0
+#define SECONDARY_TS	1
 
 enum em28xx_mode {
 	EM28XX_SUSPEND,
@@ -455,6 +460,7 @@ struct em28xx_board {
 	unsigned int mts_firmware:1;
 	unsigned int max_range_640_480:1;
 	unsigned int has_dvb:1;
+	unsigned int has_dual_ts:1;
 	unsigned int is_webcam:1;
 	unsigned int valid:1;
 	unsigned int has_ir_i2c:1;
@@ -683,6 +689,8 @@ struct em28xx {
 	u8 analog_ep_bulk;	/* address of bulk endpoint for analog */
 	u8 dvb_ep_isoc;		/* address of isoc endpoint for DVB */
 	u8 dvb_ep_bulk;		/* address of bulk endpoint for DVB */
+	u8 dvb_ep_isoc_ts2;		/* address of isoc endpoint for DVB TS2*/
+	u8 dvb_ep_bulk_ts2;		/* address of bulk endpoint for DVB TS2*/
 	int alt;		/* alternate setting */
 	int max_pkt_size;	/* max packet size of the selected ep at alt */
 	int packet_multiplier;	/* multiplier for wMaxPacketSize, used for
@@ -694,6 +702,8 @@ struct em28xx {
 	int dvb_alt_isoc;	/* alternate setting for DVB isoc transfers */
 	unsigned int dvb_max_pkt_size_isoc;	/* isoc max packet size of the
 						   selected DVB ep at dvb_alt */
+	unsigned int dvb_max_pkt_size_isoc_ts2;	/* isoc max packet size of the
+						   selected DVB ep at dvb_alt */					   
 	unsigned int dvb_xfer_bulk:1;		/* use bulk instead of isoc
 						   transfers for DVB          */
 	char urb_buf[URB_MAX_CTRL_SIZE];	/* urb control msg buffer */
@@ -719,6 +729,9 @@ struct em28xx {
 	/* Snapshot button input device */
 	char snapshot_button_path[30];	/* path of the input dev */
 	struct input_dev *sbutton_input_dev;
+
+	struct em28xx	*dev_next;
+	int ts;
 
 #ifdef CONFIG_MEDIA_CONTROLLER
 	struct media_device *media_dev;

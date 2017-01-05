@@ -635,10 +635,39 @@ int em28xx_capture_start(struct em28xx *dev, int start)
 	    dev->chip_id == CHIP_ID_EM28174 ||
 	    dev->chip_id == CHIP_ID_EM28178) {
 		/* The Transport Stream Enable Register moved in em2874 */
-		rc = em28xx_write_reg_bits(dev, EM2874_R5F_TS_ENABLE,
-					   start ?
-					       EM2874_TS1_CAPTURE_ENABLE : 0x00,
-					   EM2874_TS1_CAPTURE_ENABLE);
+		if(dev->dvb_xfer_bulk) {
+			/* TS1 Maximum Transfer Size = 188 * EM28XX_DVB_BULK_PACKET_MULTIPLIER */
+			em28xx_write_reg(dev, EM2874_R5D_TS1_PKT_SIZE, 0xef);
+		} else {
+			/* TS1 Maximum Transfer Size = 188 * 5 */
+			em28xx_write_reg(dev, EM2874_R5D_TS1_PKT_SIZE, 0x05);
+		}
+		
+		if(dev->board.has_dual_ts) {
+			if(start) {
+				if(dev->dvb_xfer_bulk) {
+					/* TS2 Maximum Transfer Size = 188 * EM28XX_DVB_BULK_PACKET_MULTIPLIER */
+					em28xx_write_reg(dev, EM2874_R5E_TS2_PKT_SIZE, 0xef);
+				} else {
+					/* TS2 Maximum Transfer Size = 188 * 5 */
+					em28xx_write_reg(dev, EM2874_R5E_TS2_PKT_SIZE, 0x05);
+				}
+				rc = em28xx_write_reg_bits(dev, EM2874_R5F_TS_ENABLE,									
+											(EM2874_TS1_CAPTURE_ENABLE | EM2874_TS2_CAPTURE_ENABLE),
+											(EM2874_TS1_CAPTURE_ENABLE | EM2874_TS2_CAPTURE_ENABLE));							
+			} else {
+				if(dev->ts == PRIMARY_TS) {
+					rc = em28xx_toggle_reg_bits(dev, EM2874_R5F_TS_ENABLE, EM2874_TS1_CAPTURE_ENABLE);
+				} else {
+					rc = em28xx_toggle_reg_bits(dev, EM2874_R5F_TS_ENABLE, EM2874_TS2_CAPTURE_ENABLE);
+				}
+			}
+		} else {
+			rc = em28xx_write_reg_bits(dev, EM2874_R5F_TS_ENABLE,
+										start ?
+										EM2874_TS1_CAPTURE_ENABLE : 0x00,
+										EM2874_TS1_CAPTURE_ENABLE);
+		}
 	} else {
 		/* FIXME: which is the best order? */
 		/* video registers are sampled by VREF */
@@ -1072,6 +1101,8 @@ int em28xx_register_extension(struct em28xx_ops *ops)
 	list_add_tail(&ops->next, &em28xx_extension_devlist);
 	list_for_each_entry(dev, &em28xx_devlist, devlist) {
 		ops->init(dev);
+		if(dev->dev_next!=NULL)
+			ops->init(dev->dev_next);
 	}
 	mutex_unlock(&em28xx_devlist_mutex);
 	pr_info("em28xx: Registered (%s) extension\n", ops->name);
@@ -1086,6 +1117,8 @@ void em28xx_unregister_extension(struct em28xx_ops *ops)
 	mutex_lock(&em28xx_devlist_mutex);
 	list_for_each_entry(dev, &em28xx_devlist, devlist) {
 		ops->fini(dev);
+		if(dev->dev_next!=NULL)
+			ops->fini(dev->dev_next);
 	}
 	list_del(&ops->next);
 	mutex_unlock(&em28xx_devlist_mutex);
@@ -1102,6 +1135,8 @@ void em28xx_init_extension(struct em28xx *dev)
 	list_for_each_entry(ops, &em28xx_extension_devlist, next) {
 		if (ops->init)
 			ops->init(dev);
+		if(dev->dev_next!=NULL)
+			ops->init(dev->dev_next);
 	}
 	mutex_unlock(&em28xx_devlist_mutex);
 }
@@ -1114,6 +1149,8 @@ void em28xx_close_extension(struct em28xx *dev)
 	list_for_each_entry(ops, &em28xx_extension_devlist, next) {
 		if (ops->fini)
 			ops->fini(dev);
+		if(dev->dev_next!=NULL)
+			ops->fini(dev->dev_next);
 	}
 	list_del(&dev->devlist);
 	mutex_unlock(&em28xx_devlist_mutex);
@@ -1128,6 +1165,8 @@ int em28xx_suspend_extension(struct em28xx *dev)
 	list_for_each_entry(ops, &em28xx_extension_devlist, next) {
 		if (ops->suspend)
 			ops->suspend(dev);
+		if(dev->dev_next!=NULL)
+			ops->suspend(dev->dev_next);
 	}
 	mutex_unlock(&em28xx_devlist_mutex);
 	return 0;
@@ -1142,6 +1181,8 @@ int em28xx_resume_extension(struct em28xx *dev)
 	list_for_each_entry(ops, &em28xx_extension_devlist, next) {
 		if (ops->resume)
 			ops->resume(dev);
+		if(dev->dev_next!=NULL)
+			ops->resume(dev->dev_next);	
 	}
 	mutex_unlock(&em28xx_devlist_mutex);
 	return 0;
