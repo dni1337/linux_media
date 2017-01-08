@@ -246,6 +246,7 @@ static int si2183_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		snr_mul = 2;
 		break;
 	case SYS_DVBC_ANNEX_A:
+	case SYS_DVBC_ANNEX_C:
 		memcpy(cmd.args, "\x90\x01", 2);
 		cmd.wlen = 2;
 		cmd.rlen = 9;
@@ -746,6 +747,12 @@ static int si2183_set_frontend(struct dvb_frontend *fe)
 		goto err;
 	}
 
+	/* Force DVB-C Annex B if SR < 6000 Ks */
+	if (c->delivery_system == SYS_DVBC_ANNEX_A && c->symbol_rate < 6000000) {
+		c->delivery_system = SYS_DVBC_ANNEX_B;
+		c->bandwidth_hz = 6000000;
+	}
+
 	if(dev->RF_switch)
 	{	
 		switch (c->delivery_system) {
@@ -755,8 +762,7 @@ static int si2183_set_frontend(struct dvb_frontend *fe)
 		case SYS_DVBC_ANNEX_B:
 		case SYS_ISDBT:
 			dev->RF_switch(dev->base->i2c,dev->rf_in,1);
-			
-			 break;
+			break;
 			
 		case SYS_DVBS:
 		case SYS_DVBS2:
@@ -790,7 +796,7 @@ static int si2183_set_frontend(struct dvb_frontend *fe)
 		ret = si2183_set_dvbt(fe);
 		break;
 	case SYS_DVBC_ANNEX_A:
-		ret = si2183_set_dvbc(fe);
+	  ret = si2183_set_dvbc(fe);
 		break;
 	case SYS_DVBC_ANNEX_B:
 		ret = si2183_set_mcns(fe);
