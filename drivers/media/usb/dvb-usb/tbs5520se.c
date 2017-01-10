@@ -302,7 +302,6 @@ static int tbs5520se_frontend_attach(struct dvb_usb_adapter *adap)
 			
 
 		}
-	
 
 	buf[0] = 0;
 	buf[1] = 0;
@@ -387,7 +386,7 @@ static int tbs5520se_load_firmware(struct usb_device *dev,
 static struct dvb_usb_device_properties tbs5520se_properties = {
 	.caps = DVB_USB_IS_AN_I2C_ADAPTER,
 	.usb_ctrl = DEVICE_SPECIFIC,
-	.firmware = "dvb-usb-id5520se.fw",
+	.firmware = "dvb-usb-tbsqbox-id5521.fw",
 	.size_of_priv = sizeof(struct tbs5520se_state),
 	.no_reconnect = 1,
 
@@ -502,7 +501,7 @@ static void __exit tbs5520se_module_exit(void)
 module_init(tbs5520se_module_init);
 module_exit(tbs5520se_module_exit);
 
-MODULE_AUTHOR("Davin  <smiledavin@hotmail.com>");
+MODULE_AUTHOR("Davin <smiledavin@hotmail.com>");
 MODULE_DESCRIPTION("TurboSight TBS 5520se driver");
 MODULE_VERSION("1.0");
 MODULE_LICENSE("GPL");
