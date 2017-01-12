@@ -1091,6 +1091,7 @@ static struct usb_device_id az6027_usb_table[] = {
 	{ USB_DEVICE(USB_VID_ELGATO, USB_PID_ELGATO_EYETV_SAT) },
 	{ USB_DEVICE(USB_VID_ELGATO, USB_PID_ELGATO_EYETV_SAT_V2) },
 	{ USB_DEVICE(USB_VID_ELGATO, USB_PID_ELGATO_EYETV_SAT_V3) },
+	{ USB_DEVICE(USB_VID_TERRATEC, USB_PID_TERRATEC_DVBS2CI_V4) },
 	{ },
 };
 
@@ -1139,7 +1140,7 @@ static struct dvb_usb_device_properties az6027_properties = {
 
 	.i2c_algo         = &az6027_i2c_algo,
 
-	.num_device_descs = 8,
+	.num_device_descs = 9,
 	.devices = {
 		{
 			.name = "AZUREWAVE DVB-S/S2 USB2.0 (AZ6027)",
@@ -1172,6 +1173,10 @@ static struct dvb_usb_device_properties az6027_properties = {
 		}, {
 			.name = "Elgato EyeTV Sat",
 			.cold_ids = { &az6027_usb_table[7], NULL },
+			.warm_ids = { NULL },
+		}, {
+			.name = "TERRATEC S7 rev.4",
+			.cold_ids = { &az6027_usb_table[8], NULL },
 			.warm_ids = { NULL },
 		},
 		{ NULL },
