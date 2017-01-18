@@ -23,7 +23,6 @@
 #include "dvb_math.h"
 #include "lgdt3306a.h"
 
-
 static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "set debug level (info=1, reg=2 (or-able))");
@@ -61,6 +60,9 @@ struct lgdt3306a_state {
 	struct lgdt3306a_config config;
 	const struct lgdt3306a_config *cfg;
 	struct i2c_client *client;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+	struct i2c_mux_core *muxc;
+#endif
 	struct dvb_frontend frontend;
 
 	enum fe_modulation current_modulation;
@@ -2122,10 +2124,18 @@ static void lgdt3306a_DumpRegs(struct lgdt3306a_state *state)
  * We must use unlocked I2C I/O because I2C adapter lock is already taken
  * by the caller (usually tuner driver).
  */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+static int lgdt3306a_select(struct i2c_mux_core *muxc, u32 chan)
+{
+	struct lgdt3306a_state *state = i2c_mux_priv(muxc);
+	struct i2c_client *client = state->client;
+#else
+
 static int lgdt3306a_select(struct i2c_adapter *adap, void *mux_priv, u32 chan)
 {
 	struct lgdt3306a_state *state = mux_priv;
 	struct i2c_client *client = state->client;
+#endif
 	
 	int ret;
 	u8 val;
@@ -2190,10 +2200,18 @@ static int lgdt3306a_select(struct i2c_adapter *adap, void *mux_priv, u32 chan)
 	return 0;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+static int lgdt3306a_deselect(struct i2c_mux_core *muxc, u32 chan)
+{
+	struct lgdt3306a_state *state = i2c_mux_priv(muxc);
+	struct i2c_client *client = state->client;
+#else
+
 static int lgdt3306a_deselect(struct i2c_adapter *adap, void *mux_priv, u32 chan)
 {
 	struct lgdt3306a_state *state = mux_priv;
 	struct i2c_client *client = state->client;
+#endif
 	int ret;
 	u8 val;
 	u8 buf[3];
@@ -2315,6 +2333,21 @@ static int lgdt3306a_probe(struct i2c_client *client,
 	state->config.has_tuner_i2c_adapter = config->has_tuner_i2c_adapter;
 	state->cfg = &state->config;
 	
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+	/* create mux i2c adapter for tuner */
+	state->muxc = i2c_mux_alloc(client->adapter, &client->dev,
+				  1, 0, I2C_MUX_LOCKED,
+				  lgdt3306a_select, lgdt3306a_deselect);
+	if (!state->muxc) {
+		ret = -ENOMEM;
+		goto err_kfree;
+	}
+	state->muxc->priv = client;
+	ret = i2c_mux_add_adapter(state->muxc, 0, 0, 0);
+	if (ret)
+		goto err_kfree;
+	state->i2c_adap = state->muxc->adapter[0];
+#else
 	/* create mux i2c adapter for tuner */
 	state->i2c_adap = i2c_add_mux_adapter(client->adapter, &client->dev,
 			state, 0, 0, 0, lgdt3306a_select, lgdt3306a_deselect);
@@ -2322,6 +2355,7 @@ static int lgdt3306a_probe(struct i2c_client *client,
 		ret = -ENODEV;
 		goto err_kfree;
 	}
+#endif
 
 	/* create dvb_frontend */
 	memcpy(&state->frontend.ops, &lgdt3306a_ops, sizeof(struct dvb_frontend_ops));
@@ -2385,7 +2419,11 @@ static int lgdt3306a_remove(struct i2c_client *client)
 
 	dev_dbg(&client->dev, "\n");
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+	i2c_mux_del_adapters(state->muxc);
+#else
 	i2c_del_mux_adapter(state->i2c_adap);
+#endif
 
 	state->frontend.ops.release = NULL;
 	state->frontend.demodulator_priv = NULL;
