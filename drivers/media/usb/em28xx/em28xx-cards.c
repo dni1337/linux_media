@@ -2371,21 +2371,6 @@ struct em28xx_board em28xx_boards[] = {
 		.tuner_gpio    = plex_px_bcud,
 		.has_dvb       = 1,
 	},
-	/*
-	 * 2040:0265 Hauppauge WinTV-dualHD (DVB version).
-	 * Empia EM28274, 2x Silicon Labs Si2168, 2x Silicon Labs Si2157
-	 */
-	[EM28174_BOARD_HAUPPAUGE_WINTV_DUALHD_DVB] = {
-		.name          = "Hauppauge WinTV-dualHD DVB",
-		.def_i2c_bus   = 1,
-		.i2c_speed     = EM28XX_I2C_CLK_WAIT_ENABLE |
-				 EM28XX_I2C_FREQ_400_KHZ,
-		.tuner_type    = TUNER_ABSENT,
-		.tuner_gpio    = hauppauge_dualhd_dvb,
-		.has_dvb       = 1,
-		.ir_codes      = RC_MAP_HAUPPAUGE,
-		.leds          = hauppauge_dualhd_leds,
-	},
 	/* 2040:0265 Hauppauge WinTV-dualHD (DVB version).
 	 * Empia EM28274, 2x Silicon Labs Si2168, 2x Silicon Labs Si2157 */
 	[EM28174_BOARD_HAUPPAUGE_WINTV_DUALHD_DVB] = {
