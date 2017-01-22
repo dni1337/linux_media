@@ -778,7 +778,7 @@ static int tbs_cx_mac(struct i2c_adapter *i2c_adap, u8 count, u8 *mac)
     };
 
     for (i = 0; i < 4; i++) {
-	b[0] = 0x40 * i;
+	b[0] = 64 * i;
 
 	ret = i2c_transfer(i2c_adap, msg, 2);
 
@@ -787,10 +787,10 @@ static int tbs_cx_mac(struct i2c_adapter *i2c_adap, u8 count, u8 *mac)
 	    return -1;
 	}
 
-	memcpy(&e[0x40 * i], b , 64);
+	memcpy(&e[64 * i], b , 64);
     }
     
-    memcpy(mac, &e[0x61 + 0x10*count], 6);
+    memcpy(mac, &e[94 + 16*count], 6);
     
     return 0;
 }
