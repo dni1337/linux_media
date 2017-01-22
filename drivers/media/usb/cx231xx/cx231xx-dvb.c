@@ -391,10 +391,10 @@ static int start_streaming(struct cx231xx_dvb *dvb)
 		dev_dbg(dev->dev, "DVB transfer mode is ISO.\n");
 		mutex_lock(&dev->i2c_lock);
 		cx231xx_enable_i2c_port_3(dev, false);
-		if (dvb->count == 0)
-			cx231xx_set_alt_setting(dev, INDEX_TS1, 4);
 		if (dvb->count == 1)
 			cx231xx_set_alt_setting(dev, INDEX_TS2, 4);
+		else
+			cx231xx_set_alt_setting(dev, INDEX_TS1, 4);
 		cx231xx_enable_i2c_port_3(dev, true);
 		mutex_unlock(&dev->i2c_lock);
 		rc = cx231xx_set_mode(dev, CX231XX_DIGITAL_MODE);
@@ -402,35 +402,35 @@ static int start_streaming(struct cx231xx_dvb *dvb)
 			return rc;
 		dev->mode_tv = 1;
 		if (dvb->count == 1)
-		return cx231xx_init_isoc_ts2(dev, CX231XX_DVB_MAX_PACKETS,
-				CX231XX_DVB_NUM_BUFS,
-				dev->ts2_mode.max_pkt_size,
-				dvb_isoc_copy_ts2);
+			return cx231xx_init_isoc_ts2(dev, CX231XX_DVB_MAX_PACKETS,
+					CX231XX_DVB_NUM_BUFS,
+					dev->ts2_mode.max_pkt_size,
+					dvb_isoc_copy_ts2);
 		else
-		return cx231xx_init_isoc(dev, CX231XX_DVB_MAX_PACKETS,
-				CX231XX_DVB_NUM_BUFS,
-				dev->ts1_mode.max_pkt_size,
-				dvb_isoc_copy);
+			return cx231xx_init_isoc(dev, CX231XX_DVB_MAX_PACKETS,
+					CX231XX_DVB_NUM_BUFS,
+					dev->ts1_mode.max_pkt_size,
+					dvb_isoc_copy);
 	} else {
 		dev_dbg(dev->dev, "DVB transfer mode is BULK.\n");
-		if (dvb->count == 0)
-			cx231xx_set_alt_setting(dev, INDEX_TS1, 0);
 		if (dvb->count == 1)
 			cx231xx_set_alt_setting(dev, INDEX_TS2, 0);
+		else
+			cx231xx_set_alt_setting(dev, INDEX_TS1, 0);
 		rc = cx231xx_set_mode(dev, CX231XX_DIGITAL_MODE);
 		if (rc < 0)
 			return rc;
 		dev->mode_tv = 1;
 		if (dvb->count == 1)
-		return cx231xx_init_bulk_ts2(dev, CX231XX_DVB_MAX_PACKETS,
-				CX231XX_DVB_NUM_BUFS,
-				dev->ts2_mode.max_pkt_size,
-				dvb_bulk_copy_ts2);
+			return cx231xx_init_bulk_ts2(dev, CX231XX_DVB_MAX_PACKETS,
+					CX231XX_DVB_NUM_BUFS,
+					dev->ts2_mode.max_pkt_size,
+					dvb_bulk_copy_ts2);
 		else
-		return cx231xx_init_bulk(dev, CX231XX_DVB_MAX_PACKETS,
-				CX231XX_DVB_NUM_BUFS,
-				dev->ts1_mode.max_pkt_size,
-				dvb_bulk_copy);
+			return cx231xx_init_bulk(dev, CX231XX_DVB_MAX_PACKETS,
+					CX231XX_DVB_NUM_BUFS,
+					dev->ts1_mode.max_pkt_size,
+					dvb_bulk_copy);
 	}
 
 }
@@ -439,16 +439,17 @@ static int stop_streaming(struct cx231xx_dvb *dvb)
 {
 	struct cx231xx *dev = dvb->adapter.priv;
 
-	if (dev->USE_ISO)
-		if (dvb->count == 0)
-			cx231xx_uninit_isoc(dev);
-		if (dvb->count == 1)
+	if (dev->USE_ISO) {
+		if (dvb->count == 1)		  
 			cx231xx_uninit_isoc_ts2(dev);
-	else
-		if (dvb->count == 0)
-			cx231xx_uninit_bulk(dev);
+		else
+			cx231xx_uninit_isoc(dev);
+	} else {
 		if (dvb->count == 1)
 			cx231xx_uninit_bulk_ts2(dev);
+		else
+			cx231xx_uninit_bulk(dev);
+	}
 
 	cx231xx_set_mode(dev, CX231XX_SUSPEND);
 
