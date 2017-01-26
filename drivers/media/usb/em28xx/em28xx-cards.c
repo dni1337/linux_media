@@ -3212,7 +3212,7 @@ static void em28xx_release_resources(struct em28xx *dev)
 	em28xx_i2c_unregister(dev, 0);
 
 	if(dev->ts == PRIMARY_TS)
-		usb_put_dev(dev->udev);
+		usb_put_dev(udev);
 
 	/* Mark device as unused */
 	clear_bit(dev->devno, em28xx_devused);

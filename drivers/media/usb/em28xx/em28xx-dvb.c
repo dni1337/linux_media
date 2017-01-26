@@ -219,7 +219,7 @@ static int em28xx_start_streaming(struct em28xx_dvb *dvb)
 	}
 
 	/* moved to em28xx_dvb_init*/
-	//usb_set_interface(dev->udev, dev->ifnum, dvb_alt);
+	//usb_set_interface(udev, dev->ifnum, dvb_alt);
 
 	rc = em28xx_set_mode(dev, EM28XX_DIGITAL_MODE);
 	if (rc < 0)
@@ -1121,6 +1121,7 @@ static int em28xx_dvb_init(struct em28xx *dev)
 {
 	int result = 0, dvb_alt = 0;
 	struct em28xx_dvb *dvb;
+	struct usb_device *udev = interface_to_usbdev(dev->intf);
 
 	if (dev->is_audio_only) {
 		/* Shouldn't initialize IR for this interface */
@@ -2056,9 +2057,9 @@ static int em28xx_dvb_init(struct em28xx *dev)
 	} else { /* isoc */
 		dvb_alt = dev->dvb_alt_isoc;
 	}
-	usb_set_interface(dev->udev, dev->ifnum, dvb_alt);
+	usb_set_interface(udev, dev->ifnum, dvb_alt);
 
-	dev_info(&dev->udev->dev, "DVB extension successfully initialized\n");
+	dev_info(&dev->intf->dev, "DVB extension successfully initialized\n");
 
 	kref_get(&dev->ref);
 
