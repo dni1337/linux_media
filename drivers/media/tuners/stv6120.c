@@ -127,6 +127,9 @@ static struct SLookup Gain_RFAGC_LookUp[] = {
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
+static unsigned int rfsource;
+module_param(rfsource, int, 0644);
+MODULE_PARM_DESC(rfsource, "RF source selection  (default:0 - auto)");
 
 static const u8 tuner_init[25] = {
  0x77,
@@ -277,6 +280,16 @@ static int probe(struct stv *state)
 		fe->ops.i2c_gate_ctrl(fe, 1);
 
 	memcpy(&d[1], tuner_init, 25);
+	switch (rfsource) {
+	case 1:
+		d[10] = 0xFA; /* RF C */
+		d[11] = 0x13; /* LNAC ON */
+		break;	    
+	case 2:
+		d[10] = 0xF5; /* RF B */
+		d[11] = 0x0B; /* LNAB ON */
+		break;	    
+	}
 	d[0] = 0;
 	ret = i2c_write(state->base->i2c, state->base->adr, d, 25 + 1);
 
