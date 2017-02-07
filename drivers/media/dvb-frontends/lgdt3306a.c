@@ -22,6 +22,8 @@
 #include <linux/dvb/frontend.h>
 #include "dvb_math.h"
 #include "lgdt3306a.h"
+#include <linux/i2c-mux.h>
+
 
 static int debug;
 module_param(debug, int, 0644);
@@ -57,17 +59,15 @@ MODULE_PARM_DESC(debug, "set debug level (info=1, reg=2 (or-able))");
 
 struct lgdt3306a_state {
 	struct i2c_adapter *i2c_adap;
-	struct lgdt3306a_config config;
 	const struct lgdt3306a_config *cfg;
-	struct i2c_client *client;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
-	struct i2c_mux_core *muxc;
-#endif
+
 	struct dvb_frontend frontend;
 
 	enum fe_modulation current_modulation;
 	u32 current_frequency;
 	u32 snr;
+
+	struct i2c_mux_core *muxc;
 };
 
 /*
@@ -120,7 +120,6 @@ static void lgdt3306a_DumpRegs(struct lgdt3306a_state *state);
 static int lgdt3306a_write_reg(struct lgdt3306a_state *state, u16 reg, u8 val)
 {
 	int ret;
-	struct i2c_adapter *i2c_adapter;
 	u8 buf[] = { reg >> 8, reg & 0xff, val };
 	struct i2c_msg msg = {
 		.addr = state->cfg->i2c_addr, .flags = 0,
@@ -128,10 +127,9 @@ static int lgdt3306a_write_reg(struct lgdt3306a_state *state, u16 reg, u8 val)
 	};
 
 	dbg_reg("reg: 0x%04x, val: 0x%02x\n", reg, val);
-	
-	if(state->cfg->has_tuner_i2c_adapter) i2c_adapter = state->client->adapter;
-	else i2c_adapter = state->i2c_adap;
-	ret = i2c_transfer(i2c_adapter, &msg, 1);
+
+	ret = i2c_transfer(state->i2c_adap, &msg, 1);
+
 	if (ret != 1) {
 		pr_err("error (addr %02x %02x <- %02x, err = %i)\n",
 		       msg.buf[0], msg.buf[1], msg.buf[2], ret);
@@ -146,7 +144,6 @@ static int lgdt3306a_write_reg(struct lgdt3306a_state *state, u16 reg, u8 val)
 static int lgdt3306a_read_reg(struct lgdt3306a_state *state, u16 reg, u8 *val)
 {
 	int ret;
-	struct i2c_adapter *i2c_adapter;
 	u8 reg_buf[] = { reg >> 8, reg & 0xff };
 	struct i2c_msg msg[] = {
 		{ .addr = state->cfg->i2c_addr,
@@ -155,10 +152,8 @@ static int lgdt3306a_read_reg(struct lgdt3306a_state *state, u16 reg, u8 *val)
 		  .flags = I2C_M_RD, .buf = val, .len = 1 },
 	};
 
-	if(state->cfg->has_tuner_i2c_adapter) i2c_adapter = state->client->adapter;
-	else i2c_adapter = state->i2c_adap;
-	
-	ret = i2c_transfer(i2c_adapter, msg, 2);
+	ret = i2c_transfer(state->i2c_adap, msg, 2);
+
 	if (ret != 2) {
 		pr_err("error (addr %02x reg %04x error (ret == %i)\n",
 		       state->cfg->i2c_addr, reg, ret);
@@ -629,9 +624,6 @@ static int lgdt3306a_set_modulation(struct lgdt3306a_state *state,
 	case QAM_256:
 		ret = lgdt3306a_set_qam(state, QAM_256);
 		break;
-	case QAM_AUTO:
-		ret = lgdt3306a_set_qam(state, QAM_64);
-		break;
 	default:
 		return -EINVAL;
 	}
@@ -657,7 +649,6 @@ static int lgdt3306a_agc_setup(struct lgdt3306a_state *state,
 		break;
 	case QAM_64:
 	case QAM_256:
-	case QAM_AUTO:
 		break;
 	default:
 		return -EINVAL;
@@ -712,7 +703,6 @@ static int lgdt3306a_spectral_inversion(struct lgdt3306a_state *state,
 		break;
 	case QAM_64:
 	case QAM_256:
-	case QAM_AUTO:
 		/* Auto ok for QAM */
 		ret = lgdt3306a_set_inversion_auto(state, 1);
 		break;
@@ -736,7 +726,6 @@ static int lgdt3306a_set_if(struct lgdt3306a_state *state,
 		break;
 	case QAM_64:
 	case QAM_256:
-	case QAM_AUTO:
 		if_freq_khz = state->cfg->qam_if_khz;
 		break;
 	default:
@@ -1595,7 +1584,6 @@ static int lgdt3306a_read_status(struct dvb_frontend *fe,
 		switch (state->current_modulation) {
 		case QAM_256:
 		case QAM_64:
-		case QAM_AUTO:
 			if (lgdt3306a_qam_lock_poll(state) == LG3306_LOCK) {
 				*status |= FE_HAS_VITERBI;
 				*status |= FE_HAS_SYNC;
@@ -1655,9 +1643,6 @@ static int lgdt3306a_read_signal_strength(struct dvb_frontend *fe,
 		 break;
 	case QAM_256:
 		 ref_snr = 2800; /* 28dB */
-		 break;
-	case QAM_AUTO:	
-		 ref_snr = 2200; /* 22dB */
 		 break;
 	default:
 		return -EINVAL;
@@ -2119,161 +2104,7 @@ static void lgdt3306a_DumpRegs(struct lgdt3306a_state *state)
 }
 #endif /* DBG_DUMP */
 
-/*
- * I2C gate logic
- * We must use unlocked I2C I/O because I2C adapter lock is already taken
- * by the caller (usually tuner driver).
- */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
-static int lgdt3306a_select(struct i2c_mux_core *muxc, u32 chan)
-{
-	struct lgdt3306a_state *state = i2c_mux_priv(muxc);
-	struct i2c_client *client = state->client;
-#else
 
-static int lgdt3306a_select(struct i2c_adapter *adap, void *mux_priv, u32 chan)
-{
-	struct lgdt3306a_state *state = mux_priv;
-	struct i2c_client *client = state->client;
-#endif
-	
-	int ret;
-	u8 val;
-	u8 buf[3];
-	
-	struct i2c_msg read_msg_1 = {
-		.addr = client->addr,
-		.flags = 0, 
-		.buf = "\x00\x02", 
-		.len = 2, 
-	};
-	struct i2c_msg read_msg_2 = {
-		.addr = client->addr,
-		.flags = I2C_M_RD, 
-		.buf = &val, 
-		.len = 1,
-	};
-
-	struct i2c_msg write_msg = {
-		.addr = client->addr,
-		.flags = 0,
-		.len = 3,
-		.buf = buf,
-	};
-
-	ret = __i2c_transfer(client->adapter, &read_msg_1, 1);
-	if (ret != 1) 
-	{
-		pr_err("error (addr %02x reg 0x002 error (ret == %i)\n",
-		       client->addr, ret);
-		if (ret < 0)
-			return ret;
-		else
-			return -EREMOTEIO;
-	}
-	
-	ret = __i2c_transfer(client->adapter, &read_msg_2, 1);
-	if (ret != 1) 
-	{
-		pr_err("error (addr %02x reg 0x002 error (ret == %i)\n",
-		       client->addr, ret);
-		if (ret < 0)
-			return ret;
-		else
-			return -EREMOTEIO;
-	}
-	
-	buf[0] = 0x00;
-	buf[1] = 0x02;
-	val &= 0x7F;
-	val |= LG3306_TUNERI2C_ON;
-	buf[2] = val;
-	ret = __i2c_transfer(client->adapter, &write_msg, 1);
-	if (ret != 1) {
-		pr_err("error (addr %02x %02x <- %02x, err = %i)\n",
-		       write_msg.buf[0], write_msg.buf[1], write_msg.buf[2], ret);
-		if (ret < 0)
-			return ret;
-		else
-			return -EREMOTEIO;
-	}	
-	return 0;
-}
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
-static int lgdt3306a_deselect(struct i2c_mux_core *muxc, u32 chan)
-{
-	struct lgdt3306a_state *state = i2c_mux_priv(muxc);
-	struct i2c_client *client = state->client;
-#else
-
-static int lgdt3306a_deselect(struct i2c_adapter *adap, void *mux_priv, u32 chan)
-{
-	struct lgdt3306a_state *state = mux_priv;
-	struct i2c_client *client = state->client;
-#endif
-	int ret;
-	u8 val;
-	u8 buf[3];
-	
-	struct i2c_msg read_msg_1 = {
-		.addr = client->addr,
-		.flags = 0, 
-		.buf = "\x00\x02", 
-		.len = 2, 
-	};
-	struct i2c_msg read_msg_2 = {
-		.addr = client->addr,
-		.flags = I2C_M_RD, 
-		.buf = &val, 
-		.len = 1,
-	};
-
-	struct i2c_msg write_msg = {
-		.addr = client->addr,
-		.flags = 0,
-		.len = 3,
-		.buf = buf,
-	};
-	
-	ret = __i2c_transfer(client->adapter, &read_msg_1, 1);
-	if (ret != 1) 
-	{
-		pr_err("error (addr %02x reg 0x002 error (ret == %i)\n",
-		       client->addr, ret);
-		if (ret < 0)
-			return ret;
-		else
-			return -EREMOTEIO;
-	}	
-	
-	ret = __i2c_transfer(client->adapter, &read_msg_2, 1);
-	if (ret != 1) 
-	{
-		pr_err("error (addr %02x reg 0x002 error (ret == %i)\n",
-		       client->addr, ret);
-		if (ret < 0)
-			return ret;
-		else
-			return -EREMOTEIO;
-	}
-	
-	buf[0] = 0x00;
-	buf[1] = 0x02;
-	val &= 0x7F;
-	val |= LG3306_TUNERI2C_OFF;
-	buf[2] = val;
-	ret = __i2c_transfer(client->adapter, &write_msg, 1);
-	if (ret != 1) {
-		pr_err("error (addr %02x %02x <- %02x, err = %i)\n",
-		       write_msg.buf[0], write_msg.buf[1], write_msg.buf[2], ret);
-		if (ret < 0)
-			return ret;
-		else
-			return -EREMOTEIO;
-	}
-	return 0;
-}
 
 static const struct dvb_frontend_ops lgdt3306a_ops = {
 	.delsys = { SYS_ATSC, SYS_DVBC_ANNEX_B },
@@ -2303,37 +2134,49 @@ static const struct dvb_frontend_ops lgdt3306a_ops = {
 	.search               = lgdt3306a_search,
 };
 
+static int lgdt3306a_select(struct i2c_mux_core *muxc, u32 chan)
+{
+	struct i2c_client *client = i2c_mux_priv(muxc);
+	struct lgdt3306a_state *state = i2c_get_clientdata(client);
+
+	return lgdt3306a_i2c_gate_ctrl(&state->frontend, 1);
+}
+
+static int lgdt3306a_deselect(struct i2c_mux_core *muxc, u32 chan)
+{
+	struct i2c_client *client = i2c_mux_priv(muxc);
+	struct lgdt3306a_state *state = i2c_get_clientdata(client);
+
+	return lgdt3306a_i2c_gate_ctrl(&state->frontend, 0);
+}
+
 static int lgdt3306a_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
 {
-	struct lgdt3306a_config *config = client->dev.platform_data;
+	struct lgdt3306a_config *config;
 	struct lgdt3306a_state *state;
-	u8 val;
+	struct dvb_frontend *fe;
 	int ret;
-	
-	dev_dbg(&client->dev, "\n");
 
-	state = kzalloc(sizeof(*state), GFP_KERNEL);
-	if (!state) {
+	config = kzalloc(sizeof(struct lgdt3306a_config), GFP_KERNEL);
+	if (config == NULL) {
 		ret = -ENOMEM;
-		dev_err(&client->dev, "kzalloc() failed\n");
-		goto err;
+		goto fail;
 	}
-	
-	state->client = client;
-	state->config.i2c_addr = config->i2c_addr;
-	state->config.qam_if_khz= config->qam_if_khz;
-	state->config.vsb_if_khz= config->vsb_if_khz;
-	state->config.deny_i2c_rptr= config->deny_i2c_rptr;
-	state->config.spectral_inversion= config->spectral_inversion;
-	state->config.mpeg_mode= config->mpeg_mode;
-	state->config.tpclk_edge= config->tpclk_edge;
-	state->config.tpvalid_polarity= config->tpvalid_polarity;
-	state->config.xtalMHz= config->xtalMHz;
-	state->config.has_tuner_i2c_adapter = config->has_tuner_i2c_adapter;
-	state->cfg = &state->config;
-	
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+
+	memcpy(config, client->dev.platform_data,
+			sizeof(struct lgdt3306a_config));
+
+	config->i2c_addr = client->addr;
+	fe = lgdt3306a_attach(config, client->adapter);
+	if (fe == NULL) {
+		ret = -ENODEV;
+		goto err_fe;
+	}
+
+	i2c_set_clientdata(client, fe->demodulator_priv);
+	state = fe->demodulator_priv;
+
 	/* create mux i2c adapter for tuner */
 	state->muxc = i2c_mux_alloc(client->adapter, &client->dev,
 				  1, 0, I2C_MUX_LOCKED,
@@ -2346,69 +2189,19 @@ static int lgdt3306a_probe(struct i2c_client *client,
 	ret = i2c_mux_add_adapter(state->muxc, 0, 0, 0);
 	if (ret)
 		goto err_kfree;
-	state->i2c_adap = state->muxc->adapter[0];
-#else
-	/* create mux i2c adapter for tuner */
-	state->i2c_adap = i2c_add_mux_adapter(client->adapter, &client->dev,
-			state, 0, 0, 0, lgdt3306a_select, lgdt3306a_deselect);
-	if (state->i2c_adap == NULL) {
-		ret = -ENODEV;
-		goto err_kfree;
-	}
-#endif
 
 	/* create dvb_frontend */
-	memcpy(&state->frontend.ops, &lgdt3306a_ops, sizeof(struct dvb_frontend_ops));
-	state->frontend.demodulator_priv = state;
-	*config->i2c_adapter = state->i2c_adap;
-	*config->fe = &state->frontend;
-	
-	/* verify that we're talking to a lg3306a */
-	/* FGR - NOTE - there is no obvious ChipId to check; we check
-	 * some "known" bits after reset, but it's still just a guess */
-	ret = lgdt3306a_read_reg(state, 0x0000, &val);
-	if (lg_chkerr(ret))
-		goto err_kfree;
-	if ((val & 0x74) != 0x74) {
-		pr_warn("expected 0x74, got 0x%x\n", (val & 0x74));
-#if 0
-		/* FIXME - re-enable when we know this is right */
-		goto err_kfree;
-#endif
-	}
-	ret = lgdt3306a_read_reg(state, 0x0001, &val);
-	if (lg_chkerr(ret))
-		goto err_kfree;
-	if ((val & 0xf6) != 0xc6) {
-		pr_warn("expected 0xc6, got 0x%x\n", (val & 0xf6));
-#if 0
-		/* FIXME - re-enable when we know this is right */
-		goto err_kfree;
-#endif
-	}
-	ret = lgdt3306a_read_reg(state, 0x0002, &val);
-	if (lg_chkerr(ret))
-		goto err_kfree;
-	if ((val & 0x73) != 0x03) {
-		pr_warn("expected 0x03, got 0x%x\n", (val & 0x73));
-#if 0
-		/* FIXME - re-enable when we know this is right */
-		goto err_kfree;
-#endif
-	}
+	fe->ops.i2c_gate_ctrl = NULL;
+	*config->i2c_adapter = state->muxc->adapter[0];
+	*config->fe = fe;
 
-	state->current_frequency = -1;
-	state->current_modulation = -1;
-
-	lgdt3306a_sleep(state);
-	
-	i2c_set_clientdata(client, state);
-
-	dev_info(&client->dev, "LG Electronics LGDT3306A successfully attached\n");
 	return 0;
+
 err_kfree:
 	kfree(state);
-err:
+err_fe:
+	kfree(config);
+fail:
 	dev_dbg(&client->dev, "failed=%d\n", ret);
 	return ret;
 }
@@ -2417,17 +2210,12 @@ static int lgdt3306a_remove(struct i2c_client *client)
 {
 	struct lgdt3306a_state *state = i2c_get_clientdata(client);
 
-	dev_dbg(&client->dev, "\n");
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
 	i2c_mux_del_adapters(state->muxc);
-#else
-	i2c_del_mux_adapter(state->i2c_adap);
-#endif
 
 	state->frontend.ops.release = NULL;
 	state->frontend.demodulator_priv = NULL;
 
+	kfree(state->cfg);
 	kfree(state);
 
 	return 0;
@@ -2441,8 +2229,8 @@ MODULE_DEVICE_TABLE(i2c, lgdt3306a_id_table);
 
 static struct i2c_driver lgdt3306a_driver = {
 	.driver = {
-		.owner	= THIS_MODULE,
-		.name	= "lgdt3306a",
+		.name                = "lgdt3306a",
+		.suppress_bind_attrs = true,
 	},
 	.probe		= lgdt3306a_probe,
 	.remove		= lgdt3306a_remove,
