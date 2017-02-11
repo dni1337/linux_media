@@ -287,8 +287,7 @@ enum fe_interleaving {
 #define DTV_ISDBT_LAYER_ENABLED	41
 
 #define DTV_STREAM_ID		42
-#define DTV_ISDBS_TS_ID_LEGACY	DTV_STREAM_ID
-#define DTV_DVBT2_PLP_ID_LEGACY	43
+#define DTV_MODCODE		43
 
 #define DTV_ENUM_DELSYS		44
 
@@ -400,6 +399,7 @@ enum atscmh_rs_code_mode {
 };
 
 #define NO_STREAM_ID_FILTER	(~0U)
+#define ALL_MODCODES		(~0U)
 #define LNA_AUTO                (~0U)
 
 struct dtv_cmds_h {
