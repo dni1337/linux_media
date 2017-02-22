@@ -795,6 +795,7 @@ static int tbs_cx_mac(struct i2c_adapter *i2c_adap, u8 count, u8 *mac)
     
     return 0;
 }
+
 static int dvb_init(struct cx231xx *dev)
 {
 	int i, result = 0;
@@ -1169,7 +1170,7 @@ static int dvb_init(struct cx231xx *dev)
 
 		/* attach demodulator chip */
 		si2168_config.ts_mode = SI2168_TS_SERIAL; /* from *.inf file */
-		si2168_config.fe = &dev->dvb->frontend;
+		si2168_config.fe = &dev->dvb[i]->frontend;
 		si2168_config.i2c_adapter = &adapter;
 		si2168_config.ts_clock_inv = true;
 
@@ -1194,7 +1195,7 @@ static int dvb_init(struct cx231xx *dev)
 		dvb->i2c_client_demod = client;
 
 		/* attach tuner chip */
-		si2157_config.fe = dev->dvb->frontend;
+		si2157_config.fe = dev->dvb[i]->frontend;
 #ifdef CONFIG_MEDIA_CONTROLLER_DVB
 		si2157_config.mdev = dev->media_dev;
 #endif
@@ -1225,7 +1226,7 @@ static int dvb_init(struct cx231xx *dev)
 		}
 
 		dev->cx231xx_reset_analog_tuner = NULL;
-		dev->dvb->i2c_client_tuner = client;
+		dev->dvb[i]->i2c_client_tuner = client;
 		break;
 	}
 	case CX231XX_BOARD_TBS_5280:
@@ -1387,7 +1388,7 @@ static int dvb_init(struct cx231xx *dev)
 	if (result < 0)
 		goto out_free;
 	}
-
+	}
 
 	dev_info(dev->dev, "Successfully loaded cx231xx-dvb\n");
 
@@ -1412,16 +1413,16 @@ static int dvb_fini(struct cx231xx *dev)
 	}
 
 	for (i = 0; i < dev->board.adap_cnt; i++) {
-	if (dev->dvb[i]) {
-		switch (dev->model) {
-			case CX231XX_BOARD_TBS_5990:
-				tbscxci_release(dev->dvb[i]);
-				break;
-		}
+		if (dev->dvb[i]) {
+			switch (dev->model) {
+				case CX231XX_BOARD_TBS_5990:
+					tbscxci_release(dev->dvb[i]);
+					break;
+			}
 
-		unregister_dvb(dev->dvb[i]);
-		dev->dvb[i] = NULL;
-	}
+			unregister_dvb(dev->dvb[i]);
+			dev->dvb[i] = NULL;
+		}
 	}
 
 	return 0;
