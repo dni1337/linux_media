@@ -42,6 +42,22 @@
 #define BER_SRC_S    0x20
 #define BER_SRC_S2   0x20
 
+static unsigned int manspeed;
+module_param(manspeed, int, 0644);
+MODULE_PARM_DESC(manspeed, "TS speed control (auto - 0, auto1 - 1, auto2 - 2, manual - 3; default : auto)");
+
+static unsigned int tsspeed = 0x20;
+module_param(tsspeed, int, 0644);
+MODULE_PARM_DESC(manspeed, "TS speed for manual mode (default : 0x20 )");
+
+static unsigned int single;
+module_param(single, int, 0644);
+MODULE_PARM_DESC(single, "Single mode (default : off)");
+
+static unsigned int ldpc_mode;
+module_param(ldpc_mode, int, 0644);
+MODULE_PARM_DESC(ldpc_mode, "LDPC mode (0 - broadcast, 1 - asap; default : broadcast)");
+
 LIST_HEAD(stvlist);
 
 enum ReceiveMode { Mode_None, Mode_DVBS, Mode_DVBS2, Mode_Auto };
@@ -108,7 +124,6 @@ struct stv {
 	u8                   i2crpt;
 	u8                   tscfgh;
 	u8                   tsgeneral;
-	u8                   tsspeed;
 	unsigned long        tune_time;
 
 	s32                  SearchRange;
@@ -519,6 +534,7 @@ static int TrackingOptimization(struct stv *state)
 	write_reg(state, RSTV0910_P2_DMDCFGMD + state->regoff, tmp);
 
 	if (state->ReceiveMode == Mode_DVBS2) {
+		u8 reg;
 		/* force to PRE BCH Rate */
 		write_reg(state, RSTV0910_P2_ERRCTRL1 + state->regoff,
 			  BER_SRC_S2 | state->BERScale);
@@ -547,6 +563,16 @@ static int TrackingOptimization(struct stv *state)
 					  state->regoff, aclc);
 			}
 		}
+		/* Check MATYPE flags*/
+		read_reg(state, RSTV0910_P2_MATSTR1 + state->regoff, &tmp);
+		read_reg(state, RSTV0910_P2_TSSTATEM + state->regoff, &reg);
+		if ( tmp & 0x18 )
+			reg &= ~1;
+		else
+			reg |= 1; /* Disable TS FIFO sync if ACM without ISSYI */
+		write_reg(state, RSTV0910_P2_TSSTATEM + state->regoff, reg);
+		/*pr_info("stv0910: %d TSSTATEM=0x%02x\n", state->regoff, reg);*/
+
 	}
 	if (state->ReceiveMode == Mode_DVBS) {
 		u8 tmp;
@@ -1007,17 +1033,14 @@ static int init_diseqc(struct stv *state)
 
 static int probe(struct stv *state)
 {
-	u8 id;
+	u8 reg;
 
-	state->ReceiveMode = Mode_None;
-	state->Started = 0;
-
-	if (read_reg(state, RSTV0910_MID, &id) < 0)
+	if (read_reg(state, RSTV0910_MID, &reg) < 0)
 		return -1;
 
-	if (id != 0x51)
+	if (reg != 0x51)
 		return -EINVAL;
-	/* pr_info("stv0910: found STV0910 id=0x%02x\n", id); */
+	pr_info("stv0910: found STV0910 id=0x%02x\n", reg);
 
 	 /* Configure the I2C repeater to off */
 	write_reg(state, RSTV0910_P1_I2CRPT, 0x24);
@@ -1031,36 +1054,45 @@ static int probe(struct stv *state)
 	write_reg(state, RSTV0910_SYNTCTRL,  0x02);  /* SYNTCTRL */
 	write_reg(state, RSTV0910_TSGENERAL, state->tsgeneral);  /* TSGENERAL */
 	write_reg(state, RSTV0910_CFGEXT,    0x02);  /* CFGEXT */
-	write_reg(state, RSTV0910_GENCFG,    0x15);  /* GENCFG */
+	
+	reg = single ? 0x14 : 0x15; /* Single or dual mode */
+	if (ldpc_mode)
+		reg &= ~0x10; /* LDPC ASAP mode */
+	write_reg(state, RSTV0910_GENCFG, reg);  /* GENCFG */
 
+	write_reg(state, RSTV0910_P1_TNRCFG2, 0x02);  /* IQSWAP = 0 */
+	write_reg(state, RSTV0910_P2_TNRCFG2, 0x02);  /* IQSWAP = 0 */
 
+	write_reg(state, RSTV0910_P1_CAR3CFG, 0x02);
+	write_reg(state, RSTV0910_P2_CAR3CFG, 0x02);
+	write_reg(state, RSTV0910_P1_DMDCFG4, 0x04);
+	write_reg(state, RSTV0910_P2_DMDCFG4, 0x04);
+	
 	write_reg(state, RSTV0910_TSTRES0, 0x80); /* LDPC Reset */
 	write_reg(state, RSTV0910_TSTRES0, 0x00);
+
+	write_reg(state, RSTV0910_P1_TSPIDFLT1, 0x00);
+	write_reg(state, RSTV0910_P2_TSPIDFLT1, 0x00);
+
+	write_reg(state, RSTV0910_P1_TMGCFG2, 0x80);
+	write_reg(state, RSTV0910_P2_TMGCFG2, 0x80);
 
 	set_mclock(state, 135000000);
 
 	/* TS output */
-	write_reg(state, RSTV0910_P1_TSCFGH , state->tscfgh | 0x01);
-	write_reg(state, RSTV0910_P1_TSCFGH , state->tscfgh);
-	write_reg(state, RSTV0910_P1_TSCFGM , 0xC0);  /* Manual speed */
+	write_reg(state, RSTV0910_P1_TSCFGM , (manspeed << 6) & 0xC0);  /* TS speed control*/
 	write_reg(state, RSTV0910_P1_TSCFGL , 0x20);
+	write_reg(state, RSTV0910_P1_TSSPEED , tsspeed);
 
-	/* Speed = 67.5 MHz */
-	write_reg(state, RSTV0910_P1_TSSPEED , state->tsspeed);
-
-	write_reg(state, RSTV0910_P2_TSCFGH , state->tscfgh | 0x01);
-	write_reg(state, RSTV0910_P2_TSCFGH , state->tscfgh);
-	write_reg(state, RSTV0910_P2_TSCFGM , 0xC0);  /* Manual speed */
+	write_reg(state, RSTV0910_P2_TSCFGM , (manspeed << 6) & 0xC0);  /* TS speed control*/
 	write_reg(state, RSTV0910_P2_TSCFGL , 0x20);
-
-	/* Speed = 67.5 MHz */
-	write_reg(state, RSTV0910_P2_TSSPEED , state->tsspeed);
+	write_reg(state, RSTV0910_P2_TSSPEED , tsspeed);
 
 	/* Reset stream merger */
-	write_reg(state, RSTV0910_P1_TSCFGH , state->tscfgh | 0x01);
-	write_reg(state, RSTV0910_P2_TSCFGH , state->tscfgh | 0x01);
+	write_reg(state, RSTV0910_P1_TSCFGH , state->tscfgh | 0x01);	
 	write_reg(state, RSTV0910_P1_TSCFGH , state->tscfgh);
-	write_reg(state, RSTV0910_P2_TSCFGH , state->tscfgh);
+	write_reg(state, RSTV0910_P2_TSCFGH , state->tscfgh | 0x01);
+	write_reg(state, RSTV0910_P2_TSCFGH , state->tscfgh);	
 
 	write_reg(state, RSTV0910_P1_I2CRPT, state->i2crpt);
 	write_reg(state, RSTV0910_P2_I2CRPT, state->i2crpt);
@@ -1267,6 +1299,8 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 		state->ReceiveMode = CurReceiveMode;
 		state->DemodLockTime = jiffies;
 		state->FirstTimeLock = 1;
+		GetSignalParameters(state);
+		TrackingOptimization(state);
 
 		write_reg(state, RSTV0910_P2_TSCFGH + state->regoff,
 			  state->tscfgh);
@@ -1276,6 +1310,7 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 		write_reg(state, RSTV0910_P2_TSCFGH + state->regoff,
 			  state->tscfgh);
 	}
+
 	if (DmdState & 0x40) {
 		if (state->ReceiveMode == Mode_DVBS2) {
 			u8 PDELStatus;
@@ -1313,7 +1348,6 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 		u8 tmp;
 
 		state->FirstTimeLock = 0;
-		GetSignalParameters(state);
 
 		if (state->ReceiveMode == Mode_DVBS2) {
 			/* FSTV0910_P2_MANUALSX_ROLLOFF,
@@ -1351,8 +1385,6 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 		/*Reset the packet Error counter2 (and Set it to
 		  infinit error count mode )*/
 		write_reg(state, RSTV0910_P2_ERRCTRL2 + state->regoff, 0xc1);
-
-		TrackingOptimization(state);
 	}
 
 	if (GetSignalToNoise(state, &snr))
@@ -1602,12 +1634,13 @@ struct dvb_frontend *stv0910_attach(struct i2c_adapter *i2c,
 	state->tscfgh = 0x20 | (cfg->parallel ? 0 : 0x40);
 	state->tsgeneral = (cfg->parallel == 2) ? 0x02 : 0x00;
 	state->i2crpt = 0x0A | ((cfg->rptlvl & 0x07) << 4);
-	state->tsspeed = 0x28;
 	state->nr = nr;
 	state->regoff = state->nr ? 0 : 0x200;
 	state->SearchRange = 16000000;
 	state->DEMOD = 0x10;     /* Inversion : Auto with reset to 0 */
 	state->ReceiveMode   = Mode_None;
+	state->Started = 0;
+	state->FirstTimeLock = 0;
 
 	base = match_base(i2c, cfg->adr);
 	if (base) {
