@@ -48,7 +48,7 @@ MODULE_PARM_DESC(manspeed, "TS speed control (auto - 0, auto1 - 1, auto2 - 2, ma
 
 static unsigned int tsspeed = 0x20;
 module_param(tsspeed, int, 0644);
-MODULE_PARM_DESC(manspeed, "TS speed for manual mode (default : 0x20 )");
+MODULE_PARM_DESC(tsspeed, "TS speed for manual mode (default : 0x20 )");
 
 static unsigned int single;
 module_param(single, int, 0644);
