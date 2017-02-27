@@ -572,7 +572,16 @@ static int TrackingOptimization(struct stv *state)
 			reg |= 1; /* Disable TS FIFO sync if ACM without ISSYI */
 		write_reg(state, RSTV0910_P2_TSSTATEM + state->regoff, reg);
 		/*pr_info("stv0910: %d TSSTATEM=0x%02x\n", state->regoff, reg);*/
-
+		read_reg(state, RSTV0910_P2_TSSYNC + state->regoff, &reg);
+		if ( tmp & 0x18 )
+			reg &= ~0x18;
+		else
+		{
+			reg &= ~0x18;
+			reg |= 0x10;
+		}
+		write_reg(state, RSTV0910_P2_TSSYNC + state->regoff, reg);
+		/*pr_info("stv0910: %d TSSYNC=0x%02x\n", state->regoff, reg);*/
 	}
 	if (state->ReceiveMode == Mode_DVBS) {
 		u8 tmp;
