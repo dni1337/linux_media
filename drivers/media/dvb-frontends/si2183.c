@@ -1039,65 +1039,73 @@ static int si2183_init(struct dvb_frontend *fe)
 	}
 
 	/* set ts mode */
-	memcpy(cmd.args, "\x14\x00\x01\x10\x10\x00", 6);
-	cmd.args[4] |= dev->ts_mode;
-	if (dev->ts_clock_gapped)
-		cmd.args[4] |= 0x40;
-	cmd.wlen = 6;
-	cmd.rlen = 4;
-	ret = si2183_cmd_execute(client, &cmd);
+	prop = 0x10 | dev->ts_mode | (dev->ts_clock_gapped ? 0x40 : 0);
+	ret = si2183_set_prop(client, 0x1001, &prop);
 	if (ret) {
 		dev_err(&client->dev, "err set ts mode\n");
 	}
 
 	/* FER resol */
-	memcpy(cmd.args, "\x14\x00\x0c\x10\x12\x00", 6);
-	cmd.wlen = 6;
-	cmd.rlen = 4;
-	ret = si2183_cmd_execute(client, &cmd);
+	prop = 0x12;
+	ret = si2183_set_prop(client, 0x100c, &prop);
 	if (ret) {
 		dev_err(&client->dev, "err set FER resol\n");
 		return ret;
 	}
 
 	/* DD IEN */
-	memcpy(cmd.args, "\x14\x00\x06\x10\x24\x00", 6);
-	cmd.wlen = 6;
-	cmd.rlen = 4;
-	ret = si2183_cmd_execute(client, &cmd);
+	prop = 0x00;
+	ret = si2183_set_prop(client, 0x1006, &prop);
 	if (ret) {
 		dev_err(&client->dev, "err set dd ien\n");
 		return ret;
 	}
 
 	/* int sense */
-	memcpy(cmd.args, "\x14\x00\x07\x10\x00\x24", 6);
-	cmd.wlen = 6;
-	cmd.rlen = 4;
-	ret = si2183_cmd_execute(client, &cmd);
+	prop = 0x2000;
+	ret = si2183_set_prop(client, 0x1007, &prop);
 	if (ret) {
 		dev_err(&client->dev, "err set int sense\n");
 		return ret;
 	}
 
-	prop = 0x10;
+	/* Control of SQI computation */
+	prop = 0x1e;
 	ret = si2183_set_prop(client, 0x100f, &prop);
 	if (ret) {
-		dev_err(&client->dev, "err set 0x100f\n");
+		dev_err(&client->dev, "err set sqi comp\n");
 		return ret;
 	}
 
-	prop = 0x08e3 | (dev->ts_clock_inv ? 0x0000 : 0x1000);
+	/* Transport Stream setting for parallel mode */
+	prop = 0x0104 | (dev->ts_clock_inv ? 0x0000 : 0x1000);
 	ret = si2183_set_prop(client, 0x1009, &prop);
 	if (ret) {
 		dev_err(&client->dev, "err set par_ts\n");
 		return ret;
 	}
 
-	prop = 0x05d7 | (dev->ts_clock_inv ? 0x0000 : 0x1000);
+	/* Transport Stream setting for serial mode */
+	prop = 0x230C | (dev->ts_clock_inv ? 0x0000 : 0x1000);
 	ret = si2183_set_prop(client, 0x1008, &prop);
 	if (ret) {
 		dev_err(&client->dev, "err set ser_ts\n");
+		return ret;
+	}
+
+	/* Transport Stream setting for parallel mode - secondary*/
+	prop = 0x08e3;
+	ret = si2183_set_prop(client, 0x1015, &prop);
+	if (ret) {
+		dev_err(&client->dev, "err set int par_ts_sec\n");
+		return ret;
+	}
+
+	/* Transport Stream setting for serial mode - secondary*/
+	prop = 0x01c7;
+	ret = si2183_set_prop(client, 0x1016, &prop);
+	if (ret) {
+		dev_err(&client->dev, "err set int ser_ts_sec\n");
 		return ret;
 	}
 
