@@ -325,7 +325,7 @@ static void RF_switch(struct i2c_adapter *i2c,u8 rf_in,u8 flag)//flag : 0: dvbs/
 	struct tbsecp3_dev *dev = i2c_adap->dev;
 	u32 val ,reg;
 	
-	reg = 0xc-rf_in*4;
+	reg = 0x8 + rf_in*4;
 	
 	val = tbs_read(TBSECP3_GPIO_BASE, reg);
 	if(flag)
