@@ -605,18 +605,10 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		memset(&si2183_config, 0, sizeof(si2183_config));
 		si2183_config.i2c_adapter = &i2c;
 		si2183_config.fe = &adapter->fe;
+		si2183_config.ts_mode = pci->subsystem_vendor==0x6528 ? SI2183_TS_PARALLEL : SI2183_TS_SERIAL;
 		si2183_config.ts_clock_gapped = true;
+		si2183_config.rf_in = adapter->nr;
 		si2183_config.RF_switch = RF_switch;
-		if(pci->subsystem_vendor==TBSECP3_BOARD_TBS6528)
-		{
-			si2183_config.rf_in = 1;
-			si2183_config.ts_mode = SI2183_TS_PARALLEL;
-		}
-		else
-		{
-			si2183_config.rf_in = adapter->nr;
-			si2183_config.ts_mode = SI2183_TS_SERIAL;
-		}
 		
 		memset(&info, 0, sizeof(struct i2c_board_info));
 		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
