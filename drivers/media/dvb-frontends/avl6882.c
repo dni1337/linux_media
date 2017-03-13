@@ -882,10 +882,26 @@ static int avl6882_set_dvbc(struct dvb_frontend *fe)
 
 	ret = AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_qam_mode_scan_control_iaddr_offset, 0x0101);
 	ret |= AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_symbol_rate_Hz_iaddr_offset, c->symbol_rate);
+	ret |= AVL6882_WR_REG8(priv, 0x600 + rc_DVBC_j83b_mode_caddr_offset, AVL_DVBC_J83A);
 	ret |= avl6882_exec_n_wait(priv, AVL_FW_CMD_ACQUIRE);
 	return ret;
 }
 
+
+static int avl6882_set_dvbc_b(struct dvb_frontend *fe)
+{
+	struct avl6882_priv *priv = fe->demodulator_priv;
+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+	int ret;
+
+	//printk("[avl6882_set_dvbc] Freq:%d Mhz,sym:%d\n", c->frequency, c->symbol_rate);
+
+	ret = AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_qam_mode_scan_control_iaddr_offset, 0x0101);
+	ret |= AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_symbol_rate_Hz_iaddr_offset, c->symbol_rate);
+	ret |= AVL6882_WR_REG8(priv, 0x600 + rc_DVBC_j83b_mode_caddr_offset, AVL_DVBC_J83B);
+	ret |= avl6882_exec_n_wait(priv, AVL_FW_CMD_ACQUIRE);
+	return ret;
+}
 
 static int avl6882_set_dvbt(struct dvb_frontend *fe)
 {
@@ -1493,6 +1509,11 @@ static int avl6882_set_frontend(struct dvb_frontend *fe)
 	if (ret)
 		return ret;
 
+	if (c->delivery_system == SYS_DVBC_ANNEX_A && c->symbol_rate < 6000000 ) {
+		c->delivery_system = SYS_DVBC_ANNEX_B;
+		c->bandwidth_hz = 6000000;
+	}
+
 	/* setup tuner */
 	if (fe->ops.tuner_ops.set_params) {
 		if (fe->ops.i2c_gate_ctrl)
@@ -1517,7 +1538,6 @@ static int avl6882_set_frontend(struct dvb_frontend *fe)
 		ret = avl6882_set_dvbt(fe);
 		break;
 	case SYS_DVBC_ANNEX_A:
-	case SYS_DVBC_ANNEX_B:
 		if (demod_mode != AVL_DVBC) {
 			dev_err(&priv->i2c->dev, "%s: failed to enter DVBC mode",
 				KBUILD_MODNAME);
@@ -1525,6 +1545,15 @@ static int avl6882_set_frontend(struct dvb_frontend *fe)
 			break;
 		}
 		ret = avl6882_set_dvbc(fe);
+		break;
+	case SYS_DVBC_ANNEX_B:
+		if (demod_mode != AVL_DVBC) {
+			dev_err(&priv->i2c->dev, "%s: failed to enter DVBC mode",
+				KBUILD_MODNAME);
+			ret = -EAGAIN;
+			break;
+		}
+		ret = avl6882_set_dvbc_b(fe);
 		break;
 	case SYS_DVBS:
 	case SYS_DVBS2:
