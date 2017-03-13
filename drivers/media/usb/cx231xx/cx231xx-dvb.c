@@ -1356,6 +1356,9 @@ static int dvb_init(struct cx231xx *dev)
 		if (dvb_attach(av201x_attach, dev->dvb[i]->frontend, &tbs5990_av201x_cfg,
 			tas2101_get_i2c_adapter(dev->dvb[i]->frontend, 2)) == NULL) {
 			dvb_frontend_detach(dev->dvb[i]->frontend);
+			result = -EINVAL;
+			goto out_free;
+		}
 
 		msleep(100);
 
@@ -1374,6 +1377,7 @@ static int dvb_init(struct cx231xx *dev)
 			dev->name);
 		break;
 	}
+
 	if (NULL == dvb->frontend) {
 		dev_err(dev->dev,
 		       "%s/2: frontend initialization failed\n", dev->name);
@@ -1387,7 +1391,6 @@ static int dvb_init(struct cx231xx *dev)
 	mutex_unlock(&dev->lock);
 	if (result < 0)
 		goto out_free;
-	}
 	}
 
 	dev_info(dev->dev, "Successfully loaded cx231xx-dvb\n");
