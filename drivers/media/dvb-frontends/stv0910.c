@@ -58,6 +58,10 @@ static unsigned int ldpc_mode;
 module_param(ldpc_mode, int, 0644);
 MODULE_PARM_DESC(ldpc_mode, "LDPC mode (0 - broadcast, 1 - asap; default : broadcast)");
 
+static unsigned int no_bcherr;
+module_param(no_bcherr, int, 0644);
+MODULE_PARM_DESC(no_bcherr, "Disable BCH error check (default : off)");
+
 LIST_HEAD(stvlist);
 
 enum ReceiveMode { Mode_None, Mode_DVBS, Mode_DVBS2, Mode_Auto };
@@ -1076,7 +1080,13 @@ static int probe(struct stv *state)
 	write_reg(state, RSTV0910_P2_CAR3CFG, 0x02);
 	write_reg(state, RSTV0910_P1_DMDCFG4, 0x04);
 	write_reg(state, RSTV0910_P2_DMDCFG4, 0x04);
-	
+
+	/* BCH error check mode */
+	write_reg(state, RSTV0910_P1_PDELCTRL2 , no_bcherr ? 0x01 : 0);
+	write_reg(state, RSTV0910_P2_PDELCTRL2 , no_bcherr ? 0x21 : 0x20);
+	write_reg(state, RSTV0910_P1_PDELCTRL3 , no_bcherr ? 0x20 : 0);
+	write_reg(state, RSTV0910_P2_PDELCTRL3 , no_bcherr ? 0x20 : 0);
+
 	write_reg(state, RSTV0910_TSTRES0, 0x80); /* LDPC Reset */
 	write_reg(state, RSTV0910_TSTRES0, 0x00);
 
