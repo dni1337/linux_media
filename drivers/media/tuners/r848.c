@@ -4535,12 +4535,25 @@ static int r848_set_params(struct dvb_frontend *fe)
 
 	switch (c->delivery_system) {
 	case SYS_DVBC_ANNEX_A:
+	case SYS_DVBC_ANNEX_C:
 		R848_INFO.RF_KHz = c->frequency / 1000;
 		if(c->bandwidth_hz <= 6000000) {
         		R848_INFO.R848_Standard = R848_DVB_C_6M_IF_5M;
 		} else if (c->bandwidth_hz <= 8000000) {
 			R848_INFO.R848_Standard = R848_DVB_C_8M_IF_5M;
 		}
+
+		/* set pll data */
+		if(R848_SetStandard(priv, R848_INFO.R848_Standard) != RT_Success) {
+			return RT_Fail;
+		}
+		if(R848_SetFrequency(priv, R848_INFO) != RT_Success) {
+			return RT_Fail;
+		}
+		break;
+	case SYS_DVBC_ANNEX_B:
+		R848_INFO.RF_KHz = c->frequency / 1000;
+       		R848_INFO.R848_Standard = R848_J83B_IF_5M;
 
 		/* set pll data */
 		if(R848_SetStandard(priv, R848_INFO.R848_Standard) != RT_Success) {
