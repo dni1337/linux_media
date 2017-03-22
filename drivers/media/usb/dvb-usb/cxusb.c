@@ -1485,6 +1485,7 @@ enum cxusb_table_index {
 	MYGICA_D689,
 	MYGICA_T230,
 	MYGICA_T230C,
+	MYGICA_T230C2,
 	NR__cxusb_table_index
 };
 
@@ -1554,6 +1555,9 @@ static struct usb_device_id cxusb_table[NR__cxusb_table_index + 1] = {
 	},
 	[MYGICA_T230C] = {
 		USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230+1)
+	},
+	[MYGICA_T230C2] = {
+		USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230+2)
 	},
 	{}		/* Terminating entry */
 };
@@ -2309,12 +2313,19 @@ static struct dvb_usb_device_properties cxusb_mygica_t230c_properties = {
 		.allowed_protos = RC_BIT_UNKNOWN,
 	},
 
-	.num_device_descs = 1,
+	.num_device_descs = 2,
 	.devices = {
 		{
 			"Mygica T230C DVB-T/T2/C",
 			{ NULL },
 			{ &cxusb_table[MYGICA_T230C], NULL },
+		  
+		},
+		{
+			"Mygica T230C2 DVB-T/T2/C",
+			{ NULL },
+			{ &cxusb_table[MYGICA_T230C2], NULL },
+		  
 		},
 	}
 };
