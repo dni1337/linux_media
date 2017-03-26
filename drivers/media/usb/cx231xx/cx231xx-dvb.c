@@ -37,10 +37,10 @@
 #include "mb86a20s.h"
 #include "si2157.h"
 #include "lgdt3306a.h"
+#include "r820t.h"
+#include "mn88473.h"
 #include "tda18212.h"
 #include "cxd2820r.h"
-#include "si2168.h"
-#include "si2157.h"
 #include "tas2101.h"
 #include "av201x.h"
 #include "tbscxci.h"
@@ -151,6 +151,13 @@ static struct lgdt3306a_config hauppauge_955q_lgdt3306a_config = {
 	.tpclk_edge         = LGDT3306A_TPCLK_RISING_EDGE,
 	.tpvalid_polarity   = LGDT3306A_TP_VALID_HIGH,
 	.xtalMHz            = 25,
+};
+
+static struct r820t_config r828d_config = {
+	.i2c_addr = 0x3a,
+	.xtal = 16000000,
+	.max_i2c_msg_len = 2,
+	.rafael_chip = CHIP_R828D,
 };
 
 static struct cxd2820r_config cxd2820r_config0 = {
@@ -1227,6 +1234,51 @@ static int dvb_init(struct cx231xx *dev)
 
 		dev->cx231xx_reset_analog_tuner = NULL;
 		dev->dvb[i]->i2c_client_tuner = client;
+		break;
+	}
+	case CX231XX_BOARD_ASTROMETA_T2HYBRID:
+	{
+		struct mn88473_config pan_mn88473_config = {};
+		struct i2c_board_info info = {};
+		struct i2c_client *client;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+
+		/* attach demodulator chip */
+		memset(&pan_mn88473_config, 0, sizeof(struct mn88473_config));
+		pan_mn88473_config.fe = &dev->dvb[i]->frontend;
+		pan_mn88473_config.i2c_wr_max = 22;
+		strlcpy(info.type, "mn88473", I2C_NAME_SIZE);
+		info.addr = dev->board.demod_addr;
+		info.platform_data = &pan_mn88473_config;
+
+		request_module(info.type);
+		client = i2c_new_device(demod_i2c, &info);
+
+		if (client == NULL || client->dev.driver == NULL || dev->dvb[i]->frontend == NULL) {
+			dev_err(dev->dev, "Failed to attach mn88473 front end\n");
+			result = -EINVAL;
+			goto out_free;
+		}
+
+		if (!try_module_get(client->dev.driver->owner)) {
+			i2c_unregister_device(client);
+			result = -ENODEV;
+			goto out_free;
+		}
+
+		dvb->i2c_client_demod = client;
+		dev->dvb[i]->frontend->ops.i2c_gate_ctrl = NULL;
+		dvb->frontend->callback = NULL;
+
+		/* attach tuner chip */
+		dvb_attach(r820t_attach, dev->dvb[i]->frontend, tuner_i2c,
+			   &r828d_config);
+		/* Use tuner to get the signal strength */
+		dev->dvb[i]->frontend->ops.read_signal_strength =
+				dev->dvb[i]->frontend->ops.tuner_ops.get_rf_strength;
+
+		dev->cx231xx_reset_analog_tuner = NULL;
 		break;
 	}
 	case CX231XX_BOARD_TBS_5280:

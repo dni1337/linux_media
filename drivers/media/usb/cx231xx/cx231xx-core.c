@@ -360,6 +360,7 @@ int cx231xx_send_vendor_cmd(struct cx231xx *dev,
 					/* Internal Master 3 Bus can send
 					 * and receive only 4 bytes per time
 					 */
+					(ven_req->bRequest == 0x1) || 
 					(ven_req->bRequest == 0x2))) {
 		unsend_size = 0;
 		pdata = ven_req->pBuff;
@@ -724,6 +725,7 @@ int cx231xx_set_mode(struct cx231xx *dev, enum cx231xx_mode set_mode)
 			break;
 		case CX231XX_BOARD_HAUPPAUGE_EXETER:
 		case CX231XX_BOARD_HAUPPAUGE_930C_HD_1113xx:
+		case CX231XX_BOARD_ASTROMETA_T2HYBRID:
 		case CX231XX_BOARD_TBS_5280:
 		case CX231XX_BOARD_TBS_5281:
 		case CX231XX_BOARD_TBS_5990:
@@ -749,6 +751,7 @@ int cx231xx_set_mode(struct cx231xx *dev, enum cx231xx_mode set_mode)
 		case CX231XX_BOARD_PV_PLAYTV_USB_HYBRID:
 		case CX231XX_BOARD_HAUPPAUGE_USB2_FM_PAL:
 		case CX231XX_BOARD_HAUPPAUGE_USB2_FM_NTSC:
+		case CX231XX_BOARD_ASTROMETA_T2HYBRID:
 		case CX231XX_BOARD_TBS_5280:
 		case CX231XX_BOARD_TBS_5281:
 		case CX231XX_BOARD_TBS_5990:
@@ -1895,6 +1898,7 @@ int cx231xx_dev_init(struct cx231xx *dev)
 	case CX231XX_BOARD_PV_PLAYTV_USB_HYBRID:
 	case CX231XX_BOARD_HAUPPAUGE_USB2_FM_PAL:
 	case CX231XX_BOARD_HAUPPAUGE_USB2_FM_NTSC:
+	case CX231XX_BOARD_ASTROMETA_T2HYBRID:
 	case CX231XX_BOARD_TBS_5280:
 	case CX231XX_BOARD_TBS_5281:
 	case CX231XX_BOARD_TBS_5990:

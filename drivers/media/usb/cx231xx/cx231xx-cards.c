@@ -725,6 +725,7 @@ struct cx231xx_board cx231xx_boards[] = {
 		.tuner_i2c_master = I2C_1_MUX_3,
 		.demod_i2c_master = { I2C_1_MUX_3 },
 		.has_dvb = 1,
+		.adap_cnt = 1,
 		.demod_addr = 0x0e,
 		.norm = V4L2_STD_PAL,
 
@@ -764,6 +765,7 @@ struct cx231xx_board cx231xx_boards[] = {
 		.tuner_i2c_master = I2C_1_MUX_3,
 		.demod_i2c_master = { I2C_1_MUX_3 },
 		.has_dvb = 1,
+		.adap_cnt = 1,
 		.demod_addr = 0x0e,
 		.norm = V4L2_STD_PAL,
 
@@ -858,6 +860,7 @@ struct cx231xx_board cx231xx_boards[] = {
 		.demod_addr = 0x64, /* 0xc8 >> 1 */
 		.demod_i2c_master = { I2C_1_MUX_3 },
 		.has_dvb = 1,
+		.adap_cnt = 1,
 		.ir_i2c_master = I2C_0,
 		.norm = V4L2_STD_PAL,
 		.output_mode = OUT_MODE_VIP11,
@@ -880,6 +883,42 @@ struct cx231xx_board cx231xx_boards[] = {
 			.amux = CX231XX_AMUX_LINE_IN,
 			.gpio = NULL,
 		} },
+	},
+	[CX231XX_BOARD_ASTROMETA_T2HYBRID] = {
+		.name = "Astrometa T2hybrid",
+		.tuner_type = TUNER_ABSENT,
+		.tuner_addr = 0x3a,
+		.tuner_gpio = RDE250_XCV_TUNER,
+		.tuner_sif_gpio = 0x05,
+		.tuner_scl_gpio = 0x1a,
+		.tuner_sda_gpio = 0x1b,
+		.decoder = CX231XX_AVDECODER,
+		.output_mode = OUT_MODE_VIP11,
+		.demod_xfer_mode = 0,
+		.ctl_pin_status_mask = 0xFFFFFFC4,
+		.agc_analog_digital_select_gpio = 0x01,
+		.gpio_pin_status_mask = 0x000000A,
+		.tuner_i2c_master = I2C_1_MUX_3,
+		.demod_i2c_master = { I2C_1_MUX_1},
+		.has_dvb = 1,
+		.adap_cnt = 1,
+		.demod_addr = 0x18,
+		.norm = V4L2_STD_NTSC,
+
+		.input = {{
+				.type = CX231XX_VMUX_COMPOSITE1,
+				.vmux = CX231XX_VIN_2_1,
+				.amux = CX231XX_AMUX_LINE_IN,
+				.gpio = NULL,
+			}, {
+				.type = CX231XX_VMUX_SVIDEO,
+				.vmux = CX231XX_VIN_1_1 |
+					(CX231XX_VIN_1_2 << 8) |
+					CX25840_SVIDEO_ON,
+				.amux = CX231XX_AMUX_LINE_IN,
+				.gpio = NULL,
+			}
+		},
 	},
 	[CX231XX_BOARD_TBS_5280] = {
 		.name = "TurboSight TBS 5280",
@@ -1073,6 +1112,8 @@ struct usb_device_id cx231xx_id_table[] = {
 	 .driver_info = CX231XX_BOARD_TBS_5281},
 	{USB_DEVICE(0x734c, 0x5990),
 	 .driver_info = CX231XX_BOARD_TBS_5990},
+	{USB_DEVICE(0x15f4, 0x0135),
+	 .driver_info = CX231XX_BOARD_ASTROMETA_T2HYBRID},
 	{},
 };
 
