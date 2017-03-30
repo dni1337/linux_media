@@ -1442,7 +1442,7 @@ static void cxusb_disconnect(struct usb_interface *intf)
 {
 	struct dvb_usb_device *d = usb_get_intfdata(intf);
 	struct cxusb_state *st = d->priv;
-#if 0
+
 	struct i2c_client *client;
 
 	/* remove I2C client for tuner */
@@ -1458,7 +1458,6 @@ static void cxusb_disconnect(struct usb_interface *intf)
 		module_put(client->dev.driver->owner);
 		i2c_unregister_device(client);
 	}
-#endif
 	dvb_usb_device_exit(intf);
 }
 
