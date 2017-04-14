@@ -1,5 +1,5 @@
 /*
- * Silicon Labs Si2146/2147/2148/2157/2158 silicon tuner driver
+ * Silicon Labs Si2141/2146/2147/2148/2151/2157/2158 silicon tuner driver
  *
  * Copyright (C) 2014 Antti Palosaari <crope@iki.fi>
  *
@@ -75,6 +75,7 @@ err_mutex_unlock:
 	return ret;
 }
 
+#define MAX_RESET_ATTEMPTS 10
 static int si2157_init(struct dvb_frontend *fe)
 {
 	struct i2c_client *client = fe->tuner_priv;
@@ -84,7 +85,8 @@ static int si2157_init(struct dvb_frontend *fe)
 	struct si2157_cmd cmd;
 	const struct firmware *fw;
 	const char *fw_name;
-	unsigned int uitmp, chip_id, count;
+	unsigned int uitmp, chip_id, i;
+
 
 	dev_dbg(&client->dev, "\n");
 
@@ -103,11 +105,7 @@ static int si2157_init(struct dvb_frontend *fe)
 		goto warm;
 
 	if (dev->chiptype == SI2157_CHIPTYPE_SI2141) {
-		count =0;
-		do {
-			if (count > 10)
-				 goto err;
-
+		for (i = 0; i < MAX_RESET_ATTEMPTS; i++)  {
 			/* reset */
 			memcpy(cmd.args, "\xc0\x05\x00\x00", 4);
 			cmd.wlen = 4;
@@ -122,22 +120,23 @@ static int si2157_init(struct dvb_frontend *fe)
 			ret = si2157_cmd_execute(client, &cmd);
 			if (ret)
 				goto err;
-			count ++;
-		} while(cmd.args[0]== 0xfe);
-		dev_info(&client->dev, "Si2141/2151 reset attempts %d\n", count);
+			if (cmd.args[0] != 0xfe)
+				break;
+		}
+		if (i >= MAX_RESET_ATTEMPTS)
+			goto err;
 	}
 
 	/* power up */
-	switch (dev->chiptype)
-	{
+	switch (dev->chiptype) {
 	case SI2157_CHIPTYPE_SI2146:
 		memcpy(cmd.args, "\xc0\x05\x01\x00\x00\x0b\x00\x00\x01", 9);
 		cmd.wlen = 9;
 		break;
 	case SI2157_CHIPTYPE_SI2141:
-  		memcpy(cmd.args, "\xc0\x08\x01\x02\x00\x08\x01", 7);
+		memcpy(cmd.args, "\xc0\x08\x01\x02\x00\x08\x01", 7);
 		cmd.wlen = 7;
-		 break;
+		break;
 	default:
 		memcpy(cmd.args, "\xc0\x00\x0c\x00\x00\x01\x01\x01\x01\x01\x01\x02\x00\x00\x01", 15);
 		cmd.wlen = 15;
@@ -253,7 +252,7 @@ skip_fw_download:
 
 	dev_info(&client->dev, "firmware version: %c.%c.%d\n",
 			cmd.args[6], cmd.args[7], cmd.args[8]);
-	
+
 	if (dev->chiptype == SI2157_CHIPTYPE_SI2141) {
 		/* set clock */
 		memcpy(cmd.args, "\xc0\x00\x0d", 3);
@@ -263,15 +262,13 @@ skip_fw_download:
 		if (ret)
 			goto err;
 		/* setup PIN */
- 		memcpy(cmd.args, "\x12\x80\x80\x85\x00\x81\x00", 7);
+		memcpy(cmd.args, "\x12\x80\x80\x85\x00\x81\x00", 7);
 		cmd.wlen = 7;
 		cmd.rlen = 7;
 		ret = si2157_cmd_execute(client, &cmd);
 		if (ret)
 			goto err;
-	  
 	}
-
 warm:
 	/* init statistics in order signal app which are supported */
 	c->strength.len = 1;
@@ -544,7 +541,8 @@ static int si2157_probe(struct i2c_client *client,
 #endif
 
 	dev_info(&client->dev, "Silicon Labs %s successfully attached\n",
-			dev->chiptype == SI2157_CHIPTYPE_SI2146 ?
+			dev->chiptype == SI2157_CHIPTYPE_SI2141 ?
+			"Si2141/2151" : dev->chiptype == SI2157_CHIPTYPE_SI2146 ?
 			"Si2146" : "Si2147/2148/2157/2158");
 
 	return 0;
@@ -582,6 +580,7 @@ static const struct i2c_device_id si2157_id_table[] = {
 	{"si2157", SI2157_CHIPTYPE_SI2157},
 	{"si2146", SI2157_CHIPTYPE_SI2146},
 	{"si2141", SI2157_CHIPTYPE_SI2141},
+	{"si2151", SI2157_CHIPTYPE_SI2141},
 	{}
 };
 MODULE_DEVICE_TABLE(i2c, si2157_id_table);
@@ -598,7 +597,7 @@ static struct i2c_driver si2157_driver = {
 
 module_i2c_driver(si2157_driver);
 
-MODULE_DESCRIPTION("Silicon Labs Si2146/2147/2148/2157/2158 silicon tuner driver");
+MODULE_DESCRIPTION("Silicon Labs Si2141/2146/2147/2148/2151/2157/2158 silicon tuner driver");
 MODULE_AUTHOR("Antti Palosaari <crope@iki.fi>");
 MODULE_LICENSE("GPL");
 MODULE_FIRMWARE(SI2158_A20_FIRMWARE);
