@@ -602,9 +602,18 @@ static int tbs5880_frontend_attach(struct dvb_usb_adapter *d)
 	return -EIO;
 }
 
-static void tbs58802_usb_disconnect (struct usb_interface * intf)
+static void tbs5880_usb_disconnect (struct usb_interface * intf)
 {
 	struct dvb_usb_device *d = usb_get_intfdata (intf);
+	struct tbs5880_state *st = d->priv;
+	struct i2c_client *client;
+
+	/* remove I2C client for tuner */
+	client = st->i2c_client_tuner;
+	if (client) {
+		module_put(client->dev.driver->owner);
+		i2c_unregister_device(client);
+	}
 	
 	tbs5880_uninit (d);
 	dvb_usb_device_exit (intf);
@@ -812,7 +821,7 @@ static int tbs5880_probe(struct usb_interface *intf,
 static struct usb_driver tbs5880_driver = {
 	.name = "tbs5880",
 	.probe = tbs5880_probe,
-	.disconnect = tbs58802_usb_disconnect,
+	.disconnect = tbs5880_usb_disconnect,
 	.id_table = tbs5880_table,
 };
 

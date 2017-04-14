@@ -458,7 +458,6 @@ static int tbs5520se_probe(struct usb_interface *intf,
 
 static void tbs5520se_disconnect(struct usb_interface *intf)
 {
-#if 0
 	struct dvb_usb_device *d = usb_get_intfdata(intf);
 	struct tbs5520se_state *st = d->priv;
 	struct i2c_client *client;
@@ -476,7 +475,7 @@ static void tbs5520se_disconnect(struct usb_interface *intf)
 		module_put(client->dev.driver->owner);
 		i2c_unregister_device(client);
 	}
-#endif	
+
 	dvb_usb_device_exit(intf);
 }
 
