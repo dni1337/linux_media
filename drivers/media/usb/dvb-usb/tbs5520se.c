@@ -228,7 +228,11 @@ static int tbs5520se_frontend_attach(struct dvb_usb_adapter *adap)
 	si2183_config.ts_clock_gapped = true;
 	si2183_config.rf_in = 0;
 	si2183_config.RF_switch = NULL;
-	si2183_config.agc_mode = 0x5 ;
+	si2183_config.fef_pin = SI2183_MP_B;
+	si2183_config.fef_inv = 0;
+	si2183_config.agc_pin = SI2183_MP_D;
+	si2183_config.ter_agc_inv = 0;
+	si2183_config.sat_agc_inv = 1;
 	memset(&info, 0, sizeof(struct i2c_board_info));
 	strlcpy(info.type, "si2183", I2C_NAME_SIZE);
 	info.addr = 0x67;
