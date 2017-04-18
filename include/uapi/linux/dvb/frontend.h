@@ -333,10 +333,10 @@ enum fe_rolloff {
 	ROLLOFF_35, /* Implied value in DVB-S, default for DVB-S2 */
 	ROLLOFF_20,
 	ROLLOFF_25,
+	ROLLOFF_AUTO,
 	ROLLOFF_15,
 	ROLLOFF_10,
 	ROLLOFF_5,
-	ROLLOFF_AUTO,
 };
 
 enum fe_delivery_system {
