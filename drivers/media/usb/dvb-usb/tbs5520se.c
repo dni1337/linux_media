@@ -219,7 +219,6 @@ static int tbs5520se_frontend_attach(struct dvb_usb_adapter *adap)
 	struct si2157_config si2157_config;
 	u8 buf[20];
 
-
 	/* attach frontend */
 	memset(&si2183_config,0,sizeof(si2183_config));
 	si2183_config.i2c_adapter = &adapter;
@@ -293,22 +292,14 @@ static int tbs5520se_frontend_attach(struct dvb_usb_adapter *adap)
 	adap->fe_adap[0].fe2->ops.delsys[2] = SYS_DSS;
 	adap->fe_adap[0].fe2->id = 1;
 
-	if (dvb_attach(av201x_attach, adap->fe_adap[0].fe2, &tbs5520se_av201x_cfg,
-				adapter) == NULL) {
-			err("attach av201x fail");
+	if (!dvb_attach(av201x_attach, adap->fe_adap[0].fe2, &tbs5520se_av201x_cfg,
+			adapter))
 			return -ENODEV;
-		}
-	else
-		{
-			buf[0] = 1;
-			buf[1] = 0;
-			tbs5520se_op_rw(d->udev, 0x8a, 0, 0,
-						buf, 2, TBS5520se_WRITE_MSG);
-			
-			adap->fe_adap[0].fe2->ops.set_voltage = tbs5520se_set_voltage;
-			
-
-		}
+	buf[0] = 1;
+	buf[1] = 0;
+	tbs5520se_op_rw(d->udev, 0x8a, 0, 0,
+			buf, 2, TBS5520se_WRITE_MSG);
+	adap->fe_adap[0].fe2->ops.set_voltage = tbs5520se_set_voltage;
 
 	buf[0] = 0;
 	buf[1] = 0;
@@ -318,9 +309,6 @@ static int tbs5520se_frontend_attach(struct dvb_usb_adapter *adap)
 	buf[1] = 1;
 	tbs5520se_op_rw(d->udev, 0x8a, 0, 0,
 			buf, 2, TBS5520se_WRITE_MSG);
-
-	
-	strlcpy(adap->fe_adap[0].fe->ops.info.name,d->props.devices[0].name,52);
 
 	return 0;
 }
