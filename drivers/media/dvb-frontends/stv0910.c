@@ -921,11 +921,15 @@ static int SetMIS(struct stv *state, int mis)
 		write_reg(state, RSTV0910_P2_PDELCTRL1 + state->regoff, tmp);
 	} else {
 		SetPLS(state, (mis>>26) & 0x3, (mis>>8) & 0x3FFFF);
+		mis &= 0xff;
+		//pr_warn("%s: enable MIS filtering - %d\n", __func__, mis);
 		read_reg(state, RSTV0910_P2_PDELCTRL1 + state->regoff, &tmp);
-		tmp |= 0x20;
+		if (mis)
+			tmp |= 0x20;
+		else
+			tmp &= ~0x20;
 		write_reg(state, RSTV0910_P2_PDELCTRL1 + state->regoff, tmp);
-		//pr_warn("%s: enable MIS filtering - %d\n", __func__, mis & 0xff);
-		write_reg(state, RSTV0910_P2_ISIENTRY + state->regoff, mis & 0xff );
+		write_reg(state, RSTV0910_P2_ISIENTRY + state->regoff, mis);
 		write_reg(state, RSTV0910_P2_ISIBITENA + state->regoff, 0xff );
 	}
 	return 0;

@@ -3465,10 +3465,11 @@ static int stv090x_set_mis(struct stv090x_state *state, int mis)
 		if (STV090x_WRITE_DEMOD(state, PDELCTRL1, reg) < 0)
 			goto err;
 	} else {
-		dprintk(FE_DEBUG, 1, "Enable MIS filtering - %d", mis);
 		stv090x_set_pls(state, (mis>>26) & 0x3, (mis>>8) & 0x3FFFF);
+		mis &= 0xff;
+		dprintk(FE_DEBUG, 1, "Enable MIS filtering - %d", mis);
 		reg = STV090x_READ_DEMOD(state, PDELCTRL1);
-		STV090x_SETFIELD_Px(reg, FILTER_EN_FIELD, 0x01);
+		STV090x_SETFIELD_Px(reg, FILTER_EN_FIELD, mis ? 1 : 0);
 		if (STV090x_WRITE_DEMOD(state, PDELCTRL1, reg) < 0)
 			goto err;
 		if (STV090x_WRITE_DEMOD(state, ISIENTRY, mis) < 0)
