@@ -449,3 +449,15 @@ config DVB_USB_TBS5520SE
 	select DVB_SI2183 if MEDIA_SUBDRV_AUTOSELECT
 	help
 	  Say Y here to support the Turbosight TBS5520SE USB2 DVB-T/T2/C/C2/S/S2/ISDB-T device
+
+config DVB_USB_CYCITV
+	tristate "Geniatech CI TV USB2.0 support"
+	depends on DVB_USB
+#	select DVB_TDA10023 if MEDIA_SUBDRV_AUTOSELECT
+#	select DVB_TDA10021 if MEDIA_SUBDRV_AUTOSELECT
+	select DVB_DS3000 if MEDIA_SUBDRV_AUTOSELECT
+#	select DVB_MN88436 if MEDIA_SUBDRV_AUTOSELECT
+#	select MEDIA_TUNER_MXL603 if MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Say Y here to support the CYCI TV, Geniatech, Prof DVB(CI) USB2.0
+	  receivers.
