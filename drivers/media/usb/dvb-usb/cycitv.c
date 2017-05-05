@@ -8,36 +8,9 @@
 *
 * see Documentation/dvb/README.dvb-usb for more information
 */
+
 #include "cycitv.h"
-
-//////////////////////////////////////////////////////
-// dvb daughter board support now
-//
-#define DAUGHTERBOARD_UNKNOW      0x00
-#define DAUGHTERBOARD_CU1216_DVBC 0x01
-#define DAUGHTERBOARD_DS3000_DVBS 0x02
-//#define DAUGHTERBOARD_BM6111_TDAE3_DVBC 0x03
-//#define DAUGHTERBOARD_MN88436_MXL603_ATSC 0x04
-//
-//
-#ifdef DAUGHTERBOARD_DS3000_DVBS
-#include "ds3000.h"
-#endif
-
-#ifdef DAUGHTERBOARD_CU1216_DVBC
-#include "tda1002x.h"
-#endif
-
-#ifdef DAUGHTERBOARD_BM6111_TDAE3_DVBC
-#include "bm6111.h"
-#endif
-
-#ifdef  DAUGHTERBOARD_MN88436_MXL603_ATSC
-#include "mn88436.h"
-#include "mxl603.h"
-#endif
-
-//////////////////////////////////////////////////////
+#include "ds3k.h"
 #include "dvb_ca_en50221.h"
 
 #ifndef USB_PID_CYCITV_COLD
@@ -56,11 +29,9 @@
 #define USB_PID_CYCITV_WORK_2  0x614f
 #endif
 
-
 #ifndef USB_VID_GENIATECH
 #define USB_VID_GENIATECH  0x1f4d
 #endif
-
 
 #define CYCITV_READ_MSG 0
 #define CYCITV_WRITE_MSG 1
@@ -317,33 +288,7 @@ static int cycitv_streaming_ctrl(struct dvb_usb_adapter *adap, int onoff)
 	u8 tsckinv ;
 	deb_info("%s onoff=%d\n", __func__,onoff);
 
-	switch(state->board_type)
-	{
-#ifdef DAUGHTERBOARD_DS3000_DVBS
-	case DAUGHTERBOARD_DS3000_DVBS:
-	    tsckinv = 0;//
-	    break;
-#endif
-#ifdef DAUGHTERBOARD_CU1216_DVBC
-	case DAUGHTERBOARD_CU1216_DVBC:
-	    tsckinv = 0;
-	    break;
-#endif
-#ifdef DAUGHTERBOARD_BM6111_TDAE3_DVBC
-	case DAUGHTERBOARD_BM6111_TDAE3_DVBC:
-	    tsckinv = 0;
-	    break;
-#endif
-#ifdef  DAUGHTERBOARD_MN88436_MXL603_ATSC
-	case DAUGHTERBOARD_MN88436_MXL603_ATSC:
-	    tsckinv = 0;
-	    break;
-#endif
-	case DAUGHTERBOARD_UNKNOW:
-	default:
-	    tsckinv = 0;
-	    break;
-	}
+	tsckinv = 0;//
 
 	obuf[0] = onoff ? CMD_START_TS:CMD_STOP_TS;
 	obuf[1] = tsckinv;
@@ -697,8 +642,7 @@ static int cycitv_read_mac_address(struct dvb_usb_device *d, u8 mac[6])
 	return 0;
 }
 
-#ifdef DAUGHTERBOARD_DS3000_DVBS
-static struct ds3000_config su3000_ds3000_config = {
+static struct ds3k_config su3000_ds3k_config = {
 	.demod_address = 0x68,
 	.ci_mode = 1,
 };
@@ -716,219 +660,6 @@ static u8 read_ds3000_ID(struct dvb_usb_adapter *adap)
 
 	return reg;
 }
-#endif //DAUGHTERBOARD_DS3000_DVBS
-//---------------------------------------------------------------
-#ifdef DAUGHTERBOARD_CU1216_DVBC
-static u8 read_cu1216_ID(struct dvb_usb_adapter *adap)
-{
-	u8 b = 0x1a;
-	u8 reg;
-	struct i2c_msg msg[] = { {.addr = 0x0c,.flags = 0,.buf = &b,.len = 1},
-	{.addr = 0x0c,.flags = I2C_M_RD,.buf = &reg,.len = 1}
-	};
-
-	if (i2c_transfer(&adap->dev->i2c_adap, msg, 2) != 2)
-		reg = 0x00;
-
-	return reg;
-}
-static u8 read_cu1216_pwm(struct dvb_usb_adapter *adap)
-{
-	u8 b = 0xff;
-	u8 pwm;
-	struct i2c_msg msg[] = { {.addr = 0x50,.flags = 0,.buf = &b,.len = 1},
-	{.addr = 0x50,.flags = I2C_M_RD,.buf = &pwm,.len = 1}
-	};
-
-	if ((i2c_transfer(&adap->dev->i2c_adap, msg, 2) != 2)
-	    || (pwm == 0xff))
-		pwm = 0x48;
-
-	return pwm;
-}
-static int philips_cu1216_tuner_set_params(struct dvb_frontend *fe)
-{
-	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-	struct dvb_usb_adapter *adap = fe->dvb->priv;
-	u8 buf[6];
-	struct i2c_msg msg = {.addr = 0x60,.flags = 0,.buf = buf,.len = sizeof(buf) };
-	int i;
-
-#define CU1216_IF 36125000
-#define TUNER_MUL 62500
-
-	u32 div = (c->frequency + CU1216_IF + TUNER_MUL / 2) / TUNER_MUL;
-
-	deb_info("philips_cu1216_tuner_set_params freq=%d\n",c->frequency);
-
-	buf[0] = (div >> 8) & 0x7f;
-	buf[1] = div & 0xff;
-	buf[2] = 0xce;
-	buf[3] = (c->frequency < 150000000 ? 0x01 :
-		  c->frequency < 445000000 ? 0x02 : 0x04);
-	buf[4] = 0xde;
-	buf[5] = 0x20;
-
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 1);
-	if (i2c_transfer(&adap->dev->i2c_adap, &msg, 1) != 1)
-		return -EIO;
-
-	/* wait for the pll lock */
-	msg.flags = I2C_M_RD;
-	msg.len = 1;
-	for (i = 0; i < 20; i++) {
-		if (fe->ops.i2c_gate_ctrl)
-			fe->ops.i2c_gate_ctrl(fe, 1);
-		if (i2c_transfer(&adap->dev->i2c_adap, &msg, 1) == 1 && (buf[0] & 0x40))
-			break;
-		msleep(10);
-	}
-
-	/* switch the charge pump to the lower current */
-	msg.flags = 0;
-	msg.len = 2;
-	msg.buf = &buf[2];
-	buf[2] &= ~0x40;
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 1);
-	if (i2c_transfer(&adap->dev->i2c_adap, &msg, 1) != 1)
-		return -EIO;
-
-	return 0;
-}
-static struct tda1002x_config philips_cu1216_config = {
-	.demod_address = 0x0c,
-	.invert = 1,
-};
-static struct tda10023_config tda10023_cu1216_config = {
-	.demod_address = 0x0c,
-	.invert = 1,
-	.output_mode = TDA10023_OUTPUT_MODE_PARALLEL_B,
-	.xtal  = 28920000,
-	.pll_m = 8,
-	.pll_p = 4,
-	.pll_n = 1,
-	.deltaf = 0xba02,
-};
-#endif //DAUGHTERBOARD_CU1216_DVBC
-//---------------------------------------------------------------
-#ifdef DAUGHTERBOARD_BM6111_TDAE3_DVBC
-static u8 read_bm6111_ID(struct dvb_usb_adapter *adap)
-{
-	u8 rbuf[2] = {0x80,0x1f};
-	u8 regn[10];
-	u8 reg =0x00;
-	struct i2c_msg rmsg[] = { {.addr = 0x1c,.flags = 0,.buf = rbuf,.len = 2},
-	{.addr = 0x1c,.flags = I2C_M_RD,.buf = regn,.len = 9}
-	};
-
-	if (i2c_transfer(&adap->dev->i2c_adap, rmsg, 2) == 2) {
-	    deb_info("ID =%02x %02x %02x %02x %02x %02x %02x %02x %02x \n",regn[0],regn[1],regn[2],regn[3],regn[4],regn[5],regn[6],regn[7],regn[8]);
-	    reg = regn[5];
-	}
-	return reg;
-}
-
-static int alps_tdae3_tuner_set_params(struct dvb_frontend *fe)
-{
-	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-	struct dvb_usb_adapter *adap = fe->dvb->priv;
-	u8 buf[6];
-	struct i2c_msg msg = {.addr = 0x61,.flags = 0,.buf = buf,.len = sizeof(buf) };
-//	int i;
-
-#define TDAE3_IF 36125000
-#define TDAE3_MUL 62500
-
-//	u32 div = (c->frequency + TDAE3_IF + TDAE3_MUL / 2) / TDAE3_MUL;
-	u32 div = (c->frequency + TDAE3_IF ) / TDAE3_MUL;
-
-	deb_info("alps_tdae3_tuner_set_params freq=%d\n",c->frequency);
-
-	buf[0] = (div >> 8) & 0x7f;
-	buf[1] = div & 0xff;
-	buf[2] = 0x9b;//0x83;//0x9b; RFAGC
-	if(c->frequency < 125000000) {
-	buf[3] = 0xa0; //10 10 0000
-	buf[4] = 0xc6; //1100 0 110
-	} else if(c->frequency < 366000000) {
-	buf[3] = 0xa2; //10 10 0010
-	buf[4] = 0xc6; //1100 0 110
-	} else if(c->frequency < 622000000) {
-	buf[3] = 0x68; //01 10 1000
-	buf[4] = 0xc6; //1100 0 110
-	} else if(c->frequency < 726000000) {
-	buf[3] = 0xa8; //10 10 1000
-	buf[4] = 0xc6; //1100 0 110
-	} else {
-	buf[3] = 0xe8; //11 10 1000
-	buf[4] = 0xc6; //1100 0 110
-	}
-	if (fe->ops.i2c_gate_ctrl)
-		fe->ops.i2c_gate_ctrl(fe, 1);
-	if (i2c_transfer(&adap->dev->i2c_adap, &msg, 1) != 1)
-		return -EIO;
-
-	deb_xfer("     wTuner5=[%02x %02x %02x %02x %02x]\n", buf[0],buf[1],buf[2],buf[3],buf[4]);
-	/* wait for the pll lock */
-/*	msg.flags = I2C_M_RD;
-	msg.len = 1;
-	for (i = 0; i < 20; i++) {
-		if (fe->ops.i2c_gate_ctrl)
-			fe->ops.i2c_gate_ctrl(fe, 1);
-		if (i2c_transfer(&adap->dev->i2c_adap, &msg, 1) == 1 && (buf[0] & 0x40))
-			break;
-	deb_xfer("     rTuner=[%02x]\n",buf[0]);
-		msleep(10);
-	}
-*/
-	return 0;
-}
-
-static struct bm6111_config bm6111_tdae3_config = {
-	.demod_address = 0x1c,
-    .xtal  = 28920000,
-	.invert = 1,
-};
-#endif //DAUGHTERBOARD_BM6111_TDAE3_DVBC
-
-#ifdef DAUGHTERBOARD_MN88436_MXL603_ATSC
-static u8 read_mn88436_ID(struct dvb_usb_adapter *adap)
-{
-	u8 b = 0xff;
-	u8 reg;
-	struct i2c_msg msg[] = { {.addr = 0x18,.flags = 0,.buf = &b,.len = 1},
-	{.addr = 0x18,.flags = I2C_M_RD,.buf = &reg,.len = 1}
-	};
-
-	if (i2c_transfer(&adap->dev->i2c_adap, msg, 2) != 2) {
-		reg = 0x00;
-	    deb_info("read mn88436 ID error\n");
-	} else {
-	    deb_info("read mn88436 ID =%02x\n",reg);
-	}
-
-	return reg;
-}
-static struct mn88436_config mn88436_mxl03_config = {
-	.demod_address = 0x30 >> 1,
-	.output_mode   = MN88436_PARALLEL_OUTPUT,
-	.gpio	       = MN88436_GPIO_ON,
-	.qam_if	       = 44000,
-	.inversion     = MN88436_INVERSION_OFF,
-	.status_mode   = MN88436_DEMODLOCKING,
-	.mpeg_timing   = MN88436_MPEGTIMING_NONCONTINOUS_NONINVERTING_CLOCK,
-};
-static struct mxl603_config mn88436_mxl03_tuner_config = {
-	.i2c_address     = 0xC0 >> 1,
-	.if_freq         = IF_FREQ_5000000HZ,
-	.div_out         = MXL_DIV_OUT_1,
-	.clock_out       = MXL_CLOCK_OUT_ENABLE, /*lxg MXL_CLOCK_OUT_DISABLE,*/
-	.xtal_freq       = CRYSTAL_FREQ_24000000HZ,
-};
-
-#endif //DAUGHTERBOARD_MN88436_MXL603_ATSC
 
 static int cycitv_frontend_attach(struct dvb_usb_adapter *d)
 {
@@ -953,77 +684,16 @@ static int cycitv_frontend_attach(struct dvb_usb_adapter *d)
 		    err("gpio set failed.\n");
 	msleep(200);
 	//attach
-	state->board_type = DAUGHTERBOARD_UNKNOW;
 	d->fe_adap[0].fe = NULL;
-#ifdef DAUGHTERBOARD_CU1216_DVBC
-	id = read_cu1216_ID(d);
-	deb_info("cu1216 frontend check ID=%02x! \n",(u8)id);
-	if((id & 0xf0)==0x70) {
-		if(id==0x7d) {
-			if ((d->fe_adap[0].fe = tda10023_attach(&tda10023_cu1216_config, &d->dev->i2c_adap, 0x48)) != NULL)
-				deb_info("found Philips CU1216 DVB-C frontend (TDA10023)\n");
-		}  else {
-			if((d->fe_adap[0].fe = dvb_attach(tda10021_attach, &philips_cu1216_config,&d->dev->i2c_adap,read_cu1216_pwm(d)))!=NULL)
-				deb_info("found Philips CU1216 DVB-C frontend (TDA10021)\n");
-		}
-		if (d->fe_adap[0].fe) {
-			d->fe_adap[0].fe->ops.tuner_ops.set_params = philips_cu1216_tuner_set_params;
-			cycitv_ci_init(d);
-			info("Attached is CU1216 DVB-C DAUGHTER BOARD!\n");
-			state->board_type = DAUGHTERBOARD_CU1216_DVBC;
-			return 0;
-		}
-	}
-#endif
-
-#ifdef DAUGHTERBOARD_DS3000_DVBS
 	id = read_ds3000_ID(d);
 	if((id & 0xfe)==0xe0) {
-		if ((d->fe_adap[0].fe = dvb_attach(ds3000_attach, &su3000_ds3000_config,
+		if ((d->fe_adap[0].fe = dvb_attach(ds3k_attach, &su3000_ds3k_config,
 						    &d->dev->i2c_adap)) != NULL) {
-			deb_info("found ds3000 DVB-S/S2 frontend\n");
+			deb_info("found ds3k DVB-S/S2 frontend\n");
 			cycitv_ci_init(d);
-			info("Attached SU3000HD DVB-S/S2 DAUGHTER BOARD!\n");
-			state->board_type = DAUGHTERBOARD_DS3000_DVBS;
 			 return 0;
 		}
 	}
-#endif
-
-#ifdef DAUGHTERBOARD_BM6111_TDAE3_DVBC
-	id = read_bm6111_ID(d);
-	if(id==0x61) {
-		if((d->fe_adap[0].fe = dvb_attach(bm6111_attach, &bm6111_tdae3_config,&d->dev->i2c_adap))!=NULL) {
-			deb_info("found bm6111 DVB-C frontend \n");
-			d->fe_adap[0].fe->ops.tuner_ops.set_params = alps_tdae3_tuner_set_params;
-			cycitv_ci_init(d);
-			info("Attached BM6111 TDAE3 DVB-C DAUGHTER BOARD!\n");
-			state->board_type = DAUGHTERBOARD_BM6111_TDAE3_DVBC;
-			return 0;
-		}
-	}
-#endif
-
-#ifdef DAUGHTERBOARD_MN88436_MXL603_ATSC
-	id = read_mn88436_ID(d);
-	if(id==0xaa) {
-		if((d->fe_adap[0].fe = dvb_attach(mn88436_attach, &mn88436_mxl03_config,&d->dev->i2c_adap))!=NULL) {
-			deb_info("found MN88436 ATSC frontend \n");
-			if(dvb_attach(mxl603_attach, d->fe_adap[0].fe,
-				&d->dev->i2c_adap, &mn88436_mxl03_tuner_config)== NULL) {
-			    if (d->fe_adap[0].fe->ops.release)
-				d->fe_adap[0].fe->ops.release(d->fe_adap[0].fe);
-			    return -EIO;
-			}
-			//
-			cycitv_ci_init(d);
-			info("Attached MN88436 MXL603 ATSC DAUGHTER BOARD!\n");
-			state->board_type = DAUGHTERBOARD_BM6111_TDAE3_DVBC;
-			return 0;
-		}
-	}
-#endif
-    info("NO DAUGHTER BOARD FIND!\n");
 	return -EIO;
 }
 
