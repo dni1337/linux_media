@@ -858,7 +858,8 @@ static int avl6882_set_dvbs(struct dvb_frontend *fe)
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	int ret;
 
-	//printk("[avl6882_set_dvbs] Freq:%d Mhz,sym:%d Khz\n", c->frequency, c->symbol_rate);
+	dev_info(&priv->i2c->dev, "%s: set_dvbs - " \
+				"Freq:%d Mhz,sym:%d\n", KBUILD_MODNAME, c->frequency, c->symbol_rate);
 
 	ret = AVL6882_WR_REG16(priv, 0xc00 + rs_DVBSx_fec_lock_saddr_offset, 0);
 	ret |= AVL6882_WR_REG16(priv, 0xe00 + rc_DVBSx_decode_mode_saddr_offset, 0x14);
@@ -878,7 +879,8 @@ static int avl6882_set_dvbc(struct dvb_frontend *fe)
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	int ret;
 
-	//printk("[avl6882_set_dvbc] Freq:%d Mhz,sym:%d\n", c->frequency, c->symbol_rate);
+	dev_info(&priv->i2c->dev, "%s: set_dvbc - " \
+				"Freq:%d Mhz,sym:%d\n", KBUILD_MODNAME, c->frequency, c->symbol_rate);
 
 	ret = AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_qam_mode_scan_control_iaddr_offset, 0x0101);
 	ret |= AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_symbol_rate_Hz_iaddr_offset, c->symbol_rate);
@@ -894,7 +896,8 @@ static int avl6882_set_dvbc_b(struct dvb_frontend *fe)
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	int ret;
 
-	//printk("[avl6882_set_dvbc] Freq:%d Mhz,sym:%d\n", c->frequency, c->symbol_rate);
+	dev_info(&priv->i2c->dev, "%s: set_dvbc_b - " \
+				"Freq:%d Mhz,sym:%d\n", KBUILD_MODNAME, c->frequency, c->symbol_rate);
 
 	ret = AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_qam_mode_scan_control_iaddr_offset, 0x0101);
 	ret |= AVL6882_WR_REG32(priv, 0x600 + rc_DVBC_symbol_rate_Hz_iaddr_offset, c->symbol_rate);
@@ -910,7 +913,8 @@ static int avl6882_set_dvbt(struct dvb_frontend *fe)
 	u32 bw_fft;
 	int ret;
 
-	//printk("[avl6882_set_dvbtx] Freq:%d bw:%d\n", c->frequency, c->bandwidth_hz);
+	dev_info(&priv->i2c->dev, "%s: set_dvbt - " \
+				"Freq:%d bw:%d delsys:%d\n", KBUILD_MODNAME, c->frequency, c->bandwidth_hz, c->delivery_system);
 
 	/* set bandwidth */
 	if(c->bandwidth_hz <= 1700000) {
