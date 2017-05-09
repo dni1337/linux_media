@@ -469,7 +469,7 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		info.addr = (adapter->nr%2)? 0x67 : 0x64;
 		si2183_config.fef_pin = (adapter->nr%2) ? SI2183_MP_B : SI2183_MP_A;
 		si2183_config.fef_inv = 0;
-		si2183_config.agc_pin = (adapter->nr%2) ? SI2183_MP_D : SI2183_MP_B;
+		si2183_config.agc_pin = (adapter->nr%2) ? SI2183_MP_D : SI2183_MP_C;
 		si2183_config.ter_agc_inv = 0;
 		si2183_config.sat_agc_inv = 1;
 		info.platform_data = &si2183_config;
