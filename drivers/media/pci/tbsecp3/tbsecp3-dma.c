@@ -35,12 +35,12 @@ static void tbsecp3_dma_tasklet(unsigned long adap)
 
 	if (adapter->dma.cnt < TBSECP3_DMA_PRE_BUFFERS)
 	{
-		next_buffer = (tbs_read(adapter->dma.base, TBSECP3_DMA_STAT) - TBSECP3_DMA_PRE_BUFFERS) & (TBSECP3_DMA_BUFFERS - 1);
+		next_buffer = (tbs_read(adapter->dma.base, TBSECP3_DMA_STAT) - TBSECP3_DMA_PRE_BUFFERS + 1) & (TBSECP3_DMA_BUFFERS - 1);
 		adapter->dma.cnt++;
 	}
         else
         {
-		next_buffer = (tbs_read(adapter->dma.base, TBSECP3_DMA_STAT) - TBSECP3_DMA_PRE_BUFFERS) & (TBSECP3_DMA_BUFFERS - 1);
+		next_buffer = (tbs_read(adapter->dma.base, TBSECP3_DMA_STAT) - TBSECP3_DMA_PRE_BUFFERS + 1) & (TBSECP3_DMA_BUFFERS - 1);
 		read_buffer = (u32)adapter->dma.next_buffer;
 
 		while (read_buffer != next_buffer)
@@ -67,7 +67,7 @@ static void tbsecp3_dma_tasklet(unsigned long adap)
 						adapter->dma.buf[0], adapter->dma.offset);
 				}
 			}
-			dvb_dmx_swfilter_packets(&adapter->demux, data, adapter->dma.buffer_size / TS_PACKET_SIZE);
+			dvb_dmx_swfilter_packets(&adapter->demux, data, adapter->dma.buffer_pkts);
 			read_buffer = (read_buffer + 1) & (TBSECP3_DMA_BUFFERS - 1);
 		}
 	}
@@ -140,13 +140,13 @@ int tbsecp3_dma_init(struct tbsecp3_dev *dev)
 	int i, j;
 
 	for (i = 0; i < dev->info->adapters; i++) {
-		if (dma_pkts[adapter->cfg->ts_in] < 16)
-			dma_pkts[adapter->cfg->ts_in] = 16;
+		if (dma_pkts[i] < 16)
+			dma_pkts[i] = 16;
+		if (dma_pkts[i] > 256)
+			dma_pkts[i] = 256;
 
-		if (dma_pkts[adapter->cfg->ts_in] > 256)
-			dma_pkts[adapter->cfg->ts_in] = 256;
-
-		adapter->dma.buffer_size = dma_pkts[adapter->cfg->ts_in] * TS_PACKET_SIZE;
+		adapter->dma.buffer_pkts = dma_pkts[i];
+		adapter->dma.buffer_size = dma_pkts[i] * TS_PACKET_SIZE;
 		adapter->dma.page_size = adapter->dma.buffer_size * TBSECP3_DMA_BUFFERS;
 
 		adapter->dma.buf[0] = pci_alloc_consistent(dev->pci_dev,
@@ -155,9 +155,9 @@ int tbsecp3_dma_init(struct tbsecp3_dev *dev)
 		if (!adapter->dma.buf[0])
 			goto err;
 
-		dev_info(&dev->pci_dev->dev,
-			"DMA page %d bytes, %d bytes (%d TS packets) per %d cells\n", adapter->dma.page_size,
-			 adapter->dma.buffer_size, adapter->dma.buffer_size / TS_PACKET_SIZE, TBSECP3_DMA_BUFFERS);
+		dev_dbg(&dev->pci_dev->dev,
+			"TS in %d: DMA page %d bytes, %d bytes (%d TS packets) per %d buffers\n", adapter->cfg->ts_in, 
+			 adapter->dma.page_size, adapter->dma.buffer_size, adapter->dma.buffer_pkts, TBSECP3_DMA_BUFFERS);
 
 		adapter->dma.base = TBSECP3_DMA_BASE(adapter->cfg->ts_in);
 		adapter->dma.cnt = 0;

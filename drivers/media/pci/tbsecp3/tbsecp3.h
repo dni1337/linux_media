@@ -66,7 +66,6 @@
 #define TBSECP3_DMA_BUFFERS	16
 #define TBSECP3_DMA_PRE_BUFFERS	2
 
-
 struct tbsecp3_dev;
 
 
@@ -113,6 +112,7 @@ struct tbsecp3_dma_channel {
 	dma_addr_t dma_addr;
 	u32 page_size;
 	u32 buffer_size;
+	u32 buffer_pkts;
 	u8 *buf[TBSECP3_DMA_BUFFERS + 1];
 	u8 offset;
 	u8 cnt;
