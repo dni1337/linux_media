@@ -189,6 +189,8 @@ enum mceusb_model_type {
 	MCE_GEN2_NO_TX,
 	HAUPPAUGE_CX_HYBRID_TV,
 	CX231XX_TBS5280,
+        CX231XX_TBS5281,
+        CX231XX_TBS5990,
 };
 
 struct mceusb_model {
@@ -252,6 +254,14 @@ static const struct mceusb_model mceusb_model[] = {
 		.rc_map = RC_MAP_RC6_MCE,
 		.name = "TurboSight TBS 5280 (cx231xx) MCE IR",
 	},
+        [CX231XX_TBS5281] = {
+                .rc_map = RC_MAP_RC6_MCE,
+                .name = "TurboSight TBS 5281 (cx231xx) MCE IR",
+        },
+        [CX231XX_TBS5990] = {
+                .rc_map = RC_MAP_RC6_MCE,
+                .name = "TurboSight TBS 5990 (cx231xx) MCE IR",
+        },
 };
 
 static struct usb_device_id mceusb_dev_table[] = {
@@ -403,7 +413,15 @@ static struct usb_device_id mceusb_dev_table[] = {
 	  .driver_info = HAUPPAUGE_CX_HYBRID_TV },
 	/* Adaptec / HP eHome Receiver */
 	{ USB_DEVICE(VENDOR_ADAPTEC, 0x0094) },
-
+        /* TurboSight TBS 5280 IR */
+        { USB_DEVICE(0x734c, 0x5280),
+          .driver_info = CX231XX_TBS5280 },
+        /* TurboSight TBS 5281 IR */
+        { USB_DEVICE(0x734c, 0x5281),
+          .driver_info = CX231XX_TBS5281 },
+        /* TurboSight TBS 5990 IR */
+        { USB_DEVICE(0x734c, 0x5990),
+          .driver_info = CX231XX_TBS5990 },
 	/* Terminating entry */
 	{ }
 };
