@@ -1,10 +1,10 @@
-#ifndef _MXL5XX_H_
-#define _MXL5XX_H_
+#ifndef _MXL58X_H_
+#define _MXL58X_H_
 
 #include <linux/types.h>
 #include <linux/i2c.h>
 
-struct mxl5xx_cfg {
+struct mxl58x_cfg {
 	u8   adr;
 	u8   type;
 	u32  cap;
@@ -21,15 +21,15 @@ struct mxl5xx_cfg {
 };
 
 #if defined(CONFIG_DVB_MXL5XX) || \
-	(defined(CONFIG_DVB_MXL5XX_MODULE) && defined(MODULE))
+	(defined(CONFIG_DVB_MXL58X_MODULE) && defined(MODULE))
 
-extern struct dvb_frontend *mxl5xx_attach(struct i2c_adapter *i2c,
-					  struct mxl5xx_cfg *cfg,
+extern struct dvb_frontend *mxl58x_attach(struct i2c_adapter *i2c,
+					  struct mxl58x_cfg *cfg,
 					  u32 demod);
 #else
 
-static inline struct dvb_frontend *mxl5xx_attach(struct i2c_adapter *i2c,
-						 struct mxl5xx_cfg *cfg,
+static inline struct dvb_frontend *mxl58x_attach(struct i2c_adapter *i2c,
+						 struct mxl58x_cfg *cfg,
 						 u32 demod)
 {
 	pr_warn("%s: driver disabled by Kconfig\n", __func__);

@@ -892,8 +892,8 @@ config DVB_STV091X
 	  DVB-S/S2/DSS Multistandard Professional/Broadcast demodulators.
 	  Say Y when you want to support these frontends.
 
-config DVB_MXL5XX
-	tristate "MaxLinear MXL5XX based"
+config DVB_MXL58X
+	tristate "MaxLinear MXL58X based"
 	depends on DVB_CORE && I2C
 	default m if !MEDIA_SUBDRV_AUTOSELECT
 	help

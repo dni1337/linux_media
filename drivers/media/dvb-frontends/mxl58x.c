@@ -42,9 +42,9 @@
 #include <asm/unaligned.h>
 
 #include "dvb_frontend.h"
-#include "mxl5xx.h"
-#include "mxl5xx_regs.h"
-#include "mxl5xx_defs.h"
+#include "mxl58x.h"
+#include "mxl58x_regs.h"
+#include "mxl58x_defs.h"
 
 
 #define BYTE0(v) ((v >>  0) & 0xff)
@@ -52,7 +52,7 @@
 #define BYTE2(v) ((v >> 16) & 0xff)
 #define BYTE3(v) ((v >> 24) & 0xff)
 
-#define MXL5XX_DEFAULT_FIRMWARE "dvb-fe-mxl5xx.fw"
+#define MXL58X_DEFAULT_FIRMWARE "dvb-fe-mxl58x.fw"
 
 static int mode = 0;
 module_param(mode, int, 0444);
@@ -78,7 +78,7 @@ struct mxl_base {
 	u32                  cmd_size;
 	u8                   cmd_data[MAX_CMD_DATA];
 
-	struct mxl5xx_cfg   *cfg;
+	struct mxl58x_cfg   *cfg;
 };
 
 struct mxl {
@@ -769,7 +769,7 @@ static int set_voltage(struct dvb_frontend *fe, enum fe_sec_voltage voltage)
 {
 	struct mxl *state = fe->demodulator_priv;
 	struct i2c_adapter *i2c = state->base->i2c;
-	struct mxl5xx_cfg *cfg = state->base->cfg;
+	struct mxl58x_cfg *cfg = state->base->cfg;
 
 	switch (mode) {
 	case 1:
@@ -811,7 +811,7 @@ static int set_tone(struct dvb_frontend *fe, enum fe_sec_tone_mode tone)
 static struct dvb_frontend_ops mxl_ops = {
 	.delsys = { SYS_DVBS, SYS_DVBS2, SYS_DSS },
 	.info = {
-		.name			= "MXL5XX",
+		.name			= "MXL58X",
 		.frequency_min		= 950000,
 		.frequency_max		= 2150000,
 		.frequency_stepsize	= 0,
@@ -1350,7 +1350,7 @@ static int config_dis(struct mxl *state, u32 id)
 
 static int load_fw(struct mxl *state)
 {
-	struct mxl5xx_cfg *cfg = state->base->cfg;
+	struct mxl58x_cfg *cfg = state->base->cfg;
 	int stat = 0;
 	u8 *buf;
 
@@ -1359,7 +1359,7 @@ static int load_fw(struct mxl *state)
 
 	pr_info("loading firmware, please wait...\n");
 
-	stat = request_firmware(&fw, MXL5XX_DEFAULT_FIRMWARE,
+	stat = request_firmware(&fw, MXL58X_DEFAULT_FIRMWARE,
 		state->base->i2c->dev.parent);
 	if (stat)
 		return stat;
@@ -1397,7 +1397,7 @@ static int init_multisw(struct mxl *state)
 {
 	struct dvb_frontend *fe = &state->fe;
 	struct i2c_adapter *i2c = state->base->i2c;
-	struct mxl5xx_cfg *cfg = state->base->cfg;
+	struct mxl58x_cfg *cfg = state->base->cfg;
 
 	switch (mode) {
 	case 0:
@@ -1420,7 +1420,7 @@ static int init_multisw(struct mxl *state)
 
 static int probe(struct mxl *state)
 {
-	struct mxl5xx_cfg *cfg = state->base->cfg;
+	struct mxl58x_cfg *cfg = state->base->cfg;
 	u32 chipver;
 	int fw, status, j;
 	MXL_HYDRA_MPEGOUT_PARAM_T mpegInterfaceCfg;
@@ -1499,8 +1499,8 @@ static int probe(struct mxl *state)
 	return 0;
 }
 
-struct dvb_frontend *mxl5xx_attach(struct i2c_adapter *i2c,
-				   struct mxl5xx_cfg *cfg,
+struct dvb_frontend *mxl58x_attach(struct i2c_adapter *i2c,
+				   struct mxl58x_cfg *cfg,
 				   u32 demod)
 {
 	struct mxl *state;
@@ -1559,8 +1559,8 @@ fail:
 	kfree(state);
 	return NULL;
 }
-EXPORT_SYMBOL_GPL(mxl5xx_attach);
+EXPORT_SYMBOL_GPL(mxl58x_attach);
 
-MODULE_DESCRIPTION("MXL5XX driver");
+MODULE_DESCRIPTION("MXL58X driver");
 MODULE_AUTHOR("Ralph Metzler");
 MODULE_LICENSE("GPL");
