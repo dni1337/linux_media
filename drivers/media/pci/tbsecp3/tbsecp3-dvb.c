@@ -27,7 +27,7 @@
 
 #include "si2183.h"
 
-#include "stv0910.h"
+#include "stv091x.h"
 #include "stv6120.h"
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
@@ -291,7 +291,7 @@ static struct mxl5xx_cfg tbs6909_mxl5xx_cfg = {
 	.set_voltage	= max_set_voltage,
 };
 
-static struct stv0910_cfg tbs6903_stv0910_cfg = {
+static struct stv091x_cfg tbs6903_stv0910_cfg = {
 	.adr      = 0x68,
 	.parallel = 1,
 	.rptlvl   = 3,
@@ -738,7 +738,7 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 	case TBSECP3_BOARD_TBS6903:
 	case TBSECP3_BOARD_TBS6905:
 	case TBSECP3_BOARD_TBS6908:
-		adapter->fe = dvb_attach(stv0910_attach, i2c,
+		adapter->fe = dvb_attach(stv091x_attach, i2c,
 				&tbs6903_stv0910_cfg, adapter->nr & 1);
 		if (adapter->fe == NULL)
 			goto frontend_atach_fail;

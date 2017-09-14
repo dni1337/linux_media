@@ -1,5 +1,5 @@
 /*
- * Driver for the ST STV0910 DVB-S/S2 demodulator.
+ * Driver for the ST STV091x DVB-S/S2 demodulator.
  *
  * Copyright (C) 2014-2015 Ralph Metzler <rjkm@metzlerbros.de>
  *                         Marcus Metzler <mocm@metzlerbros.de>
@@ -34,8 +34,8 @@
 #include <asm/div64.h>
 
 #include "dvb_frontend.h"
-#include "stv0910.h"
-#include "stv0910_regs.h"
+#include "stv091x.h"
+#include "stv091x_regs.h"
 
 
 #define TUNING_DELAY    200
@@ -1597,10 +1597,10 @@ static int read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 	return 0;
 }
 
-static struct dvb_frontend_ops stv0910_ops = {
+static struct dvb_frontend_ops stv091x_ops = {
 	.delsys = { SYS_DVBS, SYS_DVBS2, SYS_DSS },
 	.info = {
-		.name			= "STV0910 Multistandard",
+		.name			= "STV091x Multistandard",
 		.frequency_min		= 950000,
 		.frequency_max		= 2150000,
 		.frequency_stepsize	= 0,
@@ -1643,8 +1643,8 @@ static struct stv_base *match_base(struct i2c_adapter  *i2c, u8 adr)
 	return NULL;
 }
 
-struct dvb_frontend *stv0910_attach(struct i2c_adapter *i2c,
-				    struct stv0910_cfg *cfg,
+struct dvb_frontend *stv091x_attach(struct i2c_adapter *i2c,
+				    struct stv091x_cfg *cfg,
 				    int nr)
 {
 	struct stv *state;
@@ -1689,7 +1689,7 @@ struct dvb_frontend *stv0910_attach(struct i2c_adapter *i2c,
 		}
 		list_add(&base->stvlist, &stvlist);
 	}
-	state->fe.ops               = stv0910_ops;
+	state->fe.ops               = stv091x_ops;
 	state->fe.demodulator_priv  = state;
 	state->nr = nr;
 
@@ -1699,8 +1699,8 @@ fail:
 	kfree(state);
 	return NULL;
 }
-EXPORT_SYMBOL_GPL(stv0910_attach);
+EXPORT_SYMBOL_GPL(stv091x_attach);
 
-MODULE_DESCRIPTION("STV0910 driver");
+MODULE_DESCRIPTION("STV091x driver");
 MODULE_AUTHOR("Ralph Metzler, Manfred Voelkel");
 MODULE_LICENSE("GPL");

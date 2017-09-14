@@ -12,7 +12,7 @@
 #include <linux/version.h>
 #include "tbs5927.h"
 #include "stv6120.h"
-#include "stv0910.h"
+#include "stv091x.h"
 
 #define TBS5927_READ_MSG 0
 #define TBS5927_WRITE_MSG 1
@@ -178,7 +178,7 @@ static void tbs5927_led_ctrl(struct dvb_frontend *fe, int offon)
 	i2c_transfer(&udev_adap->dev->i2c_adap, &msg, 1);
 }
 
-static struct stv0910_cfg tbs5927_stv0910_cfg = {
+static struct stv091x_cfg tbs5927_stv0910_cfg = {
 	.adr      = 0x68,
 	.parallel = 1,
 	.rptlvl   = 3,
@@ -279,7 +279,7 @@ static int tbs5927_frontend_attach(struct dvb_usb_adapter *d)
 			buf, 2, TBS5927_WRITE_MSG);
 
 	if (tbs5927_properties.adapter->fe->tuner_attach == &tbs5927_tuner_attach) {
-		d->fe_adap->fe = dvb_attach(stv0910_attach, &d->dev->i2c_adap, 
+		d->fe_adap->fe = dvb_attach(stv091x_attach, &d->dev->i2c_adap, 
 					    &tbs5927_stv0910_cfg, 1 );
 		if (d->fe_adap->fe != NULL) {
 			d->fe_adap->fe->ops.set_voltage = tbs5927_set_voltage;

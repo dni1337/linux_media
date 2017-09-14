@@ -50,7 +50,7 @@
 #include "si2157.h"
 
 #include "stv6120.h"
-#include "stv0910.h"
+#include "stv091x.h"
 
 #include "tbsci-i2c.h"
 #include "tbsci.h"
@@ -2566,7 +2566,7 @@ static struct saa716x_config saa716x_tbs6991se_config = {
 #define SAA716x_MODEL_TBS6983	"TBS 6983"
 #define SAA716x_DEV_TBS6983	"DVB-S/S2"
 
-static struct stv0910_cfg tbs6983_stv0910_cfg = {
+static struct stv091x_cfg tbs6983_stv0910_cfg = {
 	.adr      = 0x68,
 	.parallel = 1,
 	.rptlvl   = 3,
@@ -2629,7 +2629,7 @@ static int saa716x_tbs6983_frontend_attach(struct saa716x_adapter *adapter, int 
 		msleep(100);
 	}
 
-	adapter->fe = dvb_attach(stv0910_attach,
+	adapter->fe = dvb_attach(stv091x_attach,
 				 &dev->i2c[1].i2c_adapter,
 				 &tbs6983_stv0910_cfg,
 				 count);

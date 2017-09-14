@@ -884,8 +884,8 @@ config DVB_AVL6882
 	help
 	  Say Y when you want to support this frontend.
 
-config DVB_STV0910
-	tristate "STV0910 based"
+config DVB_STV091X
+	tristate "STV091x based"
 	depends on DVB_CORE && I2C
 	default m if !MEDIA_SUBDRV_AUTOSELECT
 	help
