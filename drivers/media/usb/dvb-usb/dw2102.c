@@ -1691,7 +1691,7 @@ static int dw2102_rc_query(struct dvb_usb_device *d)
 		if (msg.buf[0] != 0xff) {
 			deb_rc("%s: rc code: %x, %x\n",
 					__func__, key[0], key[1]);
-			rc_keydown(d->rc_dev, RC_TYPE_UNKNOWN, key[0], 0);
+			rc_keydown(d->rc_dev, RC_PROTO_UNKNOWN, key[0], 0);
 		}
 	}
 
@@ -1712,7 +1712,8 @@ static int prof_rc_query(struct dvb_usb_device *d)
 		if (msg.buf[0] != 0xff) {
 			deb_rc("%s: rc code: %x, %x\n",
 					__func__, key[0], key[1]);
-			rc_keydown(d->rc_dev, RC_TYPE_UNKNOWN, key[0]^0xff, 0);
+			rc_keydown(d->rc_dev, RC_PROTO_UNKNOWN, key[0] ^ 0xff,
+				   0);
 		}
 	}
 
@@ -1733,7 +1734,7 @@ static int su3000_rc_query(struct dvb_usb_device *d)
 		if (msg.buf[0] != 0xff) {
 			deb_rc("%s: rc code: %x, %x\n",
 					__func__, key[0], key[1]);
-			rc_keydown(d->rc_dev, RC_TYPE_RC5,
+			rc_keydown(d->rc_dev, RC_PROTO_RC5,
 				   RC_SCANCODE_RC5(key[1], key[0]), 0);
 		}
 	}
@@ -1934,7 +1935,7 @@ static struct dvb_usb_device_properties dw2102_properties = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_DM1105_NEC,
 		.module_name = "dw2102",
-		.allowed_protos   = RC_BIT_NEC,
+		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = dw2102_rc_query,
 	},
 
@@ -1989,7 +1990,7 @@ static struct dvb_usb_device_properties dw2104_properties = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_DM1105_NEC,
 		.module_name = "dw2102",
-		.allowed_protos   = RC_BIT_NEC,
+		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = dw2102_rc_query,
 	},
 
@@ -2040,7 +2041,7 @@ static struct dvb_usb_device_properties dw3101_properties = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_DM1105_NEC,
 		.module_name = "dw2102",
-		.allowed_protos   = RC_BIT_NEC,
+		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = dw2102_rc_query,
 	},
 
@@ -2089,7 +2090,7 @@ static struct dvb_usb_device_properties s6x0_properties = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_TEVII_NEC,
 		.module_name = "dw2102",
-		.allowed_protos   = RC_BIT_NEC,
+		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = dw2102_rc_query,
 	},
 
@@ -2125,46 +2126,46 @@ static struct dvb_usb_device_properties s6x0_properties = {
 };
 
 static struct dvb_usb_device_properties *p1100;
-static struct dvb_usb_device_description d1100 = {
+static const struct dvb_usb_device_description d1100 = {
 	"Prof 1100 USB ",
 	{&dw2102_table[PROF_1100], NULL},
 	{NULL},
 };
 
 static struct dvb_usb_device_properties *s660;
-static struct dvb_usb_device_description d660 = {
+static const struct dvb_usb_device_description d660 = {
 	"TeVii S660 USB",
 	{&dw2102_table[TEVII_S660], NULL},
 	{NULL},
 };
 
-static struct dvb_usb_device_description d480_1 = {
+static const struct dvb_usb_device_description d480_1 = {
 	"TeVii S480.1 USB",
 	{&dw2102_table[TEVII_S480_1], NULL},
 	{NULL},
 };
 
-static struct dvb_usb_device_description d480_2 = {
+static const struct dvb_usb_device_description d480_2 = {
 	"TeVii S480.2 USB",
 	{&dw2102_table[TEVII_S480_2], NULL},
 	{NULL},
 };
 
 static struct dvb_usb_device_properties *p7500;
-static struct dvb_usb_device_description d7500 = {
+static const struct dvb_usb_device_description d7500 = {
 	"Prof 7500 USB DVB-S2",
 	{&dw2102_table[PROF_7500], NULL},
 	{NULL},
 };
 
 static struct dvb_usb_device_properties *s421;
-static struct dvb_usb_device_description d421 = {
+static const struct dvb_usb_device_description d421 = {
 	"TeVii S421 PCI",
 	{&dw2102_table[TEVII_S421], NULL},
 	{NULL},
 };
 
-static struct dvb_usb_device_description d632 = {
+static const struct dvb_usb_device_description d632 = {
 	"TeVii S632 USB",
 	{&dw2102_table[TEVII_S632], NULL},
 	{NULL},
@@ -2183,7 +2184,7 @@ static struct dvb_usb_device_properties su3000_properties = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_SU3000,
 		.module_name = "dw2102",
-		.allowed_protos   = RC_BIT_RC5,
+		.allowed_protos   = RC_PROTO_BIT_RC5,
 		.rc_query = su3000_rc_query,
 	},
 
@@ -2252,7 +2253,7 @@ static struct dvb_usb_device_properties t220_properties = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_SU3000,
 		.module_name = "dw2102",
-		.allowed_protos   = RC_BIT_RC5,
+		.allowed_protos   = RC_PROTO_BIT_RC5,
 		.rc_query = su3000_rc_query,
 	},
 
@@ -2350,7 +2351,7 @@ static struct dvb_usb_device_properties tt_s2_4600_properties = {
 		.rc_interval = 250,
 		.rc_codes = RC_MAP_TT_1500,
 		.module_name = "dw2102",
-		.allowed_protos   = RC_BIT_RC5,
+		.allowed_protos   = RC_PROTO_BIT_RC5,
 		.rc_query = su3000_rc_query,
 	},
 
@@ -2499,10 +2500,12 @@ static struct dvb_usb_device_properties terratec_properties = {
 static int dw2102_probe(struct usb_interface *intf,
 		const struct usb_device_id *id)
 {
+	int retval = -ENOMEM;
 	p1100 = kmemdup(&s6x0_properties,
 			sizeof(struct dvb_usb_device_properties), GFP_KERNEL);
 	if (!p1100)
-		return -ENOMEM;
+		goto err0;
+
 	/* copy default structure */
 	/* fill only different fields */
 	p1100->firmware = P1100_FIRMWARE;
@@ -2513,10 +2516,9 @@ static int dw2102_probe(struct usb_interface *intf,
 
 	s660 = kmemdup(&s6x0_properties,
 		       sizeof(struct dvb_usb_device_properties), GFP_KERNEL);
-	if (!s660) {
-		kfree(p1100);
-		return -ENOMEM;
-	}
+	if (!s660)
+		goto err1;
+
 	s660->firmware = S660_FIRMWARE;
 	s660->num_device_descs = 3;
 	s660->devices[0] = d660;
@@ -2526,11 +2528,9 @@ static int dw2102_probe(struct usb_interface *intf,
 
 	p7500 = kmemdup(&s6x0_properties,
 			sizeof(struct dvb_usb_device_properties), GFP_KERNEL);
-	if (!p7500) {
-		kfree(p1100);
-		kfree(s660);
-		return -ENOMEM;
-	}
+	if (!p7500)
+		goto err2;
+
 	p7500->firmware = P7500_FIRMWARE;
 	p7500->devices[0] = d7500;
 	p7500->rc.core.rc_query = prof_rc_query;
@@ -2540,12 +2540,9 @@ static int dw2102_probe(struct usb_interface *intf,
 
 	s421 = kmemdup(&su3000_properties,
 		       sizeof(struct dvb_usb_device_properties), GFP_KERNEL);
-	if (!s421) {
-		kfree(p1100);
-		kfree(s660);
-		kfree(p7500);
-		return -ENOMEM;
-	}
+	if (!s421)
+		goto err3;
+
 	s421->num_device_descs = 2;
 	s421->devices[0] = d421;
 	s421->devices[1] = d632;
@@ -2581,7 +2578,16 @@ static int dw2102_probe(struct usb_interface *intf,
 			 THIS_MODULE, NULL, adapter_nr))
 		return 0;
 
-	return -ENODEV;
+	retval = -ENODEV;
+	kfree(s421);
+err3:
+	kfree(p7500);
+err2:
+	kfree(s660);
+err1:
+	kfree(p1100);
+err0:
+	return retval;
 }
 
 static void dw2102_disconnect(struct usb_interface *intf)

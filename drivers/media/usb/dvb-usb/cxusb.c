@@ -458,7 +458,7 @@ static int cxusb_rc_query(struct dvb_usb_device *d)
 	cxusb_ctrl_msg(d, CMD_GET_IR_CODE, NULL, 0, ircode, 4);
 
 	if (ircode[2] || ircode[3])
-		rc_keydown(d->rc_dev, RC_TYPE_NEC,
+		rc_keydown(d->rc_dev, RC_PROTO_NEC,
 			   RC_SCANCODE_NEC(~ircode[2] & 0xff, ircode[3]), 0);
 	return 0;
 }
@@ -473,7 +473,7 @@ static int cxusb_bluebird2_rc_query(struct dvb_usb_device *d)
 		return 0;
 
 	if (ircode[1] || ircode[2])
-		rc_keydown(d->rc_dev, RC_TYPE_NEC,
+		rc_keydown(d->rc_dev, RC_PROTO_NEC,
 			   RC_SCANCODE_NEC(~ircode[1] & 0xff, ircode[2]), 0);
 	return 0;
 }
@@ -486,7 +486,7 @@ static int cxusb_d680_dmb_rc_query(struct dvb_usb_device *d)
 		return 0;
 
 	if (ircode[0] || ircode[1])
-		rc_keydown(d->rc_dev, RC_TYPE_UNKNOWN,
+		rc_keydown(d->rc_dev, RC_PROTO_UNKNOWN,
 			   RC_SCANCODE_RC5(ircode[0], ircode[1]), 0);
 	return 0;
 }
@@ -1650,7 +1650,7 @@ static struct dvb_usb_device_properties cxusb_bluebird_lgh064f_properties = {
 		.rc_codes	= RC_MAP_DVICO_PORTABLE,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query	= cxusb_rc_query,
-		.allowed_protos = RC_BIT_NEC,
+		.allowed_protos = RC_PROTO_BIT_NEC,
 	},
 
 	.generic_bulk_ctrl_endpoint = 0x01,
@@ -1707,7 +1707,7 @@ static struct dvb_usb_device_properties cxusb_bluebird_dee1601_properties = {
 		.rc_codes	= RC_MAP_DVICO_MCE,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query	= cxusb_rc_query,
-		.allowed_protos = RC_BIT_NEC,
+		.allowed_protos = RC_PROTO_BIT_NEC,
 	},
 
 	.generic_bulk_ctrl_endpoint = 0x01,
@@ -1772,7 +1772,7 @@ static struct dvb_usb_device_properties cxusb_bluebird_lgz201_properties = {
 		.rc_codes	= RC_MAP_DVICO_PORTABLE,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query	= cxusb_rc_query,
-		.allowed_protos = RC_BIT_NEC,
+		.allowed_protos = RC_PROTO_BIT_NEC,
 	},
 
 	.generic_bulk_ctrl_endpoint = 0x01,
@@ -1828,7 +1828,7 @@ static struct dvb_usb_device_properties cxusb_bluebird_dtt7579_properties = {
 		.rc_codes	= RC_MAP_DVICO_PORTABLE,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query	= cxusb_rc_query,
-		.allowed_protos = RC_BIT_NEC,
+		.allowed_protos = RC_PROTO_BIT_NEC,
 	},
 
 	.generic_bulk_ctrl_endpoint = 0x01,
@@ -1883,7 +1883,7 @@ static struct dvb_usb_device_properties cxusb_bluebird_dualdig4_properties = {
 		.rc_codes	= RC_MAP_DVICO_MCE,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query	= cxusb_bluebird2_rc_query,
-		.allowed_protos = RC_BIT_NEC,
+		.allowed_protos = RC_PROTO_BIT_NEC,
 	},
 
 	.num_device_descs = 1,
@@ -1937,7 +1937,7 @@ static struct dvb_usb_device_properties cxusb_bluebird_nano2_properties = {
 		.rc_codes	= RC_MAP_DVICO_PORTABLE,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query       = cxusb_bluebird2_rc_query,
-		.allowed_protos = RC_BIT_NEC,
+		.allowed_protos = RC_PROTO_BIT_NEC,
 	},
 
 	.num_device_descs = 1,
@@ -1993,7 +1993,7 @@ static struct dvb_usb_device_properties cxusb_bluebird_nano2_needsfirmware_prope
 		.rc_codes	= RC_MAP_DVICO_PORTABLE,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query	= cxusb_rc_query,
-		.allowed_protos = RC_BIT_NEC,
+		.allowed_protos = RC_PROTO_BIT_NEC,
 	},
 
 	.num_device_descs = 1,
@@ -2092,7 +2092,7 @@ struct dvb_usb_device_properties cxusb_bluebird_dualdig4_rev2_properties = {
 		.rc_codes	= RC_MAP_DVICO_MCE,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query	= cxusb_rc_query,
-		.allowed_protos = RC_BIT_NEC,
+		.allowed_protos = RC_PROTO_BIT_NEC,
 	},
 
 	.num_device_descs = 1,
@@ -2146,7 +2146,7 @@ static struct dvb_usb_device_properties cxusb_d680_dmb_properties = {
 		.rc_codes	= RC_MAP_D680_DMB,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query       = cxusb_d680_dmb_rc_query,
-		.allowed_protos = RC_BIT_UNKNOWN,
+		.allowed_protos = RC_PROTO_BIT_UNKNOWN,
 	},
 
 	.num_device_descs = 1,
@@ -2201,7 +2201,7 @@ static struct dvb_usb_device_properties cxusb_mygica_d689_properties = {
 		.rc_codes	= RC_MAP_D680_DMB,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query       = cxusb_d680_dmb_rc_query,
-		.allowed_protos = RC_BIT_UNKNOWN,
+		.allowed_protos = RC_PROTO_BIT_UNKNOWN,
 	},
 
 	.num_device_descs = 1,
@@ -2255,7 +2255,7 @@ static struct dvb_usb_device_properties cxusb_mygica_t230_properties = {
 		.rc_codes	= RC_MAP_TOTAL_MEDIA_IN_HAND_02,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query       = cxusb_d680_dmb_rc_query,
-		.allowed_protos = RC_BIT_UNKNOWN,
+		.allowed_protos = RC_PROTO_BIT_UNKNOWN,
 	},
 
 	.num_device_descs = 1,
@@ -2309,7 +2309,7 @@ static struct dvb_usb_device_properties cxusb_mygica_t230c_properties = {
 		.rc_codes	= RC_MAP_TOTAL_MEDIA_IN_HAND_02,
 		.module_name	= KBUILD_MODNAME,
 		.rc_query       = cxusb_d680_dmb_rc_query,
-		.allowed_protos = RC_BIT_UNKNOWN,
+		.allowed_protos = RC_PROTO_BIT_UNKNOWN,
 	},
 
 	.num_device_descs = 2,

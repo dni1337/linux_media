@@ -29,11 +29,8 @@ Arguments
 ``fd``
     File descriptor returned by :ref:`open() <func-open>`.
 
-``request``
-    VIDIOC_G_SELECTION, VIDIOC_S_SELECTION
-
 ``argp``
-
+    Pointer to struct :c:type:`v4l2_selection`.
 
 Description
 ===========
@@ -121,8 +118,8 @@ Selection targets and flags are documented in
 
 .. _sel-const-adjust:
 
-.. figure::  constraints.*
-    :alt:    constraints.pdf / constraints.svg
+.. kernel-figure::  constraints.svg
+    :alt:    constraints.svg
     :align:  center
 
     Size adjustments with constraint flags.

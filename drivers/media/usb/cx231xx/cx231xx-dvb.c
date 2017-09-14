@@ -747,6 +747,9 @@ static void unregister_dvb(struct cx231xx_dvb *dvb)
 	dvb->demux.dmx.remove_frontend(&dvb->demux.dmx, &dvb->fe_hw);
 	dvb_dmxdev_release(&dvb->dmxdev);
 	dvb_dmx_release(&dvb->demux);
+	dvb_unregister_frontend(dvb->frontend);
+	dvb_frontend_detach(dvb->frontend);
+	dvb_unregister_adapter(&dvb->adapter);
 
 	/* remove I2C tuner */
 	client = dvb->i2c_client_tuner;
@@ -760,9 +763,6 @@ static void unregister_dvb(struct cx231xx_dvb *dvb)
 		module_put(client->dev.driver->owner);
 		i2c_unregister_device(client);
 	}
-	dvb_unregister_frontend(dvb->frontend);
-	dvb_frontend_detach(dvb->frontend);
-	dvb_unregister_adapter(&dvb->adapter);
 }
 
 static int tbs_cx_mac(struct i2c_adapter *i2c_adap, u8 count, u8 *mac)
