@@ -1771,7 +1771,11 @@ enum dw2102_table_entry {
 	TEVII_S482_2,
 	TERRATEC_DUAL_1,
 	TERRATEC_DUAL_2,
-	TEVII_S662
+	TEVII_S662,
+	GENIATECH_S4_3300,
+	GENIATECH_S4_3301,
+	GENIATECH_S4_3302,
+	GENIATECH_S4_3303,
 };
 
 static struct usb_device_id dw2102_table[] = {
@@ -1805,6 +1809,10 @@ static struct usb_device_id dw2102_table[] = {
 	[TERRATEC_DUAL_1] = {USB_DEVICE(0x153B,0x1181)},
 	[TERRATEC_DUAL_2] = {USB_DEVICE(0x153B,0x1182)},
 	[TEVII_S662] = {USB_DEVICE(0x9022, USB_PID_TEVII_S662)},
+	[GENIATECH_S4_3300] = {USB_DEVICE(0x1f4d, 0x3300)},
+	[GENIATECH_S4_3301] = {USB_DEVICE(0x1f4d, 0x3301)},
+	[GENIATECH_S4_3302] = {USB_DEVICE(0x1f4d, 0x3302)},
+	[GENIATECH_S4_3303] = {USB_DEVICE(0x1f4d, 0x3303)},
 	{ }
 };
 
@@ -2213,7 +2221,7 @@ static struct dvb_usb_device_properties su3000_properties = {
 		}},
 		}
 	},
-	.num_device_descs = 7,
+	.num_device_descs = 11,
 	.devices = {
 		{ "SU3000HD DVB-S USB2.0",
 			{ &dw2102_table[GENIATECH_SU3000], NULL },
@@ -2241,6 +2249,22 @@ static struct dvb_usb_device_properties su3000_properties = {
 		},
 		{ "Terratec Cinergy S2 USB HD Rev.4",
 			{ &dw2102_table[TERRATEC_CINERGY_S2_R4], NULL },
+			{ NULL },
+		},
+		{ "Geniatech S2 X9320-0 USB2.0",
+			{ &dw2102_table[GENIATECH_S4_3300], NULL },
+			{ NULL },
+		},
+		{ "Geniatech S2 X9320-1 USB2.0",
+			{ &dw2102_table[GENIATECH_S4_3301], NULL },
+			{ NULL },
+		},
+		{ "Geniatech S2 X9320-2 USB2.0",
+			{ &dw2102_table[GENIATECH_S4_3302], NULL },
+			{ NULL },
+		},
+		{ "Geniatech S2 X9320-2 USB2.0",
+			{ &dw2102_table[GENIATECH_S4_3303], NULL },
 			{ NULL },
 		},
 	}
