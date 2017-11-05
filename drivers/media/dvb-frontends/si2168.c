@@ -675,10 +675,19 @@ static int si2168_init(struct dvb_frontend *fe)
 	}
 
 	/* set ts mode */
-	memcpy(cmd.args, "\x14\x00\x01\x10\x10\x00", 6);
+	memcpy(cmd.args, "\x14\x00\x01\x10\x00\x00", 6);
 	cmd.args[4] |= dev->ts_mode;
+	cmd.args[4] |= dev->ts_clock_mode << 4;
 	if (dev->ts_clock_gapped)
 		cmd.args[4] |= 0x40;
+	cmd.wlen = 6;
+	cmd.rlen = 4;
+	ret = si2168_cmd_execute(client, &cmd);
+	if (ret)
+		goto err;
+
+	/* set ts freq to 10Mhz*/
+	memcpy(cmd.args, "\x14\x00\x0d\x10\xe8\x03", 6);
 	cmd.wlen = 6;
 	cmd.rlen = 4;
 	ret = si2168_cmd_execute(client, &cmd);
@@ -913,6 +922,7 @@ static int si2168_probe(struct i2c_client *client,
 	*config->i2c_adapter = dev->muxc->adapter[0];
 	*config->fe = &dev->fe;
 	dev->ts_mode = config->ts_mode;
+	dev->ts_clock_mode = config->ts_clock_mode;
 	dev->ts_clock_inv = config->ts_clock_inv;
 	dev->ts_clock_gapped = config->ts_clock_gapped;
 	dev->fef_pin = config->fef_pin;
