@@ -1190,6 +1190,7 @@ static int cxusb_mygica_t230_frontend_attach(struct dvb_usb_adapter *adap)
 	si2168_config.i2c_adapter = &adapter;
 	si2168_config.fe = &adap->fe_adap[0].fe;
 	si2168_config.ts_mode = SI2168_TS_PARALLEL;
+	si2168_config.ts_clock_mode = SI2168_TS_CLK_AUTO_FIXED;
 	si2168_config.ts_clock_inv = 1;
 	memset(&info, 0, sizeof(struct i2c_board_info));
 	strlcpy(info.type, "si2168", I2C_NAME_SIZE);
@@ -1267,6 +1268,7 @@ static int cxusb_mygica_t230c_frontend_attach(struct dvb_usb_adapter *adap)
 	si2168_config.i2c_adapter = &adapter;
 	si2168_config.fe = &adap->fe_adap[0].fe;
 	si2168_config.ts_mode = SI2168_TS_PARALLEL;
+	si2168_config.ts_clock_mode = SI2168_TS_CLK_MANUAL;
 	si2168_config.ts_clock_inv = 1;
 	memset(&info, 0, sizeof(struct i2c_board_info));
 	strlcpy(info.type, "si2168", I2C_NAME_SIZE);
@@ -1485,6 +1487,10 @@ enum cxusb_table_index {
 	MYGICA_T230,
 	MYGICA_T230C,
 	MYGICA_T230C2,
+	MYGICA_X9330_0,
+	MYGICA_X9330_1,
+	MYGICA_X9330_2,
+	MYGICA_X9330_3,
 	NR__cxusb_table_index
 };
 
@@ -1557,6 +1563,18 @@ static struct usb_device_id cxusb_table[NR__cxusb_table_index + 1] = {
 	},
 	[MYGICA_T230C2] = {
 		USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230+2)
+	},
+	[MYGICA_X9330_0] = {
+		USB_DEVICE(USB_VID_GTEK, 0xd230)
+	},
+	[MYGICA_X9330_1] = {
+		USB_DEVICE(USB_VID_GTEK, 0xd231)
+	},
+	[MYGICA_X9330_2] = {
+		USB_DEVICE(USB_VID_GTEK, 0xd232)
+	},
+	[MYGICA_X9330_3] = {
+		USB_DEVICE(USB_VID_GTEK, 0xd233)
 	},
 	{}		/* Terminating entry */
 };
@@ -2258,12 +2276,32 @@ static struct dvb_usb_device_properties cxusb_mygica_t230_properties = {
 		.allowed_protos = RC_PROTO_BIT_UNKNOWN,
 	},
 
-	.num_device_descs = 1,
+	.num_device_descs = 5,
 	.devices = {
 		{
 			"Mygica T230 DVB-T/T2/C",
 			{ NULL },
 			{ &cxusb_table[MYGICA_T230], NULL },
+		},
+		{
+			"Geniatech T2 X9330-0 USB2.0",
+			{ NULL },
+			{ &cxusb_table[MYGICA_X9330_0], NULL },
+		},
+		{
+			"Geniatech T2 X9330-1 USB2.0",
+			{ NULL },
+			{ &cxusb_table[MYGICA_X9330_1], NULL },
+		},
+		{
+			"Geniatech T2 X9330-2 USB2.0",
+			{ NULL },
+			{ &cxusb_table[MYGICA_X9330_2], NULL },
+		},
+		{
+			"Geniatech T2 X9330-3 USB2.0",
+			{ NULL },
+			{ &cxusb_table[MYGICA_X9330_3], NULL },
 		},
 	}
 };
