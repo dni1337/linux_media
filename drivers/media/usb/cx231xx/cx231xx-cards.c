@@ -857,11 +857,11 @@ struct cx231xx_board cx231xx_boards[] = {
 	[CX231XX_BOARD_EVROMEDIA_FULL_HYBRID_FULLHD] = {
 		.name = "Evromedia USB Full Hybrid Full HD",
 		.tuner_type = TUNER_ABSENT,
+		.decoder = CX231XX_AVDECODER,
 		.demod_addr = 0x64, /* 0xc8 >> 1 */
 		.demod_i2c_master = { I2C_1_MUX_3 },
 		.has_dvb = 1,
 		.adap_cnt = 1,
-		.ir_i2c_master = I2C_0,
 		.norm = V4L2_STD_PAL,
 		.output_mode = OUT_MODE_VIP11,
 		.tuner_addr = 0x60, /* 0xc0 >> 1 */
@@ -887,6 +887,7 @@ struct cx231xx_board cx231xx_boards[] = {
 	[CX231XX_BOARD_ASTROMETA_T2HYBRID] = {
 		.name = "Astrometa T2hybrid",
 		.tuner_type = TUNER_ABSENT,
+		.decoder = CX231XX_AVDECODER,
 		.output_mode = OUT_MODE_VIP11,
 		.agc_analog_digital_select_gpio = 0x01,
 		.ctl_pin_status_mask = 0xffffffc4,
@@ -1824,7 +1825,7 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 	nr = dev->devno;
 
 	assoc_desc = udev->actconfig->intf_assoc[0];
-	if (assoc_desc->bFirstInterface != ifnum) {
+	if (!assoc_desc || assoc_desc->bFirstInterface != ifnum) {
 		dev_err(d, "Not found matching IAD interface\n");
 		retval = -ENODEV;
 		goto err_if;

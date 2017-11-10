@@ -1210,20 +1210,6 @@ error2:
 }
 EXPORT_SYMBOL(ds3k_attach);
 
-static int ds3k_set_property(struct dvb_frontend *fe,
-	struct dtv_property *tvp)
-{
-	dprintk("%s(..)\n", __func__);
-	return 0;
-}
-
-static int ds3k_get_property(struct dvb_frontend *fe,
-	struct dtv_property *tvp)
-{
-	dprintk("%s(..)\n", __func__);
-	return 0;
-}
-
 static int ds3k_set_carrier_offset(struct dvb_frontend *fe,
 					s32 carrier_offset_khz)
 {
@@ -2117,8 +2103,6 @@ static struct dvb_frontend_ops ds3k_ops = {
 	.diseqc_send_burst = ds3k_diseqc_send_burst,
 	.get_frontend_algo = ds3k_get_algo,
 
-	.set_property = ds3k_set_property,
-	.get_property = ds3k_get_property,
 	.set_frontend = ds3k_set_frontend,
 	.tune = ds3k_tune,
 };

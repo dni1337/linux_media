@@ -1429,7 +1429,7 @@ static const struct dvb_frontend_ops si2183_ops = {
 	.read_ber		= si2183_read_ber,
 	.read_ucblocks		= si2183_read_ucblocks,
 
-	.set_property			= si2183_set_property,
+	/*.set_property			= si2183_set_property,*/
 	.set_tone			= si2183_set_tone,
 	.diseqc_send_master_cmd 	= si2183_send_diseqc_msg,
 	.diseqc_send_burst		= si2183_diseqc_send_burst,

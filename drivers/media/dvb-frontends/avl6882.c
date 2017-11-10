@@ -1697,7 +1697,7 @@ static struct dvb_frontend_ops avl6882_ops = {
 	.get_frontend_algo		= avl6882fe_algo,
 	.tune				= avl6882_tune,
 
-	.set_property			= avl6882_set_property,
+	/*.set_property			= avl6882_set_property,*/
 	.set_frontend			= avl6882_set_frontend,
 };
 
