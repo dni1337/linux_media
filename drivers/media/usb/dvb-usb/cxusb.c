@@ -1190,7 +1190,7 @@ static int cxusb_mygica_t230_frontend_attach(struct dvb_usb_adapter *adap)
 	si2168_config.i2c_adapter = &adapter;
 	si2168_config.fe = &adap->fe_adap[0].fe;
 	si2168_config.ts_mode = SI2168_TS_PARALLEL;
-	si2168_config.ts_clock_mode = SI2168_TS_CLK_AUTO_FIXED;
+	si2168_config.ts_clock_mode = SI2168_TS_CLK_AUTO_ADAPT;
 	si2168_config.ts_clock_inv = 1;
 	memset(&info, 0, sizeof(struct i2c_board_info));
 	strlcpy(info.type, "si2168", I2C_NAME_SIZE);
@@ -1268,7 +1268,8 @@ static int cxusb_mygica_t230c_frontend_attach(struct dvb_usb_adapter *adap)
 	si2168_config.i2c_adapter = &adapter;
 	si2168_config.fe = &adap->fe_adap[0].fe;
 	si2168_config.ts_mode = SI2168_TS_PARALLEL;
-	si2168_config.ts_clock_mode = SI2168_TS_CLK_MANUAL;
+	si2168_config.ts_clock_mode = d->udev->descriptor.idProduct == (USB_PID_MYGICA_T230+2) ?
+						SI2168_TS_CLK_MANUAL : SI2168_TS_CLK_AUTO_ADAPT;
 	si2168_config.ts_clock_inv = 1;
 	memset(&info, 0, sizeof(struct i2c_board_info));
 	strlcpy(info.type, "si2168", I2C_NAME_SIZE);
