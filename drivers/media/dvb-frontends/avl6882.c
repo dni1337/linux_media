@@ -1533,6 +1533,8 @@ static int avl6882_set_frontend(struct dvb_frontend *fe)
 	switch (c->delivery_system) {
 	case SYS_DVBT:
 	case SYS_DVBT2:
+		if (demod_mode != AVL_DVBTX)
+			ret = avl6882_set_dvbmode(fe, c->delivery_system);
 		if (demod_mode != AVL_DVBTX) {
 			dev_err(&priv->i2c->dev, "%s: failed to enter DVBTx mode",
 				KBUILD_MODNAME);
@@ -1542,6 +1544,8 @@ static int avl6882_set_frontend(struct dvb_frontend *fe)
 		ret = avl6882_set_dvbt(fe);
 		break;
 	case SYS_DVBC_ANNEX_A:
+		if (demod_mode != AVL_DVBC)
+			ret = avl6882_set_dvbmode(fe, c->delivery_system);
 		if (demod_mode != AVL_DVBC) {
 			dev_err(&priv->i2c->dev, "%s: failed to enter DVBC mode",
 				KBUILD_MODNAME);
@@ -1551,6 +1555,8 @@ static int avl6882_set_frontend(struct dvb_frontend *fe)
 		ret = avl6882_set_dvbc(fe);
 		break;
 	case SYS_DVBC_ANNEX_B:
+		if (demod_mode != AVL_DVBC)
+			ret = avl6882_set_dvbmode(fe, c->delivery_system);
 		if (demod_mode != AVL_DVBC) {
 			dev_err(&priv->i2c->dev, "%s: failed to enter DVBC mode",
 				KBUILD_MODNAME);
@@ -1561,6 +1567,8 @@ static int avl6882_set_frontend(struct dvb_frontend *fe)
 		break;
 	case SYS_DVBS:
 	case SYS_DVBS2:
+		if (demod_mode != AVL_DVBSX)
+			ret = avl6882_set_dvbmode(fe, c->delivery_system);
 		if (demod_mode != AVL_DVBSX) {
 			dev_err(&priv->i2c->dev, "%s: failed to enter DVBSx mode",
 				KBUILD_MODNAME);
@@ -1650,10 +1658,6 @@ static struct dvb_frontend_ops avl6882_ops = {
 	.delsys = {SYS_DVBT, SYS_DVBT2, SYS_DVBC_ANNEX_A, SYS_DVBC_ANNEX_B, SYS_DVBS, SYS_DVBS2},
 	.info = {
 		.name			= "Availink AVL6882",
-		.frequency_min		= 174000000,
-		.frequency_max		= 862000000,
-		.frequency_stepsize	= 62500,
-		.frequency_tolerance	= 0,
 		.symbol_rate_min	= 1000000,
 		.symbol_rate_max	= 45000000,
 		.caps = FE_CAN_FEC_1_2                 |
