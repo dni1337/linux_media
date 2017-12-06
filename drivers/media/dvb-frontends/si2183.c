@@ -1242,13 +1242,13 @@ static int si2183_get_algo(struct dvb_frontend *fe)
 }
 
 static int si2183_set_property(struct dvb_frontend *fe,
-		struct dtv_property *p)
+		u32 cmd, u32 data)
 {
 	int ret = 0;
 
-	switch (p->cmd) {
+	switch (cmd) {
 	case DTV_DELIVERY_SYSTEM:
-		switch (p->u.data) {
+		switch (data) {
 		case SYS_DVBS:
 		case SYS_DVBS2:
 		case SYS_DSS:
@@ -1429,7 +1429,7 @@ static const struct dvb_frontend_ops si2183_ops = {
 	.read_ber		= si2183_read_ber,
 	.read_ucblocks		= si2183_read_ucblocks,
 
-	/*.set_property			= si2183_set_property,*/
+	.set_property			= si2183_set_property,
 	.set_tone			= si2183_set_tone,
 	.diseqc_send_master_cmd 	= si2183_send_diseqc_msg,
 	.diseqc_send_burst		= si2183_diseqc_send_burst,

@@ -1598,14 +1598,14 @@ static int avl6882_tune(struct dvb_frontend *fe, bool re_tune,
 }
 
 static int avl6882_set_property(struct dvb_frontend *fe,
-		struct dtv_property *p)
+		u32 cmd, u32 data)
 {
 	int ret = 0;
 
-	switch (p->cmd) {
+	switch (cmd) {
 	case DTV_DELIVERY_SYSTEM:
-		ret = avl6882_set_dvbmode(fe, p->u.data);
-		switch (p->u.data) {
+		ret = avl6882_set_dvbmode(fe, data);
+		switch (data) {
 		case SYS_DVBC_ANNEX_A:
 		case SYS_DVBC_ANNEX_B:
 			fe->ops.info.frequency_min = 47000000;
@@ -1701,7 +1701,7 @@ static struct dvb_frontend_ops avl6882_ops = {
 	.get_frontend_algo		= avl6882fe_algo,
 	.tune				= avl6882_tune,
 
-	/*.set_property			= avl6882_set_property,*/
+	.set_property			= avl6882_set_property,
 	.set_frontend			= avl6882_set_frontend,
 };
 
