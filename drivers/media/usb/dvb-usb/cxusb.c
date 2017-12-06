@@ -1492,6 +1492,7 @@ enum cxusb_table_index {
 	MYGICA_X9330_1,
 	MYGICA_X9330_2,
 	MYGICA_X9330_3,
+	EYETV_T2_LITE,
 	NR__cxusb_table_index
 };
 
@@ -1576,6 +1577,9 @@ static struct usb_device_id cxusb_table[NR__cxusb_table_index + 1] = {
 	},
 	[MYGICA_X9330_3] = {
 		USB_DEVICE(USB_VID_GTEK, 0xd233)
+	},
+	[EYETV_T2_LITE] = {
+		USB_DEVICE(USB_VID_CONEXANT, 0xc699)
 	},
 	{}		/* Terminating entry */
 };
@@ -2351,7 +2355,7 @@ static struct dvb_usb_device_properties cxusb_mygica_t230c_properties = {
 		.allowed_protos = RC_PROTO_BIT_UNKNOWN,
 	},
 
-	.num_device_descs = 2,
+	.num_device_descs = 3,
 	.devices = {
 		{
 			"Mygica T230C DVB-T/T2/C",
@@ -2362,6 +2366,11 @@ static struct dvb_usb_device_properties cxusb_mygica_t230c_properties = {
 			"Mygica T230C2 DVB-T/T2/C",
 			{ NULL },
 			{ &cxusb_table[MYGICA_T230C2], NULL },
+		},
+		{
+			"EyeTV T2 lite",
+			{ NULL },
+			{ &cxusb_table[EYETV_T2_LITE], NULL },
 		},
 	}
 };
