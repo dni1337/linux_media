@@ -71,7 +71,7 @@ int cxd2820r_set_frontend_t2(struct dvb_frontend *fe)
 	};
 
 	dev_dbg(&client->dev,
-		"delivery_system=%d modulation=%d frequency=%u bandwidth_hz=%u inversion=%d stream_id=%u\n",
+		"delivery_system=%d modulation=%d frequency=%u bandwidth_hz=%u inversion=%d stream_id=%d\n",
 		c->delivery_system, c->modulation, c->frequency,
 		c->bandwidth_hz, c->inversion, c->stream_id);
 
