@@ -11,7 +11,7 @@
 
 #include "cycitv.h"
 #include "ds3k.h"
-#include "dvb_ca_en50221.h"
+#include <media/dvb_ca_en50221.h>
 
 #ifndef USB_PID_CYCITV_COLD
 #define USB_PID_CYCITV_COLD 0x613d

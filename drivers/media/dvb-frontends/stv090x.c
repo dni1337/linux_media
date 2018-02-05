@@ -27,7 +27,7 @@
 #include <linux/mutex.h>
 
 #include <linux/dvb/frontend.h>
-#include "dvb_frontend.h"
+#include <media/dvb_frontend.h>
 
 #include "stv6110x.h" /* for demodulator internal modes */
 
@@ -681,7 +681,7 @@ static struct stv090x_short_frame_crloop stv090x_s2_short_crl_cut20[] = {
 
 /* Cut 3.0 Short Frame Tracking CR Loop */
 static struct stv090x_short_frame_crloop stv090x_s2_short_crl_cut30[] = {
-	/* MODCOD  	  2M	5M    10M   20M	  30M */
+	/* MODCOD	  2M	5M    10M   20M	  30M */
 	{ STV090x_QPSK,   0x2C, 0x2B, 0x0B, 0x0B, 0x3A },
 	{ STV090x_8PSK,   0x3B, 0x0B, 0x2A, 0x0A, 0x39 },
 	{ STV090x_16APSK, 0x1B, 0x1B, 0x1B, 0x3A, 0x2A },
@@ -705,7 +705,7 @@ static int stv090x_read_reg(struct stv090x_state *state, unsigned int reg)
 	u8 buf;
 
 	struct i2c_msg msg[] = {
-		{ .addr	= config->address, .flags	= 0, 		.buf = b0,   .len = 2 },
+		{ .addr	= config->address, .flags	= 0,		.buf = b0,   .len = 2 },
 		{ .addr	= config->address, .flags	= I2C_M_RD,	.buf = &buf, .len = 1 }
 	};
 
@@ -759,7 +759,9 @@ static int stv090x_write_regs(struct stv090x_state *state, unsigned int reg, u8 
 
 static int stv090x_write_reg(struct stv090x_state *state, unsigned int reg, u8 data)
 {
-	return stv090x_write_regs(state, reg, &data, 1);
+	u8 tmp = data; /* see gcc.gnu.org/bugzilla/show_bug.cgi?id=81715 */
+
+	return stv090x_write_regs(state, reg, &tmp, 1);
 }
 
 static int stv090x_i2c_gate_ctrl(struct stv090x_state *state, int enable)
@@ -2219,12 +2221,11 @@ static int stv090x_get_coldlock(struct stv090x_state *state, s32 timeout_dmd)
 		if (state->config->tuner_get_status) {
 			if (state->config->tuner_get_status(fe, &reg) < 0)
 				goto err_gateoff;
+			if (reg)
+				dprintk(FE_DEBUG, 1, "Tuner phase locked");
+			else
+				dprintk(FE_DEBUG, 1, "Tuner unlocked");
 		}
-
-		if (reg)
-			dprintk(FE_DEBUG, 1, "Tuner phase locked");
-		else
-			dprintk(FE_DEBUG, 1, "Tuner unlocked");
 
 		if (stv090x_i2c_gate_ctrl(state, 0) < 0)
 			goto err;
@@ -3519,6 +3520,10 @@ static enum dvbfe_search stv090x_search(struct dvb_frontend *fe)
 	}
 
 	stv090x_set_mis(state, props->stream_id);
+
+	/* Set Gold code > 0 */
+	if (props->scrambling_sequence_index)
+	      stv090x_set_pls(state, 1, props->scrambling_sequence_index);
 
 	if (stv090x_algo(state) == STV090x_RANGEOK) {
 		dprintk(FE_DEBUG, 1, "Search success!");
@@ -5049,11 +5054,11 @@ static const struct dvb_frontend_ops stv090x_ops = {
 	.info = {
 		.name			= "STV090x Multistandard",
 		.frequency_min		= 950000,
-		.frequency_max 		= 2150000,
+		.frequency_max		= 2150000,
 		.frequency_stepsize	= 0,
 		.frequency_tolerance	= 0,
-		.symbol_rate_min 	= 1000000,
-		.symbol_rate_max 	= 45000000,
+		.symbol_rate_min	= 1000000,
+		.symbol_rate_max	= 45000000,
 		.caps			= FE_CAN_INVERSION_AUTO |
 					  FE_CAN_FEC_AUTO       |
 					  FE_CAN_QPSK           |
@@ -5097,7 +5102,7 @@ struct dvb_frontend *stv090x_attach(struct stv090x_config *config,
 	state->frontend.ops			= stv090x_ops;
 	state->frontend.demodulator_priv	= state;
 	state->demod				= demod;
-	state->demod_mode 			= config->demod_mode; /* Single or Dual mode */
+	state->demod_mode			= config->demod_mode; /* Single or Dual mode */
 	state->device				= config->device;
 	state->rolloff				= STV090x_RO_35; /* default */
 

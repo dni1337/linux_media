@@ -27,9 +27,6 @@ struct r848_priv {
 	u8 inited;
 };
 
-
-
-
 /* R848 */
 
 typedef struct _R848_I2C_LEN_TYPE

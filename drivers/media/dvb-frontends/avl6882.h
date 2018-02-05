@@ -18,8 +18,9 @@
 #ifndef AVL6882_H
 #define AVL6882_H
 
-//#include <linux/dvb/frontend.h>
-//#include "dvb_frontend.h"
+#include <linux/types.h>
+#include <linux/i2c.h>
+#include <linux/dvb/frontend.h>
 
 struct avl6882_config {
 	/* the demodulator's i2c address */
@@ -30,8 +31,7 @@ struct avl6882_config {
 };
 
 
-#if defined(CONFIG_DVB_AVL6882) || (defined(CONFIG_DVB_AVL6882_MODULE) && \
-							defined(MODULE))
+#if IS_REACHABLE(CONFIG_DVB_AVL6882)
 extern struct dvb_frontend *avl6882_attach(struct avl6882_config *config,
 					   struct i2c_adapter *i2c);
 #else

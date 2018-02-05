@@ -83,6 +83,7 @@
 #define CX231XX_BOARD_TBS_5280 25
 #define CX231XX_BOARD_TBS_5281 26
 #define CX231XX_BOARD_TBS_5990 27
+#define CX231XX_BOARD_THE_IMAGING_SOURCE_DFG_USB2_PRO 28
 
 /* Limits minimum and default number of buffers */
 #define CX231XX_MIN_BUF                 4

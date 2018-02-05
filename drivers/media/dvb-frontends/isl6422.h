@@ -46,7 +46,7 @@ struct isl6422_config {
 	int id;
 };
 
-#if IS_ENABLED(CONFIG_DVB_ISL6422)
+#if IS_REACHABLE(CONFIG_DVB_ISL6422)
 
 
 extern struct dvb_frontend *isl6422_attach(struct dvb_frontend *fe,

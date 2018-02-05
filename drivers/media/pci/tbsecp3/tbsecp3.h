@@ -28,15 +28,15 @@
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
 
-#include "demux.h"
-#include "dmxdev.h"
-#include "dvb_demux.h"
-#include "dvb_frontend.h"
-#include "dvb_net.h"
-#include "dvbdev.h"
-#include "tbsecp3-regs.h"
-#include "dvb_ca_en50221.h"
+#include <media/dmxdev.h>
+#include <media/dvbdev.h>
+#include <media/dvb_demux.h>
+#include <media/dvb_frontend.h>
+#include <media/dvb_ringbuffer.h>
+#include <media/dvb_ca_en50221.h>
+#include <media/dvb_net.h>
 
+#include "tbsecp3-regs.h"
 
 #define TBSECP3_VID		0x544d
 #define TBSECP3_PID		0x6178

@@ -13,7 +13,7 @@
  */
 
 #include "si2183.h"
-#include "dvb_frontend.h"
+#include <media/dvb_frontend.h>
 #include <linux/firmware.h>
 #include <linux/i2c-mux.h>
 
@@ -598,11 +598,16 @@ static int si2183_set_dvbs(struct dvb_frontend *fe)
 		if (ret)
 			dev_warn(&client->dev, "dvb-s2: err selecting stream_id\n");
 
-		/* pls selection */
+		/* PLS selection */
 		pls_mode = c->stream_id == NO_STREAM_ID_FILTER ? 0 : (c->stream_id >> 26) & 3;
 		pls_code = c->stream_id == NO_STREAM_ID_FILTER ? 0 : (c->stream_id >> 8) & 0x3FFFF;
 		if (pls_mode)
 			pls_code = gold_code_index(pls_code);
+
+		/* Set Gold code > 0 */
+		if (c->scrambling_sequence_index)
+			pls_code = gold_code_index(c->scrambling_sequence_index);
+
 		cmd.args[0] = 0x73;
 		cmd.args[1] = pls_code > 0;
 		cmd.args[2] = cmd.args[3] = 0;

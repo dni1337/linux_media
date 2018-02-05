@@ -22,9 +22,8 @@
 #define R848_H
 
 #include <linux/kconfig.h>
-#include "dvb_frontend.h"
-
-
+#include <linux/i2c.h>
+#include <media/dvb_frontend.h>
 
 
 typedef struct _R848_Sys_Info_Type
@@ -70,7 +69,7 @@ u8 R848_SetTfType;
 
 };
 
-#if IS_ENABLED(CONFIG_MEDIA_TUNER_R848)
+#if IS_REACHABLE(CONFIG_MEDIA_TUNER_R848)
 extern struct dvb_frontend *r848_attach(struct dvb_frontend *fe,
 		struct r848_config *cfg, struct i2c_adapter *i2c);
 #else

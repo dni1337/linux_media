@@ -33,7 +33,7 @@
 #include <linux/version.h>
 #include <asm/div64.h>
 
-#include "dvb_frontend.h"
+#include <media/dvb_frontend.h>
 #include "stv091x.h"
 #include "stv091x_regs.h"
 
@@ -972,6 +972,10 @@ static int Start(struct stv *state, struct dtv_frontend_properties *p)
 	}
 	
 	SetMIS(state, p->stream_id);
+
+	/* Set Gold code > 0 */
+	if (p->scrambling_sequence_index)
+	      SetPLS(state, 1, p->scrambling_sequence_index);
 
 	/* Set the Init Symbol rate*/
 	symb = MulDiv32(p->symbol_rate, 65536, state->base->mclk);

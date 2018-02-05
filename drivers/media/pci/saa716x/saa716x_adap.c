@@ -1,17 +1,11 @@
 #include <linux/bitops.h>
 
-#include "dmxdev.h"
-#include "dvbdev.h"
-#include "dvb_demux.h"
-#include "dvb_frontend.h"
-
+#include "saa716x_priv.h"
 #include "saa716x_mod.h"
 #include "saa716x_spi.h"
 #include "saa716x_adap.h"
 #include "saa716x_i2c.h"
 #include "saa716x_gpio.h"
-#include "saa716x_priv.h"
-
 
 #define SAA716X_TS_DMA_BUF_SIZE		(16 * SAA716x_PAGE_SIZE)
 

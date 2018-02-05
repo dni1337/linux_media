@@ -20,7 +20,11 @@
 #ifndef __TDA18273_H
 #define __TDA18273_H
 
-#if IS_ENABLED(CONFIG_MEDIA_TUNER_TDA18273)
+#include <linux/i2c.h>
+#include <media/dvb_frontend.h>
+
+
+#if IS_REACHABLE(CONFIG_MEDIA_TUNER_TDA18273)
 extern struct dvb_frontend *tda18273_attach(struct dvb_frontend *fe,
 					    struct i2c_adapter *i2c,
 					    const u8 i2c_addr);

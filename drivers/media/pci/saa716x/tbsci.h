@@ -12,8 +12,6 @@
 #include "saa716x_gpio.h"
 #include "tbsci-i2c.h"
 
-#include "dvb_ca_en50221.h"
-
 extern int tbsci_read_attribute_mem(struct dvb_ca_en50221 *en50221, 
 	int slot, int addr);
 extern int tbsci_write_attribute_mem(struct dvb_ca_en50221 *en50221, 

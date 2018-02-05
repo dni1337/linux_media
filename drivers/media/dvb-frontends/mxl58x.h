@@ -4,6 +4,8 @@
 #include <linux/types.h>
 #include <linux/i2c.h>
 
+#include <media/dvb_frontend.h>
+
 struct mxl58x_cfg {
 	u8   adr;
 	u8   type;
@@ -20,9 +22,8 @@ struct mxl58x_cfg {
 		enum fe_sec_voltage voltage, u8 rf_in);
 };
 
-#if defined(CONFIG_DVB_MXL5XX) || \
-	(defined(CONFIG_DVB_MXL58X_MODULE) && defined(MODULE))
 
+#if IS_REACHABLE(CONFIG_DVB_MXL5XX)
 extern struct dvb_frontend *mxl58x_attach(struct i2c_adapter *i2c,
 					  struct mxl58x_cfg *cfg,
 					  u32 demod);

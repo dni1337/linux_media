@@ -23,8 +23,7 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 
-#include "dvb_frontend.h"
-
+#include "tda18273.h"
 #include "tda18273_priv.h"
 
 static unsigned int verbose;

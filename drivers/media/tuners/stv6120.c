@@ -27,8 +27,6 @@
 #include <linux/version.h>
 #include <asm/div64.h>
 
-#include "dvb_frontend.h"
-
 #include "stv6120.h"
 
 #define REG_N0		0
