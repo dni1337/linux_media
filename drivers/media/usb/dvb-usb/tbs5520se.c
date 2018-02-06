@@ -254,17 +254,34 @@ static int tbs5520se_frontend_attach(struct dvb_usb_adapter *adap)
 	adap->fe_adap[0].fe2 = &adap->fe_adap[0]._fe2;
 	memcpy(adap->fe_adap[0].fe2, adap->fe_adap[0].fe, sizeof(struct dvb_frontend));
 
-	/* terrestrial tuner */
+	/* sat demod */
 	memset(adap->fe_adap[0].fe->ops.delsys, 0, MAX_DELSYS);
-	adap->fe_adap[0].fe->ops.delsys[0] = SYS_DVBT;
-	adap->fe_adap[0].fe->ops.delsys[1] = SYS_DVBT2;
-	adap->fe_adap[0].fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
-	adap->fe_adap[0].fe->ops.delsys[3] = SYS_ISDBT;
-	adap->fe_adap[0].fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+	adap->fe_adap[0].fe->ops.delsys[0] = SYS_DVBS;
+	adap->fe_adap[0].fe->ops.delsys[1] = SYS_DVBS2;
+	adap->fe_adap[0].fe->ops.delsys[2] = SYS_DSS;
 
-	/* attach ter tuner */
+	/* attach sat tuner */
+	if (!dvb_attach(av201x_attach, adap->fe_adap[0].fe, &tbs5520se_av201x_cfg,
+			adapter))
+			return -ENODEV;
+	buf[0] = 1;
+	buf[1] = 0;
+	tbs5520se_op_rw(d->udev, 0x8a, 0, 0,
+			buf, 2, TBS5520se_WRITE_MSG);
+	adap->fe_adap[0].fe->ops.set_voltage = tbs5520se_set_voltage;
+
+	/* ter/cab demod */
+	memset(adap->fe_adap[0].fe2->ops.delsys, 0, MAX_DELSYS);
+	adap->fe_adap[0].fe2->ops.delsys[0] = SYS_DVBT;
+	adap->fe_adap[0].fe2->ops.delsys[1] = SYS_DVBT2;
+	adap->fe_adap[0].fe2->ops.delsys[2] = SYS_DVBC_ANNEX_A;
+	adap->fe_adap[0].fe2->ops.delsys[3] = SYS_ISDBT;
+	adap->fe_adap[0].fe2->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+	adap->fe_adap[0].fe2->id = 1;
+
+	/* attach ter/cab tuner */
 	memset(&si2157_config, 0, sizeof(si2157_config));
-	si2157_config.fe = adap->fe_adap[0].fe;
+	si2157_config.fe = adap->fe_adap[0].fe2;
 	si2157_config.if_port = 1;
 	memset(&info, 0, sizeof(struct i2c_board_info));
 	strlcpy(info.type, "si2157", I2C_NAME_SIZE);
@@ -285,21 +302,6 @@ static int tbs5520se_frontend_attach(struct dvb_usb_adapter *adap)
 	}
 
 	st->i2c_client_tuner = client_tuner;
-
-	memset(adap->fe_adap[0].fe2->ops.delsys, 0, MAX_DELSYS);
-	adap->fe_adap[0].fe2->ops.delsys[0] = SYS_DVBS;
-	adap->fe_adap[0].fe2->ops.delsys[1] = SYS_DVBS2;
-	adap->fe_adap[0].fe2->ops.delsys[2] = SYS_DSS;
-	adap->fe_adap[0].fe2->id = 1;
-
-	if (!dvb_attach(av201x_attach, adap->fe_adap[0].fe2, &tbs5520se_av201x_cfg,
-			adapter))
-			return -ENODEV;
-	buf[0] = 1;
-	buf[1] = 0;
-	tbs5520se_op_rw(d->udev, 0x8a, 0, 0,
-			buf, 2, TBS5520se_WRITE_MSG);
-	adap->fe_adap[0].fe2->ops.set_voltage = tbs5520se_set_voltage;
 
 	buf[0] = 0;
 	buf[1] = 0;
