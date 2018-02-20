@@ -25,7 +25,7 @@
 #define TBS5925_VOLTAGE_CTRL (0x1800)
 
 struct tbs5925_state {
-	u32 last_key_pressed;
+	u8 initialized;
 };
 
 /* struct tbs5925_rc_keys {
@@ -298,79 +298,24 @@ static int tbs5925_frontend_attach(struct dvb_usb_adapter *d)
 	return -EIO;
 }
 
-static struct rc_map_table tbs5925_rc_keys[] = {
-	{ 0xff84, KEY_POWER2},		/* power */
-	{ 0xff94, KEY_MUTE},		/* mute */
-	{ 0xff87, KEY_1},
-	{ 0xff86, KEY_2},
-	{ 0xff85, KEY_3},
-	{ 0xff8b, KEY_4},
-	{ 0xff8a, KEY_5},
-	{ 0xff89, KEY_6},
-	{ 0xff8f, KEY_7},
-	{ 0xff8e, KEY_8},
-	{ 0xff8d, KEY_9},
-	{ 0xff92, KEY_0},
-	{ 0xff96, KEY_CHANNELUP},	/* ch+ */
-	{ 0xff91, KEY_CHANNELDOWN},	/* ch- */
-	{ 0xff93, KEY_VOLUMEUP},	/* vol+ */
-	{ 0xff8c, KEY_VOLUMEDOWN},	/* vol- */
-	{ 0xff83, KEY_RECORD},		/* rec */
-	{ 0xff98, KEY_PAUSE},		/* pause, yellow */
-	{ 0xff99, KEY_OK},		/* ok */
-	{ 0xff9a, KEY_CAMERA},		/* snapshot */
-	{ 0xff81, KEY_UP},
-	{ 0xff90, KEY_LEFT},
-	{ 0xff82, KEY_RIGHT},
-	{ 0xff88, KEY_DOWN},
-	{ 0xff95, KEY_FAVORITES},	/* blue */
-	{ 0xff97, KEY_SUBTITLE},	/* green */
-	{ 0xff9d, KEY_ZOOM},
-	{ 0xff9f, KEY_EXIT},
-	{ 0xff9e, KEY_MENU},
-	{ 0xff9c, KEY_EPG},
-	{ 0xff80, KEY_PREVIOUS},	/* red */
-	{ 0xff9b, KEY_MODE},
-	{ 0xffdd, KEY_TV },
-	{ 0xffde, KEY_PLAY },
-	{ 0xffdc, KEY_STOP },
-	{ 0xffdb, KEY_REWIND },
-	{ 0xffda, KEY_FASTFORWARD },
-	{ 0xffd9, KEY_PREVIOUS },	/* replay */
-	{ 0xffd8, KEY_NEXT },		/* skip */
-	{ 0xffd1, KEY_NUMERIC_STAR },
-	{ 0xffd2, KEY_NUMERIC_POUND },
-	{ 0xffd4, KEY_DELETE },		/* clear */
-};
-
-static int tbs5925_rc_query(struct dvb_usb_device *d, u32 *event, int *state)
+static int tbs5925_rc_query(struct dvb_usb_device *d)
 {
-	struct rc_map_table *keymap = d->props.rc.legacy.rc_map_table;
-	int keymap_size = d->props.rc.legacy.rc_map_size;
-	
-	struct tbs5925_state *st = d->priv;
 	u8 key[2];
-	struct i2c_msg msg[] = {
-		{.addr = TBS5925_RC_QUERY, .flags = I2C_M_RD, .buf = key,
-		.len = 2},
+	struct i2c_msg msg = {
+		.addr = TBS5925_RC_QUERY,
+		.flags = I2C_M_RD,
+		.buf = key,
+		.len = 2
 	};
-	int i;
 
-	*state = REMOTE_NO_KEY_PRESSED;
-	if (tbs5925_i2c_transfer(&d->i2c_adap, msg, 1) == 1) {
-		//info("key: %x %x\n",msg[0].buf[0],msg[0].buf[1]); 
-		for (i = 0; i < keymap_size; i++) {
-			if (rc5_data(&keymap[i]) == msg[0].buf[1]) {
-				*state = REMOTE_KEY_PRESSED;
-				*event = keymap[i].keycode;
-				st->last_key_pressed =
-					keymap[i].keycode;
-				break;
-			}
-		st->last_key_pressed = 0;
+	if (d->props.i2c_algo->master_xfer(&d->i2c_adap, &msg, 1) == 1) {
+		if (key[1] != 0xff) {
+			deb_xfer("RC code: 0x%02X !\n", key[1]);
+			rc_keydown(d->rc_dev, RC_PROTO_UNKNOWN, key[1],
+				   0);
 		}
 	}
-	 
+
 	return 0;
 }
 
@@ -447,10 +392,11 @@ static struct dvb_usb_device_properties tbs5925_properties = {
 	.no_reconnect = 1,
 
 	.i2c_algo = &tbs5925_i2c_algo,
-	.rc.legacy = {
-		.rc_map_table = tbs5925_rc_keys,
-		.rc_map_size = ARRAY_SIZE(tbs5925_rc_keys),
-		.rc_interval = 250,
+	.rc.core = {
+		.rc_interval = 150,
+		.rc_codes = RC_MAP_TBS_NEC,
+		.module_name = KBUILD_MODNAME,
+		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = tbs5925_rc_query,
 	},
 

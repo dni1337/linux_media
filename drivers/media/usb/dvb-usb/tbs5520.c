@@ -19,13 +19,13 @@
 #define USB_PID_tbs5520 0x5520
 #endif
 
-#define tbs5520_READ_MSG 0
-#define tbs5520_WRITE_MSG 1
+#define TBS5520_READ_MSG 0
+#define TBS5520_WRITE_MSG 1
 
-#define tbs5520_RC_QUERY (0x1a00)
+#define TBS5520_RC_QUERY (0x1a00)
 
 struct tbs5520_state {
-	u32 last_key_pressed;
+	u8 initialized;
 };
 
 /* debug */
@@ -42,19 +42,19 @@ static int tbs5520_op_rw(struct usb_device *dev, u8 request, u16 value,
 	int ret;
 	void *u8buf;
 
-	unsigned int pipe = (flags == tbs5520_READ_MSG) ?
+	unsigned int pipe = (flags == TBS5520_READ_MSG) ?
 			usb_rcvctrlpipe(dev, 0) : usb_sndctrlpipe(dev, 0);
-	u8 request_type = (flags == tbs5520_READ_MSG) ? USB_DIR_IN : USB_DIR_OUT;
+	u8 request_type = (flags == TBS5520_READ_MSG) ? USB_DIR_IN : USB_DIR_OUT;
 	u8buf = kmalloc(len, GFP_KERNEL);
 	if (!u8buf)
 		return -ENOMEM;
 
-	if (flags == tbs5520_WRITE_MSG)
+	if (flags == TBS5520_WRITE_MSG)
 		memcpy(u8buf, data, len);
 	ret = usb_control_msg(dev, pipe, request, request_type | USB_TYPE_VENDOR,
 				value, index , u8buf, len, 2000);
 
-	if (flags == tbs5520_READ_MSG)
+	if (flags == TBS5520_READ_MSG)
 		memcpy(data, u8buf, len);
 	kfree(u8buf);
 	return ret;
@@ -87,10 +87,10 @@ static int tbs5520_i2c_transfer(struct i2c_adapter *adap,
 		//register
 		//buf6[2] = 0;
 		tbs5520_op_rw(d->udev, 0x93, 0, 0,
-					buf6, 2, tbs5520_WRITE_MSG);
+					buf6, 2, TBS5520_WRITE_MSG);
 		//msleep(5);
 		tbs5520_op_rw(d->udev, 0x91, 0, 0,
-					inbuf, buf6[0], tbs5520_READ_MSG);
+					inbuf, buf6[0], TBS5520_READ_MSG);
 		memcpy(msg[1].buf, inbuf, msg[1].len);
 
 		break;
@@ -105,23 +105,23 @@ static int tbs5520_i2c_transfer(struct i2c_adapter *adap,
 					buf6[2+i] = msg[0].buf[i];//register
 				}
 				tbs5520_op_rw(d->udev, 0x80, 0, 0,
-					buf6, msg[0].len+2, tbs5520_WRITE_MSG);
+					buf6, msg[0].len+2, TBS5520_WRITE_MSG);
 			} else {
 				tbs5520_op_rw(d->udev, 0x82, 0, 0,
-					msg[0].buf, 64, tbs5520_WRITE_MSG);
+					msg[0].buf, 64, TBS5520_WRITE_MSG);
 
 			}
 
 			//msleep(3);
 			break;
 			
-		case (tbs5520_RC_QUERY):
+		case (TBS5520_RC_QUERY):
 			tbs5520_op_rw(d->udev, 0xb8, 0, 0,
-					buf6, 4, tbs5520_READ_MSG);
+					buf6, 4, TBS5520_READ_MSG);
 			msg[0].buf[0] = buf6[2];
 			msg[0].buf[1] = buf6[3];
 			//msleep(3);
-			//info("tbs5520_RC_QUERY %x %x %x %x\n",
+			//info("TBS5520_RC_QUERY %x %x %x %x\n",
 			//		buf6[0],buf6[1],buf6[2],buf6[3]);
 			break;
 		}
@@ -179,9 +179,9 @@ return 0;
 		ibuf[1]=0xa0;//eeprom addr
 		ibuf[2]=i;//register
 		ret = tbs5520_op_rw(d->udev, 0x90, 0, 0,
-					ibuf, 3, tbs5520_WRITE_MSG);
+					ibuf, 3, TBS5520_WRITE_MSG);
 		ret = tbs5520_op_rw(d->udev, 0x91, 0, 0,
-					ibuf, 1, tbs5520_READ_MSG);
+					ibuf, 1, TBS5520_READ_MSG);
 			if (ret < 0) {
 				err("read eeprom failed.");
 				return -1;
@@ -223,12 +223,12 @@ static int tbs5520_frontend_attach(struct dvb_usb_adapter *d)
 	buf[0] = 7;
 	buf[1] = 1;
 	tbs5520_op_rw(d->dev->udev, 0x8a, 0, 0,
-		buf, 2, tbs5520_WRITE_MSG);
+		buf, 2, TBS5520_WRITE_MSG);
 
 	buf[0] = 6;
 	buf[1] = 1;
 	tbs5520_op_rw(d->dev->udev, 0x8a, 0, 0,
-		buf, 2, tbs5520_WRITE_MSG);
+		buf, 2, TBS5520_WRITE_MSG);
 
 
 	return 0;
@@ -237,79 +237,24 @@ err:
 	return -ENODEV;
 }
 
-static struct rc_map_table tbs5520_rc_keys[] = {
-	{ 0xff84, KEY_POWER2},		/* power */
-	{ 0xff94, KEY_MUTE},		/* mute */
-	{ 0xff87, KEY_1},
-	{ 0xff86, KEY_2},
-	{ 0xff85, KEY_3},
-	{ 0xff8b, KEY_4},
-	{ 0xff8a, KEY_5},
-	{ 0xff89, KEY_6},
-	{ 0xff8f, KEY_7},
-	{ 0xff8e, KEY_8},
-	{ 0xff8d, KEY_9},
-	{ 0xff92, KEY_0},
-	{ 0xff96, KEY_CHANNELUP},	/* ch+ */
-	{ 0xff91, KEY_CHANNELDOWN},	/* ch- */
-	{ 0xff93, KEY_VOLUMEUP},	/* vol+ */
-	{ 0xff8c, KEY_VOLUMEDOWN},	/* vol- */
-	{ 0xff83, KEY_RECORD},		/* rec */
-	{ 0xff98, KEY_PAUSE},		/* pause, yellow */
-	{ 0xff99, KEY_OK},		/* ok */
-	{ 0xff9a, KEY_CAMERA},		/* snapshot */
-	{ 0xff81, KEY_UP},
-	{ 0xff90, KEY_LEFT},
-	{ 0xff82, KEY_RIGHT},
-	{ 0xff88, KEY_DOWN},
-	{ 0xff95, KEY_FAVORITES},	/* blue */
-	{ 0xff97, KEY_SUBTITLE},	/* green */
-	{ 0xff9d, KEY_ZOOM},
-	{ 0xff9f, KEY_EXIT},
-	{ 0xff9e, KEY_MENU},
-	{ 0xff9c, KEY_EPG},
-	{ 0xff80, KEY_PREVIOUS},	/* red */
-	{ 0xff9b, KEY_MODE},
-	{ 0xffdd, KEY_TV },
-	{ 0xffde, KEY_PLAY },
-	{ 0xffdc, KEY_STOP },
-	{ 0xffdb, KEY_REWIND },
-	{ 0xffda, KEY_FASTFORWARD },
-	{ 0xffd9, KEY_PREVIOUS },	/* replay */
-	{ 0xffd8, KEY_NEXT },		/* skip */
-	{ 0xffd1, KEY_NUMERIC_STAR },
-	{ 0xffd2, KEY_NUMERIC_POUND },
-	{ 0xffd4, KEY_DELETE },		/* clear */
-};
-
-static int tbs5520_rc_query(struct dvb_usb_device *d, u32 *event, int *state)
+static int tbs5520_rc_query(struct dvb_usb_device *d)
 {
-	struct rc_map_table *keymap = d->props.rc.legacy.rc_map_table;
-	int keymap_size = d->props.rc.legacy.rc_map_size;
-
-	struct tbs5520_state *st = d->priv;
 	u8 key[2];
-	struct i2c_msg msg[] = {
-		{.addr = tbs5520_RC_QUERY, .flags = I2C_M_RD, .buf = key,
-		.len = 2},
+	struct i2c_msg msg = {
+		.addr = TBS5520_RC_QUERY,
+		.flags = I2C_M_RD,
+		.buf = key,
+		.len = 2
 	};
-	int i;
 
-	*state = REMOTE_NO_KEY_PRESSED;
-	if (tbs5520_i2c_transfer(&d->i2c_adap, msg, 1) == 1) {
-		//info("key: %x %x\n",msg[0].buf[0],msg[0].buf[1]); 
-		for (i = 0; i < keymap_size; i++) {
-			if (rc5_data(&keymap[i]) == msg[0].buf[1]) {
-				*state = REMOTE_KEY_PRESSED;
-				*event = keymap[i].keycode;
-				st->last_key_pressed =
-					keymap[i].keycode;
-				break;
-			}
-		st->last_key_pressed = 0;
+	if (d->props.i2c_algo->master_xfer(&d->i2c_adap, &msg, 1) == 1) {
+		if (key[1] != 0xff) {
+			deb_xfer("RC code: 0x%02X !\n", key[1]);
+			rc_keydown(d->rc_dev, RC_PROTO_UNKNOWN, key[1],
+				   0);
 		}
 	}
-	 
+
 	return 0;
 }
 
@@ -345,15 +290,15 @@ static int tbs5520_load_firmware(struct usb_device *dev,
 	p = kmalloc(fw->size, GFP_KERNEL);
 	reset = 1;
 	/*stop the CPU*/
-	tbs5520_op_rw(dev, 0xa0, 0x7f92, 0, &reset, 1, tbs5520_WRITE_MSG);
-	tbs5520_op_rw(dev, 0xa0, 0xe600, 0, &reset, 1, tbs5520_WRITE_MSG);
+	tbs5520_op_rw(dev, 0xa0, 0x7f92, 0, &reset, 1, TBS5520_WRITE_MSG);
+	tbs5520_op_rw(dev, 0xa0, 0xe600, 0, &reset, 1, TBS5520_WRITE_MSG);
 
 	if (p != NULL) {
 		memcpy(p, fw->data, fw->size);
 		for (i = 0; i < fw->size; i += 0x40) {
 			b = (u8 *) p + i;
 			if (tbs5520_op_rw(dev, 0xa0, i, 0, b , 0x40,
-					tbs5520_WRITE_MSG) != 0x40) {
+					TBS5520_WRITE_MSG) != 0x40) {
 				err("error while transferring firmware");
 				ret = -EINVAL;
 				break;
@@ -362,12 +307,12 @@ static int tbs5520_load_firmware(struct usb_device *dev,
 		/* restart the CPU */
 		reset = 0;
 		if (ret |= tbs5520_op_rw(dev, 0xa0, 0x7f92, 0, &reset, 1,
-					tbs5520_WRITE_MSG) != 1) {
+					TBS5520_WRITE_MSG) != 1) {
 			err("could not restart the USB controller CPU.");
 			ret = -EINVAL;
 		}
 		if (ret |= tbs5520_op_rw(dev, 0xa0, 0xe600, 0, &reset, 1,
-					tbs5520_WRITE_MSG) != 1) {
+					TBS5520_WRITE_MSG) != 1) {
 			err("could not restart the USB controller CPU.");
 			ret = -EINVAL;
 		}
@@ -387,10 +332,11 @@ static struct dvb_usb_device_properties tbs5520_properties = {
 	.no_reconnect = 1,
 
 	.i2c_algo = &tbs5520_i2c_algo,
-	.rc.legacy = {
-		.rc_map_table = tbs5520_rc_keys,
-		.rc_map_size = ARRAY_SIZE(tbs5520_rc_keys),
+	.rc.core = {
 		.rc_interval = 150,
+		.rc_codes = RC_MAP_TBS_NEC,
+		.module_name = KBUILD_MODNAME,
+		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = tbs5520_rc_query,
 	},
 
