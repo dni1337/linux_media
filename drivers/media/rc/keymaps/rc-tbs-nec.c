@@ -9,6 +9,16 @@
 #include <linux/module.h>
 
 static struct rc_map_table tbs_nec[] = {
+	{ 0xdd, KEY_TV },
+	{ 0xde, KEY_PLAY },
+	{ 0xdc, KEY_STOP },
+	{ 0xdb, KEY_REWIND },
+	{ 0xda, KEY_FASTFORWARD },
+	{ 0xd9, KEY_PREVIOUS },		/* replay */
+	{ 0xd8, KEY_NEXT },		/* skip */
+	{ 0xd1, KEY_NUMERIC_STAR },
+	{ 0xd2, KEY_NUMERIC_POUND },
+	{ 0xd4, KEY_DELETE },		/* clear */
 	{ 0x84, KEY_POWER2},		/* power */
 	{ 0x94, KEY_MUTE},		/* mute */
 	{ 0x87, KEY_1},
