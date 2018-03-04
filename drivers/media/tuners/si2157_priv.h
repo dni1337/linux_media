@@ -52,6 +52,7 @@ struct si2157_cmd {
 #define SI2157_CHIPTYPE_SI2146 1
 #define SI2157_CHIPTYPE_SI2141 2
 
+#define SI2157_A30_FIRMWARE "dvb-tuner-si2157-a30-01.fw"
 #define SI2158_A20_FIRMWARE "dvb-tuner-si2158-a20-01.fw"
 #define SI2141_A10_FIRMWARE "dvb-tuner-si2141-a10-01.fw"
 

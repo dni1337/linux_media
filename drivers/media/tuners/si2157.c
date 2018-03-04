@@ -156,6 +156,8 @@ static int si2157_init(struct dvb_frontend *fe)
 		break;
 	case SI2157_A30:
 	case SI2147_A30:
+		fw_name = SI2157_A30_FIRMWARE;
+		break;
 	case SI2146_A10:
 		fw_name = NULL;
 		break;
@@ -561,5 +563,6 @@ module_i2c_driver(si2157_driver);
 MODULE_DESCRIPTION("Silicon Labs Si2141/Si2146/2147/2148/2157/2158 silicon tuner driver");
 MODULE_AUTHOR("Antti Palosaari <crope@iki.fi>");
 MODULE_LICENSE("GPL");
+MODULE_FIRMWARE(SI2157_A30_FIRMWARE);
 MODULE_FIRMWARE(SI2158_A20_FIRMWARE);
 MODULE_FIRMWARE(SI2141_A10_FIRMWARE);
