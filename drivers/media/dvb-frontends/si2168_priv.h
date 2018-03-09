@@ -54,6 +54,7 @@ struct si2168_dev {
 	bool fef_inv;
 	int agc_pin;
 	bool agc_inv;
+	bool spectral_inversion;
 };
 
 /* firmware command struct */

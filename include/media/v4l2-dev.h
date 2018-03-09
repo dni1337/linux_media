@@ -184,7 +184,7 @@ struct v4l2_file_operations {
 	struct module *owner;
 	ssize_t (*read) (struct file *, char __user *, size_t, loff_t *);
 	ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
-	unsigned int (*poll) (struct file *, struct poll_table_struct *);
+	__poll_t (*poll) (struct file *, struct poll_table_struct *);
 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
 #ifdef CONFIG_COMPAT
 	long (*compat_ioctl32) (struct file *, unsigned int, unsigned long);
@@ -298,10 +298,10 @@ struct video_device
  * media_entity_to_video_device - Returns a &struct video_device from
  *	the &struct media_entity embedded on it.
  *
- * @entity: pointer to &struct media_entity
+ * @__entity: pointer to &struct media_entity
  */
-#define media_entity_to_video_device(entity) \
-	container_of(entity, struct video_device, entity)
+#define media_entity_to_video_device(__entity) \
+	container_of(__entity, struct video_device, entity)
 
 /**
  * to_video_device - Returns a &struct video_device from the

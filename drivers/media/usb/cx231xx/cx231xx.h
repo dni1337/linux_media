@@ -84,6 +84,8 @@
 #define CX231XX_BOARD_TBS_5281 26
 #define CX231XX_BOARD_TBS_5990 27
 #define CX231XX_BOARD_THE_IMAGING_SOURCE_DFG_USB2_PRO 28
+#define CX231XX_BOARD_HAUPPAUGE_935C 29
+#define CX231XX_BOARD_HAUPPAUGE_975 30
 
 /* Limits minimum and default number of buffers */
 #define CX231XX_MIN_BUF                 4
@@ -337,6 +339,8 @@ enum CX231XX_I2C_MASTER_PORT {
 	I2C_1_MUX_3 = 4  /* master 1 - port 3 (I2C_DEMOD_EN = 1) */
 };
 
+#define CX231XX_DVB_MAX_FRONTENDS 2
+
 struct cx231xx_board {
 	char *name;
 	int vchannels;
@@ -346,6 +350,7 @@ struct cx231xx_board {
 
 	/* demod related */
 	int demod_addr;
+	int demod_addr2;
 	u8 demod_xfer_mode;	/* 0 - Serial; 1 - parallel */
 
 	int adap_cnt;
@@ -366,7 +371,7 @@ struct cx231xx_board {
 
 	/* i2c masters */
 	u8 tuner_i2c_master;
-	u8 demod_i2c_master[2];
+	u8 demod_i2c_master[CX231XX_DVB_MAX_FRONTENDS];
 	u8 ir_i2c_master;
 
 	/* for devices with I2C chips for IR */
@@ -594,7 +599,7 @@ struct cx231xx_tsport {
 };
 
 struct cx231xx_dvb {
-	struct dvb_frontend *frontend;
+	struct dvb_frontend *frontend[CX231XX_DVB_MAX_FRONTENDS];
 
 	/* feed count management */
 	struct mutex lock;
@@ -608,7 +613,7 @@ struct cx231xx_dvb {
 	struct dmx_frontend fe_hw;
 	struct dmx_frontend fe_mem;
 	struct dvb_net net;
-	struct i2c_client *i2c_client_demod;
+	struct i2c_client *i2c_client_demod[2];
 	struct i2c_client *i2c_client_tuner;
 
 	void *adap_priv;
