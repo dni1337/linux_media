@@ -2431,7 +2431,7 @@ static struct dvb_usb_device_properties tevii_properties = {
 		.rc_codes = RC_MAP_TEVII_NEC,
 		.module_name = "dw2102",
 		.allowed_protos   = RC_PROTO_BIT_NEC,
-		.rc_query = su3000_rc_query,
+		.rc_query = dw2102_rc_query,
 	},
 
 	.read_mac_address = su3000_read_mac_address,
@@ -2488,7 +2488,7 @@ static struct dvb_usb_device_properties terratec_properties = {
 		.rc_codes = RC_MAP_TERRATEC_CINERGY_S2_DUAL,
 		.module_name = "dw2102",
 		.allowed_protos   = RC_PROTO_BIT_NEC,
-		.rc_query = su3000_rc_query,
+		.rc_query = dw2102_rc_query,
 	},
 
 	.read_mac_address = su3000_read_mac_address,
