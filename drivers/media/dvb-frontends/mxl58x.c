@@ -155,7 +155,7 @@ static int write_register(struct mxl *state, u32 reg, u32 val)
 	stat = i2cwrite(state, data, sizeof(data));
 	mutex_unlock(&state->base->i2c_lock);
 	if (stat)
-		pr_err("i2c write error\n");
+		dev_err(&state->base->i2c->dev,"i2c write error\n");
 	return stat;
 }
 
@@ -201,7 +201,7 @@ static int write_firmware_block(struct mxl *state,
 			MXL_HYDRA_REG_SIZE_IN_BYTES + size);
 	mutex_unlock(&state->base->i2c_lock);
 	if (stat)
-		pr_err("fw block write failed\n");
+		dev_err(&state->base->i2c->dev,"fw block write failed\n");
 	return stat;
 }
 
@@ -218,13 +218,13 @@ static int read_register(struct mxl *state, u32 reg, u32 *val)
 	stat = i2cwrite(state, data,
 			MXL_HYDRA_REG_SIZE_IN_BYTES + MXL_HYDRA_I2C_HDR_SIZE);
 	if (stat)
-		pr_err("i2c read error 1\n");
+		dev_err(&state->base->i2c->dev,"i2c read error 1\n");
 	if (!stat)
 		stat = i2cread(state, (u8 *) val, MXL_HYDRA_REG_SIZE_IN_BYTES);
 	mutex_unlock(&state->base->i2c_lock);
 	le32_to_cpus(val);
 	if (stat)
-		pr_err("i2c read error 2\n");
+		dev_err(&state->base->i2c->dev,"i2c read error 2\n");
 	return stat;
 }
 
@@ -444,8 +444,6 @@ static int set_parameters(struct dvb_frontend *fe)
 	demodChanCfg.spectrumInversion = MXL_HYDRA_SPECTRUM_AUTO;
 	demodChanCfg.fecCodeRate = MXL_HYDRA_FEC_AUTO;
 
-	//printk("std %u freq %u\n", demodChanCfg.standard, demodChanCfg.symbolRateInHz);
-
 #if 0
 	if (p->delivery_system == SYS_DSS)
 		update_by_mnemonic(state,
@@ -546,7 +544,7 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 		p->pre_bit_count.len = 1;
 		p->pre_bit_count.stat[0].scale = FE_SCALE_COUNTER;
 		p->pre_bit_count.stat[0].uvalue = reg[3];
-		/* pr_warn("mxl5xx: pre_bit_error=%u pre_bit_count=%u\n", p->pre_bit_error.stat[0].uvalue, p->pre_bit_count.stat[0].uvalue); */
+		dev_warn(&state->base->i2c->dev,"pre_bit_error=%u pre_bit_count=%u\n", p->pre_bit_error.stat[0].uvalue, p->pre_bit_count.stat[0].uvalue);
 		break;
 	default:
 		break;
@@ -581,7 +579,7 @@ static int read_status(struct dvb_frontend *fe, enum fe_status *status)
 	default:
 		break;
 	}
-	/* pr_warn("mxl5xx: post_bit_error=%u post_bit_count=%u\n", p->post_bit_error.stat[0].uvalue, p->post_bit_count.stat[0].uvalue); */
+	dev_warn(&state->base->i2c->dev,"post_bit_error=%u post_bit_count=%u\n", p->post_bit_error.stat[0].uvalue, p->post_bit_count.stat[0].uvalue);
 
 	return 0;
 }
@@ -693,10 +691,8 @@ static int get_frontend(struct dvb_frontend *fe, struct dtv_frontend_properties 
 	HYDRA_DEMOD_STATUS_UNLOCK(state, state->demod);
 	mutex_unlock(&state->base->status_lock);
 
-#if 0
-	pr_warn("mxl5xx: freq=%u delsys=%u srate=%u\n", freq * 1000,
+	dev_warn(&state->base->i2c->dev,"freq=%u delsys=%u srate=%u\n", freq * 1000,
 		regData[DMD_STANDARD_ADDR], regData[DMD_SYMBOL_RATE_ADDR]);
-#endif
 
 	p->symbol_rate = regData[DMD_SYMBOL_RATE_ADDR];
 	p->frequency = freq;
@@ -905,7 +901,7 @@ static int write_fw_segment(struct mxl *state,
 	u32 blockSize = MXL_HYDRA_OEM_MAX_BLOCK_WRITE_LENGTH;
 	u8 wMsgBuffer[MXL_HYDRA_OEM_MAX_BLOCK_WRITE_LENGTH];
 
-	//pr_info("seg %u\n", totalSize);
+	//dev_warn(&state->base->i2c->dev,"seg %u\n", totalSize);
 	do {
 		size = origSize = (((u32)(dataCount + blockSize)) > totalSize) ?
 			(totalSize - dataCount) : blockSize;
@@ -942,7 +938,7 @@ static int do_firmware_download(struct mxl *state,
 	MBIN_SEGMENT_T *segmentPtr;
 
 	if (mbinPtr->header.id != MBIN_FILE_HEADER_ID) {
-		pr_err("%s: Invalid file header ID (%c)\n",
+		dev_err(&state->base->i2c->dev,"%s: Invalid file header ID (%c)\n",
 		       __func__, mbinPtr->header.id);
 		return -EINVAL;
 	}
@@ -952,7 +948,7 @@ static int do_firmware_download(struct mxl *state,
 	segmentPtr = (MBIN_SEGMENT_T *) (&mbinPtr->data[0]);
 	for (index = 0; index < mbinPtr->header.numSegments; index++) {
 		if (segmentPtr->header.id != MBIN_SEGMENT_HEADER_ID) {
-			pr_err("%s: Invalid segment header ID (%c)\n",
+			dev_err(&state->base->i2c->dev,"%s: Invalid segment header ID (%c)\n",
 			       __func__, segmentPtr->header.id);
 			return -EINVAL;
 		}
@@ -1048,7 +1044,7 @@ static int firmware_download(struct mxl *state, u32 mbinBufferSize,
 	if (!firmware_is_alive(state))
 		return -1;
 
-	pr_info("Hydra FW alive\n");
+	dev_info(&state->base->i2c->dev,"Hydra FW alive\n");
 
 	/* sometimes register values are wrong shortly after first heart beats */
 	msleep(50);
@@ -1063,17 +1059,17 @@ static int firmware_download(struct mxl *state, u32 mbinBufferSize,
 	status = GET_REG_FIELD_DATA(PAD_MUX_BOND_OPTION, &regData);
 	if (status)
 		return status;
-	pr_info("chipID=%08x\n", regData);
+	dev_info(&state->base->i2c->dev,"chipID=%08x\n", regData);
 
 	status = GET_REG_FIELD_DATA(PRCM_AFE_CHIP_MMSK_VER, &regData);
 	if (status)
 		return status;
-	pr_info("chipVer=%08x\n", regData);
+	dev_info(&state->base->i2c->dev,"chipVer=%08x\n", regData);
 
 	status = read_register(state, HYDRA_FIRMWARE_VERSION, &regData);
 	if (status)
 		return status;
-	pr_info("FWVer=%08x\n", regData);
+	dev_info(&state->base->i2c->dev,"FWVer=%08x\n", regData);
 
 	return status;
 }
@@ -1354,10 +1350,9 @@ static int load_fw(struct mxl *state)
 	int stat = 0;
 	u8 *buf;
 
-#if 1
 	const struct firmware *fw;
 
-	pr_info("loading firmware, please wait...\n");
+	dev_warn(&state->base->i2c->dev,"loading firmware, please wait...\n");
 
 	stat = request_firmware(&fw, MXL58X_DEFAULT_FIRMWARE,
 		state->base->i2c->dev.parent);
@@ -1369,27 +1364,8 @@ static int load_fw(struct mxl *state)
 	release_firmware(fw);
 
 	if (stat)
-		pr_info("error loading firmware\n");
-
-#else
-	if (cfg->fw)
-		return firmware_download(state, cfg->fw_len, cfg->fw);
+		dev_err(&state->base->i2c->dev,"error loading firmware\n");
 	
-#ifdef FW_INCLUDED
-	return firmware_download(state, sizeof(hydra_fw), hydra_fw);
-#endif
-	
-	if (!cfg->fw_read)
-		return -1;
-
-	buf = vmalloc(0x40000);
-	if (!buf)
-		return -ENOMEM;
-	
-	cfg->fw_read(cfg->fw_priv, buf, 0x40000);
-	stat = firmware_download(state, 0x40000, buf);
-	vfree(buf);
-#endif
 	return stat;
 }
 
@@ -1438,7 +1414,7 @@ static int probe(struct mxl *state)
 			state->base->chipversion = 0;
 		else
 			state->base->chipversion = (chipver == 2) ? 2 : 1;
-		pr_info("Hydra chip version %u\n", state->base->chipversion);
+		dev_info(&state->base->i2c->dev, "Hydra chip version %u\n", state->base->chipversion);
 
 
 

@@ -12,12 +12,6 @@ struct mxl58x_cfg {
 	u32  cap;
 	u32  clk;
 
-	u8  *fw;
-	u32  fw_len;
-
-	int (*fw_read)(void *priv, u8 *buf, u32 len);
-	void *fw_priv;
-
 	int (*set_voltage)(struct i2c_adapter *i2c,
 		enum fe_sec_voltage voltage, u8 rf_in);
 };
