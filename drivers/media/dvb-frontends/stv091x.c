@@ -575,7 +575,7 @@ static int TrackingOptimization(struct stv *state)
 		else
 			reg |= 1; /* Disable TS FIFO sync if ACM without ISSYI */
 		write_reg(state, RSTV0910_P2_TSSTATEM + state->regoff, reg);
-		/*pr_info("stv0910: %d TSSTATEM=0x%02x\n", state->regoff, reg);*/
+
 		read_reg(state, RSTV0910_P2_TSSYNC + state->regoff, &reg);
 		if ( tmp & 0x18 )
 			reg &= ~0x18;
@@ -585,7 +585,6 @@ static int TrackingOptimization(struct stv *state)
 			reg |= 0x10;
 		}
 		write_reg(state, RSTV0910_P2_TSSYNC + state->regoff, reg);
-		/*pr_info("stv0910: %d TSSYNC=0x%02x\n", state->regoff, reg);*/
 	}
 	if (state->ReceiveMode == Mode_DVBS) {
 		u8 tmp;
@@ -871,7 +870,6 @@ static int set_mclock(struct stv *state, u32 MasterClock)
 	fvco = (quartz * 2 * ndiv) / idf;
 	state->base->mclk = fvco / (2 * odf) * 1000000;
 
-	/*pr_info("ndiv = %d, MasterClock = %d\n", ndiv, state->base->mclk);*/
 	return 0;
 }
 
@@ -902,7 +900,7 @@ static int SetPLS(struct stv *state, u8 pls_mode, u32 pls_code)
 	pls_mode &= 0x03;
 	pls_code &= 0x3FFFF;
 
-	//pr_warn("%s: code %d (mode %d)\n", __func__, pls_code, pls_mode);
+	dev_warn(&state->base->i2c->dev, "%s: code %d (mode %d)\n", __func__, pls_code, pls_mode);
 	write_reg(state, RSTV0910_P2_PLROOT2 + state->regoff, (pls_mode<<2) | (pls_code>>16));
 	write_reg(state, RSTV0910_P2_PLROOT1 + state->regoff, pls_code>>8);
 	write_reg(state, RSTV0910_P2_PLROOT0 + state->regoff, pls_code);
@@ -914,7 +912,7 @@ static int SetMIS(struct stv *state, int mis)
 	u8 tmp;
 
 	if (mis == NO_STREAM_ID_FILTER) {
-		//pr_warn("%s: disable MIS filtering\n", __func__);
+		dev_warn(&state->base->i2c->dev, "%s: disable MIS filtering\n", __func__);
 		SetPLS(state, 0, 0);
 		read_reg(state, RSTV0910_P2_PDELCTRL1 + state->regoff, &tmp);
 		tmp &= ~0x20;
@@ -922,7 +920,7 @@ static int SetMIS(struct stv *state, int mis)
 	} else {
 		SetPLS(state, (mis>>26) & 0x3, (mis>>8) & 0x3FFFF);
 		mis &= 0xff;
-		//pr_warn("%s: enable MIS filtering - %d\n", __func__, mis);
+		dev_warn(&state->base->i2c->dev, "%s: enable MIS filtering - %d\n", __func__, mis);
 		read_reg(state, RSTV0910_P2_PDELCTRL1 + state->regoff, &tmp);
 		if (mis)
 			tmp |= 0x20;
@@ -932,6 +930,14 @@ static int SetMIS(struct stv *state, int mis)
 		write_reg(state, RSTV0910_P2_ISIENTRY + state->regoff, mis);
 		write_reg(state, RSTV0910_P2_ISIBITENA + state->regoff, 0xff );
 	}
+	return 0;
+}
+
+static int SetModcode(struct stv *state, int modcode)
+{
+	dev_warn(&state->base->i2c->dev, "%s: modcode - 0x%X\n", __func__, modcode);
+	/* TODO */
+
 	return 0;
 }
 
@@ -976,6 +982,8 @@ static int Start(struct stv *state, struct dtv_frontend_properties *p)
 	/* Set Gold code > 0 */
 	if (p->scrambling_sequence_index)
 	      SetPLS(state, 1, p->scrambling_sequence_index);
+
+	SetModcode(state, p->modcode);
 
 	/* Set the Init Symbol rate*/
 	symb = MulDiv32(p->symbol_rate, 65536, state->base->mclk);
@@ -1061,7 +1069,6 @@ static int probe(struct stv *state)
 
 	if (reg != 0x51)
 		return -EINVAL;
-	pr_info("stv0910: found STV0910 id=0x%02x\n", reg);
 
 	 /* Configure the I2C repeater to off */
 	write_reg(state, RSTV0910_P1_I2CRPT, 0x24);
@@ -1155,10 +1162,12 @@ static int gate_ctrl(struct dvb_frontend *fe, int enable)
 	    reg = state->nr ? RSTV0910_P2_I2CRPT : RSTV0910_P1_I2CRPT;
 	}
 
-	/* pr_info("stv0910: gate_ctrl %d\n", enable); */
-
-	if (write_reg(state, reg , i2crpt) < 0)
+	if (write_reg(state, reg , i2crpt) < 0) {
+		dev_err(&state->base->i2c->dev,
+			"%s() write_reg failure (enable=%d)\n",
+			__func__, enable);
 		return -EIO;
+	}
 
 	state->i2crpt = i2crpt;
 
@@ -1688,6 +1697,8 @@ struct dvb_frontend *stv091x_attach(struct i2c_adapter *i2c,
 		mutex_init(&base->reg_lock);
 		state->base = base;
 		if (probe(state) < 0) {
+			dev_info(&i2c->dev, "No demod found at adr %02X on %s\n",
+				 cfg->adr, dev_name(&i2c->dev));
 			kfree(base);
 			goto fail;
 		}
@@ -1696,6 +1707,9 @@ struct dvb_frontend *stv091x_attach(struct i2c_adapter *i2c,
 	state->fe.ops               = stv091x_ops;
 	state->fe.demodulator_priv  = state;
 	state->nr = nr;
+
+	dev_info(&i2c->dev, "%s demod found at adr %02X on %s\n",
+		 state->fe.ops.info.name, cfg->adr, dev_name(&i2c->dev));
 
 	return &state->fe;
 
