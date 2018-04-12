@@ -900,7 +900,7 @@ static int SetPLS(struct stv *state, u8 pls_mode, u32 pls_code)
 	pls_mode &= 0x03;
 	pls_code &= 0x3FFFF;
 
-	dev_warn(&state->base->i2c->dev, "%s: code %d (mode %d)\n", __func__, pls_code, pls_mode);
+	dev_dbg(&state->base->i2c->dev, "%s: code %d (mode %d)\n", __func__, pls_code, pls_mode);
 	write_reg(state, RSTV0910_P2_PLROOT2 + state->regoff, (pls_mode<<2) | (pls_code>>16));
 	write_reg(state, RSTV0910_P2_PLROOT1 + state->regoff, pls_code>>8);
 	write_reg(state, RSTV0910_P2_PLROOT0 + state->regoff, pls_code);
@@ -912,7 +912,7 @@ static int SetMIS(struct stv *state, int mis)
 	u8 tmp;
 
 	if (mis == NO_STREAM_ID_FILTER) {
-		dev_warn(&state->base->i2c->dev, "%s: disable MIS filtering\n", __func__);
+		dev_dbg(&state->base->i2c->dev, "%s: disable MIS filtering\n", __func__);
 		SetPLS(state, 0, 0);
 		read_reg(state, RSTV0910_P2_PDELCTRL1 + state->regoff, &tmp);
 		tmp &= ~0x20;
@@ -920,7 +920,7 @@ static int SetMIS(struct stv *state, int mis)
 	} else {
 		SetPLS(state, (mis>>26) & 0x3, (mis>>8) & 0x3FFFF);
 		mis &= 0xff;
-		dev_warn(&state->base->i2c->dev, "%s: enable MIS filtering - %d\n", __func__, mis);
+		dev_dbg(&state->base->i2c->dev, "%s: enable MIS filtering - %d\n", __func__, mis);
 		read_reg(state, RSTV0910_P2_PDELCTRL1 + state->regoff, &tmp);
 		if (mis)
 			tmp |= 0x20;
@@ -935,7 +935,7 @@ static int SetMIS(struct stv *state, int mis)
 
 static int SetModcode(struct stv *state, int modcode)
 {
-	dev_warn(&state->base->i2c->dev, "%s: modcode - 0x%X\n", __func__, modcode);
+	dev_dbg(&state->base->i2c->dev, "%s: modcode - 0x%X\n", __func__, modcode);
 	/* TODO */
 
 	return 0;
@@ -1697,7 +1697,7 @@ struct dvb_frontend *stv091x_attach(struct i2c_adapter *i2c,
 		mutex_init(&base->reg_lock);
 		state->base = base;
 		if (probe(state) < 0) {
-			dev_info(&i2c->dev, "No demod found at adr %02X on %s\n",
+			dev_warn(&i2c->dev, "No demod found at adr %02X on %s\n",
 				 cfg->adr, dev_name(&i2c->dev));
 			kfree(base);
 			goto fail;
