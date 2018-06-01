@@ -119,7 +119,7 @@ static void cec_pin_update(struct cec_pin *pin, bool v, bool force)
 
 		if (pin->work_pin_events_dropped) {
 			pin->work_pin_events_dropped = false;
-			v |= CEC_PIN_EVENT_FL_DROPPED;
+			ev |= CEC_PIN_EVENT_FL_DROPPED;
 		}
 		pin->work_pin_events[pin->work_pin_events_wr] = ev;
 		pin->work_pin_ts[pin->work_pin_events_wr] = ktime_get();
@@ -668,7 +668,7 @@ static void cec_pin_rx_states(struct cec_pin *pin, ktime_t ts)
 		/* Start bit low is too short, go back to idle */
 		if (delta < CEC_TIM_START_BIT_LOW_MIN - CEC_TIM_IDLE_SAMPLE) {
 			if (!pin->rx_start_bit_low_too_short_cnt++) {
-				pin->rx_start_bit_low_too_short_ts = pin->ts;
+				pin->rx_start_bit_low_too_short_ts = ktime_to_ns(pin->ts);
 				pin->rx_start_bit_low_too_short_delta = delta;
 			}
 			cec_pin_to_idle(pin);
@@ -700,7 +700,7 @@ static void cec_pin_rx_states(struct cec_pin *pin, ktime_t ts)
 		/* Start bit is too short, go back to idle */
 		if (delta < CEC_TIM_START_BIT_TOTAL_MIN - CEC_TIM_IDLE_SAMPLE) {
 			if (!pin->rx_start_bit_too_short_cnt++) {
-				pin->rx_start_bit_too_short_ts = pin->ts;
+				pin->rx_start_bit_too_short_ts = ktime_to_ns(pin->ts);
 				pin->rx_start_bit_too_short_delta = delta;
 			}
 			cec_pin_to_idle(pin);
@@ -770,7 +770,7 @@ static void cec_pin_rx_states(struct cec_pin *pin, ktime_t ts)
 		 */
 		if (delta < CEC_TIM_DATA_BIT_TOTAL_MIN) {
 			if (!pin->rx_data_bit_too_short_cnt++) {
-				pin->rx_data_bit_too_short_ts = pin->ts;
+				pin->rx_data_bit_too_short_ts = ktime_to_ns(pin->ts);
 				pin->rx_data_bit_too_short_delta = delta;
 			}
 			cec_pin_low(pin);

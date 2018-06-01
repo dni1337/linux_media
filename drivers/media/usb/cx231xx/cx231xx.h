@@ -38,7 +38,12 @@
 #include <media/v4l2-fh.h>
 #include <media/rc-core.h>
 #include <media/i2c/ir-kbd-i2c.h>
-#include <media/videobuf-dvb.h>
+
+#include <media/dvbdev.h>
+#include <media/dmxdev.h>
+#include <media/dvb_demux.h>
+#include <media/dvb_net.h>
+#include <media/dvb_frontend.h>
 
 #include "cx231xx-reg.h"
 #include "cx231xx-pcb-cfg.h"
@@ -553,8 +558,6 @@ struct cx231xx_tsport {
 
 	int                        nr;
 	int                        sram_chno;
-
-	struct videobuf_dvb_frontends frontends;
 
 	/* dma queues */
 
