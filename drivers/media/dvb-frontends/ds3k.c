@@ -28,7 +28,7 @@
 #include "ds3k.h"
 #include "ds3k_priv.h"
 
-static int debug=1;
+static int debug;
 
 #define dprintk(args...) \
 	do { \
@@ -2073,7 +2073,7 @@ static int ds3k_sleep(struct dvb_frontend *fe)
 static struct dvb_frontend_ops ds3k_ops = {
 	.delsys = { SYS_DVBS, SYS_DVBS2 },
 	.info = {
-		.name = "Montage Technology DS3000/TS2020",
+		.name = "Montage Technology TS202x/DS30xx",
 		.frequency_min = 950000,
 		.frequency_max = 2150000,
 		.frequency_stepsize = 1011, /* kHz for QPSK frontends */
@@ -2114,4 +2114,3 @@ MODULE_DESCRIPTION("DVB Frontend module for Montage Technology "
 			"TS2020/TS2022/DS300x/DS3103 hardware");
 MODULE_AUTHOR("Geniatech");
 MODULE_LICENSE("GPL");
-
