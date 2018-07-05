@@ -36,6 +36,7 @@
 #include "cxd2820r.h"
 #include "m88ds3103.h"
 #include "tda18273.h"
+#include "ds3k.h"
 
 /* Max transfer size done by I2C transfer functions */
 #define MAX_XFER_SIZE  64
@@ -1152,6 +1153,11 @@ static struct ds3000_config su3000_ds3000_config = {
 	.set_lock_led = dw210x_led_ctrl,
 };
 
+static struct ds3k_config su3000_ds3k_config = {
+	.demod_address = 0x68,
+	.ci_mode = 0,
+};
+
 static struct cxd2820r_config cxd2820r_config = {
 	.i2c_address = 0x6c, /* (0xd8 >> 1) */
 	.ts_mode = 0x38,
@@ -1429,6 +1435,7 @@ static int su3000_frontend_attach(struct dvb_usb_adapter *adap)
 
 	mutex_unlock(&d->data_mutex);
 
+#if 1
 	/* First try ds300x version */
 	adap->fe_adap[0].fe = dvb_attach(ds3000_attach, &su3000_ds3000_config,
 					&d->i2c_adap);
@@ -1501,6 +1508,14 @@ attach2:
 	state->i2c_client_tuner = client;
 
 attach3:
+#else
+	adap->fe_adap[0].fe = dvb_attach(ds3k_attach, &su3000_ds3k_config,
+					&d->i2c_adap);
+	if (adap->fe_adap[0].fe == NULL) {
+		dvb_frontend_detach(adap->fe_adap[0].fe);
+		return -ENODEV;
+	}
+#endif
 	/* hook fe: need to resync the slave fifo when signal locks */
 	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
 	adap->fe_adap[0].fe->ops.read_status = su3000_read_status;
