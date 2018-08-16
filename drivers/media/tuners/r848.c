@@ -4616,10 +4616,8 @@ exit:
 static const struct dvb_tuner_ops r848_tuner_ops = {
 	.info = {
 		.name           = "Rafael R848",
-
-//		.frequency_min  = 850000,
-//		.frequency_max  = 2300000,
-//		.frequency_step = 206,
+//		.frequency_min_hz  = 950 * MHz,
+//		.frequency_max_hz  = 2150 * MHz
 	},
 
 	.release = r848_release,
