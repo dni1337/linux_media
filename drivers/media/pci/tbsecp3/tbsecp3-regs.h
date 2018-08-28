@@ -22,6 +22,12 @@
 #define TBSECP3_GPIO_BASE	0x0000
 #define TBSECP3_GPIO_PIN(_bank, _pin)	(((_bank) << 5) + _pin)
 
+#define GPIO_TSMODE     0x002c
+#define TS_2PAR		0
+#define TS_2SER		1
+#define TS_PARSER	2
+#define TS_SERPAR	3
+
 /* I2C */
 #define TBSECP3_I2C_BASE(_n)	(0x4000 + 0x1000 * _n)
 #define TBSECP3_I2C_STAT	0x0000

@@ -21,6 +21,9 @@ static unsigned int dma_pkts[8] = {128, 128, 128, 128, 128, 128, 128, 128};
 module_param_array(dma_pkts, int, NULL, 0444); /* No /sys/module write access */
 MODULE_PARM_DESC(dma_pkts, "DMA buffer size in TS packets (16-256), default 128");
 
+#define dprintk(fmt, arg...) \
+	printk(KERN_DEBUG pr_fmt("%s: " fmt),  __func__, ##arg)
+
 #define TS_PACKET_SIZE		188
 
 static void tbsecp3_dma_tasklet(unsigned long adap)
@@ -130,6 +133,7 @@ void tbsecp3_dma_free(struct tbsecp3_dev *dev)
 			adapter->dma.page_size + 0x100,
 			adapter->dma.buf[0], adapter->dma.dma_addr);
 		adapter->dma.buf[0] = NULL;
+
 		adapter++;
 	}
 }
