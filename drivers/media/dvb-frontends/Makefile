@@ -133,6 +133,7 @@ obj-$(CONFIG_DVB_AVL6882) += avl6882.o
 obj-$(CONFIG_DVB_STV091X) += stv091x.o
 obj-$(CONFIG_DVB_MXL58X) += mxl58x.o
 obj-$(CONFIG_DVB_SI2183) += si2183.o
+obj-$(CONFIG_DVB_STID135) += stid135/
 obj-$(CONFIG_DVB_HORUS3A) += horus3a.o
 obj-$(CONFIG_DVB_ASCOT2E) += ascot2e.o
 obj-$(CONFIG_DVB_HELENE) += helene.o
