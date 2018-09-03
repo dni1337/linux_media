@@ -132,9 +132,20 @@ static int set_mac_address(struct tbsecp3_adapter *adap)
 			"error reading MAC address for adapter %d\n",
 			adap->nr);
 	} else {
+		/* Set fake MAC when EEPROM not set */
+		if (adap->dvb_adapter.proposed_mac[0] == 0xff && adap->dvb_adapter.proposed_mac[1] == 0xff && adap->dvb_adapter.proposed_mac[2] == 0xff &&
+		    adap->dvb_adapter.proposed_mac[3] == 0xff && adap->dvb_adapter.proposed_mac[4] == 0xff && adap->dvb_adapter.proposed_mac[5] == 0xff) {
+			adap->dvb_adapter.proposed_mac[0] = 0;
+			adap->dvb_adapter.proposed_mac[1] = 0x22;
+			adap->dvb_adapter.proposed_mac[2] = 0xAB;
+			adap->dvb_adapter.proposed_mac[3] = 0x69;
+			adap->dvb_adapter.proposed_mac[4] = 0x69;
+			adap->dvb_adapter.proposed_mac[5] = dev->mac_num++;
+		}
 		dev_info(&dev->pci_dev->dev,
 			"MAC address %pM\n", adap->dvb_adapter.proposed_mac);
 	}
+	
 	return 0;
 };
 

@@ -178,6 +178,8 @@ struct tbsecp3_dev {
 
 	/* i2c */
 	struct tbsecp3_i2c i2c_bus[TBSECP3_MAX_I2C_BUS];
+	
+	u8 mac_num;
 };
 
 #define tbs_read(_b, _o)	readl(dev->lmmio + (_b + _o))

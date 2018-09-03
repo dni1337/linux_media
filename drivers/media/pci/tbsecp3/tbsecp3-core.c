@@ -258,6 +258,8 @@ static int tbsecp3_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	}
 	/* global interrupt enable */
 	tbs_write(TBSECP3_INT_BASE, TBSECP3_INT_EN, 1);
+	
+	dev->mac_num = 0;
 
 	ret = tbsecp3_adapters_attach(dev);
 	if (ret < 0)
