@@ -1154,6 +1154,7 @@ static struct ds3000_config su3000_ds3000_config = {
 static struct ds3k_config su3000_ds3k_config = {
 	.demod_address = 0x68,
 	.ci_mode = 0,
+	.output_mode = MtFeTsOutMode_Common,
 };
 
 static struct cxd2820r_config cxd2820r_config = {
@@ -1433,7 +1434,7 @@ static int su3000_frontend_attach(struct dvb_usb_adapter *adap)
 
 	mutex_unlock(&d->data_mutex);
 
-#if 1
+#if 0
 	/* First try ds300x version */
 	adap->fe_adap[0].fe = dvb_attach(ds3000_attach, &su3000_ds3000_config,
 					&d->i2c_adap);
