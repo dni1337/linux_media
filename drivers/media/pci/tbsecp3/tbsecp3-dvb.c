@@ -571,17 +571,37 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		adapter->fe2 = &adapter->_fe2;
 		memcpy(adapter->fe2, adapter->fe, sizeof(struct dvb_frontend));
 
-		/* terrestrial tuner */
+		/* sattelite tuner */
 		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
-		adapter->fe->ops.delsys[0] = SYS_DVBT;
-		adapter->fe->ops.delsys[1] = SYS_DVBT2;
-		adapter->fe->ops.delsys[2] = SYS_ISDBT;
-		adapter->fe->ops.delsys[3] = SYS_DVBC_ANNEX_A;
-		adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+		adapter->fe->ops.delsys[0] = SYS_DVBS;
+		adapter->fe->ops.delsys[1] = SYS_DVBS2;
+		adapter->fe->ops.delsys[2] = SYS_DSS;
+		
+		if (dvb_attach(av201x_attach, adapter->fe, &tbs6522_av201x_cfg[adapter->nr],
+				i2c) == NULL) {
+			dev_err(&dev->pci_dev->dev,
+				"frontend %d tuner attach failed\n",
+				adapter->nr);
+			goto frontend_atach_fail;
+		}
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+			dev_warn(&dev->pci_dev->dev,
+				"error attaching lnb control on adapter %d\n",
+				adapter->nr);
+		}
+
+		/* terrestrial tuner */
+		memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe2->ops.delsys[0] = SYS_DVBT;
+		adapter->fe2->ops.delsys[1] = SYS_DVBT2;
+		adapter->fe2->ops.delsys[2] = SYS_ISDBT;
+		adapter->fe2->ops.delsys[3] = SYS_DVBC_ANNEX_A;
+		adapter->fe2->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+		adapter->fe2->id = 1;
 
 		/* attach tuner */
 		memset(&si2157_config, 0, sizeof(si2157_config));
-		si2157_config.fe = adapter->fe;
+		si2157_config.fe = adapter->fe2;
 		si2157_config.if_port = 1;
 
 		memset(&info, 0, sizeof(struct i2c_board_info));
@@ -599,25 +619,6 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 			goto frontend_atach_fail;
 		}
 		adapter->i2c_client_tuner = client_tuner;
-
-		/* sattelite tuner */
-		memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
-		adapter->fe2->ops.delsys[0] = SYS_DVBS;
-		adapter->fe2->ops.delsys[1] = SYS_DVBS2;
-		adapter->fe2->ops.delsys[2] = SYS_DSS;
-		adapter->fe2->id = 1;
-		if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[adapter->nr],
-				i2c) == NULL) {
-			dev_err(&dev->pci_dev->dev,
-				"frontend %d tuner attach failed\n",
-				adapter->nr);
-			goto frontend_atach_fail;
-		}
-		if (tbsecp3_attach_sec(adapter, adapter->fe2) == NULL) {
-			dev_warn(&dev->pci_dev->dev,
-				"error attaching lnb control on adapter %d\n",
-				adapter->nr);
-		}
 		break;
 
 	case TBSECP3_BOARD_TBS6528:
@@ -666,17 +667,45 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		adapter->fe2 = &adapter->_fe2;
 		memcpy(adapter->fe2, adapter->fe, sizeof(struct dvb_frontend));
 
-		/* terrestrial tuner */
+		/* sattelite tuner */
 		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
-		adapter->fe->ops.delsys[0] = SYS_DVBT;
-		adapter->fe->ops.delsys[1] = SYS_DVBT2;
-		adapter->fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
-		adapter->fe->ops.delsys[3] = SYS_ISDBT;
-		adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+		adapter->fe->ops.delsys[0] = SYS_DVBS;
+		adapter->fe->ops.delsys[1] = SYS_DVBS2;
+		adapter->fe->ops.delsys[2] = SYS_DSS;
+
+		if (dev->info->board_id == TBSECP3_BOARD_TBS6528) {
+			if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[1],
+					i2c) == NULL) {
+				dev_err(&dev->pci_dev->dev,
+				"frontend %d tuner attach failed\n",
+				adapter->nr);
+				goto frontend_atach_fail;
+			}
+		} else if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[adapter->nr],
+					i2c) == NULL) {
+				dev_err(&dev->pci_dev->dev,
+					"frontend %d tuner attach failed\n",
+					adapter->nr);
+				goto frontend_atach_fail;
+		}
+		if (tbsecp3_attach_sec(adapter, adapter->fe2) == NULL) {
+			dev_warn(&dev->pci_dev->dev,
+				"error attaching lnb control on adapter %d\n",
+				adapter->nr);
+		}
+
+		/* terrestrial tuner */
+		memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe2->ops.delsys[0] = SYS_DVBT;
+		adapter->fe2->ops.delsys[1] = SYS_DVBT2;
+		adapter->fe2->ops.delsys[2] = SYS_DVBC_ANNEX_A;
+		adapter->fe2->ops.delsys[3] = SYS_ISDBT;
+		adapter->fe2->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+		adapter->fe2->id = 1;
 
 		/* attach tuner */
 		memset(&si2157_config, 0, sizeof(si2157_config));
-		si2157_config.fe = adapter->fe;
+		si2157_config.fe = adapter->fe2;
 		si2157_config.if_port = 1;
 
 		memset(&info, 0, sizeof(struct i2c_board_info));
@@ -698,33 +727,6 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 			goto frontend_atach_fail;
 		}
 		adapter->i2c_client_tuner = client_tuner;
-
-		/* sattelite tuner */
-		memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
-		adapter->fe2->ops.delsys[0] = SYS_DVBS;
-		adapter->fe2->ops.delsys[1] = SYS_DVBS2;
-		adapter->fe2->ops.delsys[2] = SYS_DSS;
-		adapter->fe2->id = 1;
-		if (dev->info->board_id == TBSECP3_BOARD_TBS6528) {
-			if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[1],
-					i2c) == NULL) {
-				dev_err(&dev->pci_dev->dev,
-				"frontend %d tuner attach failed\n",
-				adapter->nr);
-				goto frontend_atach_fail;
-			}
-		} else if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[adapter->nr],
-					i2c) == NULL) {
-				dev_err(&dev->pci_dev->dev,
-					"frontend %d tuner attach failed\n",
-					adapter->nr);
-				goto frontend_atach_fail;
-		}
-		if (tbsecp3_attach_sec(adapter, adapter->fe2) == NULL) {
-			dev_warn(&dev->pci_dev->dev,
-				"error attaching lnb control on adapter %d\n",
-				adapter->nr);
-		}
 
 		tbsecp3_ca_init(adapter, adapter->nr);
 		break;
