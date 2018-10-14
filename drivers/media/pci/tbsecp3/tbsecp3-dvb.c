@@ -854,6 +854,53 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		}
 
 		break;
+	case TBSECP3_BOARD_TBS6904X:
+		memset(&si2183_config, 0, sizeof(si2183_config));
+		si2183_config.i2c_adapter = &i2c;
+		si2183_config.fe = &adapter->fe;
+		si2183_config.ts_mode =  SI2183_TS_PARALLEL ;
+		si2183_config.ts_clock_gapped = true;
+		si2183_config.rf_in = adapter->nr;
+		si2183_config.RF_switch = NULL;
+		si2183_config.start_clk_mode = 1;
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
+		info.addr = (adapter->nr %2)? 0x64 : 0x67;
+		si2183_config.agc_pin = (adapter->nr%2) ? SI2183_MP_C : SI2183_MP_D;
+		si2183_config.sat_agc_inv = 1;
+	
+		info.platform_data = &si2183_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+			client_demod->dev.driver == NULL)
+		    goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+		    i2c_unregister_device(client_demod);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+
+		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe->ops.delsys[0] = SYS_DVBS;
+		adapter->fe->ops.delsys[1] = SYS_DVBS2;
+		adapter->fe->ops.delsys[2] = SYS_DSS;
+
+		if (dvb_attach(av201x_attach, adapter->fe, &tbs6522_av201x_cfg[(adapter->nr%2)],
+			    i2c) == NULL) {
+		    dvb_frontend_detach(adapter->fe);
+		    adapter->fe = NULL;
+		    dev_err(&dev->pci_dev->dev,
+			    "frontend %d tuner attach failed\n",
+			    adapter->nr);
+		    goto frontend_atach_fail;
+		}
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+		    dev_warn(&dev->pci_dev->dev,
+			    "error attaching lnb control on adapter %d\n",
+			    adapter->nr);
+		}
+		break;
 	default:
 		dev_warn(&dev->pci_dev->dev, "unknonw card\n");
 		return -ENODEV;
