@@ -74,6 +74,7 @@ struct si2183_dev {
 	u8 ts_mode;
 	bool ts_clock_inv;
 	bool ts_clock_gapped;
+	u8 start_clk_mode;
 
 	int fef_pin;
 	bool fef_inv;
@@ -856,6 +857,10 @@ static int si2183_init(struct dvb_frontend *fe)
 
 	/* initialize */
 	memcpy(cmd.args, "\xc0\x12\x00\x0c\x00\x0d\x16\x00\x00\x00\x00\x00\x00", 13);
+	if (dev->start_clk_mode) {
+		cmd.args[3] = 0;
+		cmd.args[5] = 0x6;
+	}
 	cmd.wlen = 13;
 	cmd.rlen = 0;
 	ret = si2183_cmd_execute(client, &cmd);
@@ -883,6 +888,9 @@ static int si2183_init(struct dvb_frontend *fe)
 
 	/* power up */
 	memcpy(cmd.args, "\xc0\x06\x01\x0f\x00\x20\x20\x01", 8);
+	if (dev->start_clk_mode) {
+		cmd.args[6] = 0x30;
+	}
 	cmd.wlen = 8;
 	cmd.rlen = 1;
 	ret = si2183_cmd_execute(client, &cmd);
@@ -1532,6 +1540,7 @@ static int si2183_probe(struct i2c_client *client,
 	dev->sat_agc_inv = config->sat_agc_inv;
 	dev->RF_switch = config->RF_switch;
 	dev->rf_in  = config->rf_in;
+	dev->start_clk_mode = config->start_clk_mode;
 	dev->fw_loaded = false;
 	dev->stat_resp = 0;
 

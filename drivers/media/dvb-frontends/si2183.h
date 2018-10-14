@@ -44,6 +44,9 @@ struct si2183_config {
 	/* TS clock gapped */
 	bool ts_clock_gapped;
 
+	/* 0 terrestrial mode 1: satellite mode */
+	u8  start_clk_mode;  
+
 	/* Tuner control pins */
 #define SI2183_MP_NOT_USED	1
 #define SI2183_MP_A		2
