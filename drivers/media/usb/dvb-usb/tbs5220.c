@@ -172,59 +172,37 @@ static struct dvb_usb_device_properties tbs5220_properties;
 static int tbs5220_frontend_attach(struct dvb_usb_adapter *adap)
 {
 	struct dvb_usb_device *d = adap->dev;
-	struct tbs5220_state *st = d->priv;
-	struct i2c_adapter *adapter;
-	struct i2c_client *client_demod;
-	struct i2c_client *client_tuner;
-	struct i2c_board_info info;
+	struct tbs5220_state *state = d->priv;
+	struct i2c_adapter *i2c_adapter;
 	struct si2168_config si2168_config;
 	struct si2157_config si2157_config;
 	u8 buf[20];
 
 	/* attach frontend */
 	memset(&si2168_config, 0, sizeof(si2168_config));
-	si2168_config.i2c_adapter = &adapter;
+	si2168_config.i2c_adapter = &i2c_adapter;
 	si2168_config.fe = &adap->fe_adap[0].fe;
 	si2168_config.ts_mode = SI2168_TS_PARALLEL;
 	si2168_config.ts_clock_gapped = true;
-	memset(&info, 0, sizeof(struct i2c_board_info));
-	strlcpy(info.type, "si2168", I2C_NAME_SIZE);
-	info.addr = 0x64;
-	info.platform_data = &si2168_config;
-	request_module(info.type);
-	client_demod = i2c_new_device(&d->i2c_adap, &info);
-	if (client_demod == NULL || client_demod->dev.driver == NULL)
-		return -ENODEV;
 
-	if (!try_module_get(client_demod->dev.driver->owner)) {
-		i2c_unregister_device(client_demod);
+	state->i2c_client_demod = dvb_module_probe("si2168", NULL,
+						   &d->i2c_adap,
+						   0x64, &si2168_config);
+	if (!state->i2c_client_demod)
 		return -ENODEV;
-	}
 
 	/* attach tuner */
 	memset(&si2157_config, 0, sizeof(si2157_config));
 	si2157_config.fe = adap->fe_adap[0].fe;
 	si2157_config.if_port = 1;
-	memset(&info, 0, sizeof(struct i2c_board_info));
-	strlcpy(info.type, "si2157", I2C_NAME_SIZE);
-	info.addr = 0x60;
-	info.platform_data = &si2157_config;
-	request_module(info.type);
-	client_tuner = i2c_new_device(adapter, &info);
-	if (client_tuner == NULL || client_tuner->dev.driver == NULL) {
-		module_put(client_demod->dev.driver->owner);
-		i2c_unregister_device(client_demod);
-		return -ENODEV;
-	}
-	if (!try_module_get(client_tuner->dev.driver->owner)) {
-		i2c_unregister_device(client_tuner);
-		module_put(client_demod->dev.driver->owner);
-		i2c_unregister_device(client_demod);
-		return -ENODEV;
-	}
 
-	st->i2c_client_demod = client_demod;
-	st->i2c_client_tuner = client_tuner;
+	state->i2c_client_tuner = dvb_module_probe("si2157", "si2157",
+						   i2c_adapter,
+						   0x60, &si2157_config);
+	if (!state->i2c_client_tuner) {
+		dvb_module_release(state->i2c_client_demod);
+		return -ENODEV;
+	}
 
 	buf[0] = 0;
 	buf[1] = 0;
@@ -395,22 +373,11 @@ static int tbs5220_probe(struct usb_interface *intf,
 static void tbs5220_disconnect(struct usb_interface *intf)
 {
 	struct dvb_usb_device *d = usb_get_intfdata(intf);
-	struct tbs5220_state *st = d->priv;
-	struct i2c_client *client;
-
-	/* remove I2C client for tuner */
-	client = st->i2c_client_tuner;
-	if (client) {
-		module_put(client->dev.driver->owner);
-		i2c_unregister_device(client);
-	}
-
-	/* remove I2C client for demodulator */
-	client = st->i2c_client_demod;
-	if (client) {
-		module_put(client->dev.driver->owner);
-		i2c_unregister_device(client);
-	}
+	struct tbs5220_state *state = d->priv;
+#if 0
+	dvb_module_release(state->i2c_client_tuner);
+	dvb_module_release(state->i2c_client_demod);
+#endif
 
 	dvb_usb_device_exit(intf);
 }
