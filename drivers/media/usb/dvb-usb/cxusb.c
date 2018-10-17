@@ -1170,11 +1170,8 @@ static int cxusb_mygica_d689_frontend_attach(struct dvb_usb_adapter *adap)
 static int cxusb_mygica_t230_frontend_attach(struct dvb_usb_adapter *adap)
 {
 	struct dvb_usb_device *d = adap->dev;
-	struct cxusb_state *st = d->priv;
-	struct i2c_adapter *adapter;
-	struct i2c_client *client_demod;
-	struct i2c_client *client_tuner;
-	struct i2c_board_info info;
+	struct cxusb_state *state = d->priv;
+	struct i2c_adapter *i2c_adapter;
 	struct si2168_config si2168_config;
 	struct si2157_config si2157_config;
 
@@ -1192,54 +1189,35 @@ static int cxusb_mygica_t230_frontend_attach(struct dvb_usb_adapter *adap)
 
 	/* attach frontend */
 	memset(&si2168_config, 0, sizeof(si2168_config));
-	si2168_config.i2c_adapter = &adapter;
+	si2168_config.i2c_adapter = &i2c_adapter;
 	si2168_config.fe = &adap->fe_adap[0].fe;
 	si2168_config.ts_mode = SI2168_TS_PARALLEL;
 	si2168_config.ts_clock_mode = SI2168_TS_CLK_AUTO_ADAPT;
 	si2168_config.ts_clock_inv = 1;
-	memset(&info, 0, sizeof(struct i2c_board_info));
-	strlcpy(info.type, "si2168", I2C_NAME_SIZE);
-	info.addr = 0x64;
-	info.platform_data = &si2168_config;
-	request_module(info.type);
-	client_demod = i2c_new_device(&d->i2c_adap, &info);
-	if (client_demod == NULL || client_demod->dev.driver == NULL)
-		return -ENODEV;
 
-	if (!try_module_get(client_demod->dev.driver->owner)) {
-		i2c_unregister_device(client_demod);
+	state->i2c_client_demod = dvb_module_probe("si2168", NULL,
+						   &d->i2c_adap,
+						   0x64, &si2168_config);
+	if (!state->i2c_client_demod)
 		return -ENODEV;
-	}
 
 	/* attach tuner */
 	memset(&si2157_config, 0, sizeof(si2157_config));
 	si2157_config.fe = adap->fe_adap[0].fe;
 	si2157_config.if_port = 1;
-	memset(&info, 0, sizeof(struct i2c_board_info));
-	strlcpy(info.type, "si2157", I2C_NAME_SIZE);
-	info.addr = 0x60;
-	info.platform_data = &si2157_config;
-	request_module(info.type);
-	client_tuner = i2c_new_device(adapter, &info);
-	if (client_tuner == NULL || client_tuner->dev.driver == NULL) {
-		module_put(client_demod->dev.driver->owner);
-		i2c_unregister_device(client_demod);
-		return -ENODEV;
-	}
-	if (!try_module_get(client_tuner->dev.driver->owner)) {
-		i2c_unregister_device(client_tuner);
-		module_put(client_demod->dev.driver->owner);
-		i2c_unregister_device(client_demod);
-		return -ENODEV;
-	}
 
-	st->i2c_client_demod = client_demod;
-	st->i2c_client_tuner = client_tuner;
+	state->i2c_client_tuner = dvb_module_probe("si2157", "si2157",
+						   i2c_adapter,
+						   0x60, &si2157_config);
+	if (!state->i2c_client_tuner) {
+		dvb_module_release(state->i2c_client_demod);
+		return -ENODEV;
+	}
 
 	/* hook fe: need to resync the slave fifo when signal locks. */
-	mutex_init(&st->stream_mutex);
-	st->last_lock = 0;
-	st->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
+	mutex_init(&state->stream_mutex);
+	state->last_lock = 0;
+	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
 	adap->fe_adap[0].fe->ops.read_status = cxusb_read_status;
 
 	return 0;
@@ -1248,11 +1226,8 @@ static int cxusb_mygica_t230_frontend_attach(struct dvb_usb_adapter *adap)
 static int cxusb_mygica_t230c_frontend_attach(struct dvb_usb_adapter *adap)
 {
 	struct dvb_usb_device *d = adap->dev;
-	struct cxusb_state *st = d->priv;
-	struct i2c_adapter *adapter;
-	struct i2c_client *client_demod;
-	struct i2c_client *client_tuner;
-	struct i2c_board_info info;
+	struct cxusb_state *state = d->priv;
+	struct i2c_adapter *i2c_adapter;
 	struct si2168_config si2168_config;
 	struct si2157_config si2157_config;
 
@@ -1270,54 +1245,34 @@ static int cxusb_mygica_t230c_frontend_attach(struct dvb_usb_adapter *adap)
 
 	/* attach frontend */
 	memset(&si2168_config, 0, sizeof(si2168_config));
-	si2168_config.i2c_adapter = &adapter;
+	si2168_config.i2c_adapter = &i2c_adapter;
 	si2168_config.fe = &adap->fe_adap[0].fe;
 	si2168_config.ts_mode = SI2168_TS_PARALLEL;
-	si2168_config.ts_clock_mode = d->udev->descriptor.idProduct == (USB_PID_MYGICA_T230+2) ?
+	si2168_config.ts_clock_mode = d->udev->descriptor.idProduct == 0xc68a || d->udev->descriptor.idProduct == 0xc69a?
 						SI2168_TS_CLK_MANUAL : SI2168_TS_CLK_AUTO_ADAPT;
 	si2168_config.ts_clock_inv = 1;
-	memset(&info, 0, sizeof(struct i2c_board_info));
-	strlcpy(info.type, "si2168", I2C_NAME_SIZE);
-	info.addr = 0x64;
-	info.platform_data = &si2168_config;
-	request_module(info.type);
-	client_demod = i2c_new_device(&d->i2c_adap, &info);
-	if (client_demod == NULL || client_demod->dev.driver == NULL)
-		return -ENODEV;
 
-	if (!try_module_get(client_demod->dev.driver->owner)) {
-		i2c_unregister_device(client_demod);
+	state->i2c_client_demod = dvb_module_probe("si2168", NULL,
+						   &d->i2c_adap,
+						   0x64, &si2168_config);
+	if (!state->i2c_client_demod)
 		return -ENODEV;
-	}
 
 	/* attach tuner */
 	memset(&si2157_config, 0, sizeof(si2157_config));
 	si2157_config.fe = adap->fe_adap[0].fe;
-	memset(&info, 0, sizeof(struct i2c_board_info));
-	strlcpy(info.type, "si2141", I2C_NAME_SIZE);
-	info.addr = 0x60;
-	info.platform_data = &si2157_config;
-	request_module("si2157");
-	client_tuner = i2c_new_device(adapter, &info);
-	if (client_tuner == NULL || client_tuner->dev.driver == NULL) {
-		module_put(client_demod->dev.driver->owner);
-		i2c_unregister_device(client_demod);
+	state->i2c_client_tuner = dvb_module_probe("si2157", "si2141",
+						   i2c_adapter,
+						   0x60, &si2157_config);
+	if (!state->i2c_client_tuner) {
+		dvb_module_release(state->i2c_client_demod);
 		return -ENODEV;
 	}
-	if (!try_module_get(client_tuner->dev.driver->owner)) {
-		i2c_unregister_device(client_tuner);
-		module_put(client_demod->dev.driver->owner);
-		i2c_unregister_device(client_demod);
-		return -ENODEV;
-	}
-
-	st->i2c_client_demod = client_demod;
-	st->i2c_client_tuner = client_tuner;
 
 	/* hook fe: need to resync the slave fifo when signal locks. */
-	mutex_init(&st->stream_mutex);
-	st->last_lock = 0;
-	st->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
+	mutex_init(&state->stream_mutex);
+	state->last_lock = 0;
+	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
 	adap->fe_adap[0].fe->ops.read_status = cxusb_read_status;
 
 	return 0;
@@ -1449,23 +1404,13 @@ static int cxusb_probe(struct usb_interface *intf,
 static void cxusb_disconnect(struct usb_interface *intf)
 {
 	struct dvb_usb_device *d = usb_get_intfdata(intf);
-	struct cxusb_state *st = d->priv;
+	struct cxusb_state *state = d->priv;
 
-	struct i2c_client *client;
+#if 0
+	dvb_module_release(state->i2c_client_tuner);
+	dvb_module_release(state->i2c_client_demod);
+#endif
 
-	/* remove I2C client for tuner */
-	client = st->i2c_client_tuner;
-	if (client) {
-		module_put(client->dev.driver->owner);
-		i2c_unregister_device(client);
-	}
-
-	/* remove I2C client for demodulator */
-	client = st->i2c_client_demod;
-	if (client) {
-		module_put(client->dev.driver->owner);
-		i2c_unregister_device(client);
-	}
 	dvb_usb_device_exit(intf);
 }
 
@@ -1498,6 +1443,7 @@ enum cxusb_table_index {
 	MYGICA_X9330_2,
 	MYGICA_X9330_3,
 	EYETV_T2_LITE,
+	EYETV_T2_LITE2,
 	NR__cxusb_table_index
 };
 
@@ -1585,6 +1531,9 @@ static struct usb_device_id cxusb_table[NR__cxusb_table_index + 1] = {
 	},
 	[EYETV_T2_LITE] = {
 		USB_DEVICE(USB_VID_CONEXANT, 0xc699)
+	},
+	[EYETV_T2_LITE2] = {
+		USB_DEVICE(USB_VID_CONEXANT, 0xc69a)
 	},
 	{}		/* Terminating entry */
 };
@@ -2376,6 +2325,11 @@ static struct dvb_usb_device_properties cxusb_mygica_t230c_properties = {
 			"EyeTV T2 lite",
 			{ NULL },
 			{ &cxusb_table[EYETV_T2_LITE], NULL },
+		},
+		{
+			"EyeTV T2 lite 2",
+			{ NULL },
+			{ &cxusb_table[EYETV_T2_LITE2], NULL },
 		},
 	}
 };
