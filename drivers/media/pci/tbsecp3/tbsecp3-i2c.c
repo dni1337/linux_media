@@ -145,23 +145,10 @@ static void tbsecp3_i2c_unregister(struct tbsecp3_i2c *bus)
 
 void tbsecp3_i2c_remove_clients(struct tbsecp3_adapter *adapter)
 {
-	struct i2c_client *client_demod, *client_tuner;
-
-	/* remove tuner I2C client */
-	client_tuner = adapter->i2c_client_tuner;
-	if (client_tuner) {
-		module_put(client_tuner->dev.driver->owner);
-		i2c_unregister_device(client_tuner);
-		adapter->i2c_client_tuner = NULL;
-	}
-
-	/* remove demodulator I2C client */
-	client_demod = adapter->i2c_client_demod;
-	if (client_demod) {
-		module_put(client_demod->dev.driver->owner);
-		i2c_unregister_device(client_demod);
-		adapter->i2c_client_demod = NULL;
-	}
+#if 0
+	dvb_module_release(adapter->i2c_client_tuner);
+	dvb_module_release(adapter->i2c_client_demod);
+#endif
 }
 
 void tbsecp3_i2c_reg_init(struct tbsecp3_dev *dev)
