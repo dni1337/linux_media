@@ -554,7 +554,6 @@ static void tbs5881_usb_disconnect (struct usb_interface * intf)
 	dvb_module_release(state->i2c_client_tuner);
 	dvb_module_release(state->i2c_client_demod);
 #endif
-
 	tbs5881_uninit (d);
 	dvb_usb_device_exit (intf);
 }

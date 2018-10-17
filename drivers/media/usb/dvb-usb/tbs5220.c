@@ -372,13 +372,13 @@ static int tbs5220_probe(struct usb_interface *intf,
 
 static void tbs5220_disconnect(struct usb_interface *intf)
 {
+#if 0
 	struct dvb_usb_device *d = usb_get_intfdata(intf);
 	struct tbs5220_state *state = d->priv;
-#if 0
+
 	dvb_module_release(state->i2c_client_tuner);
 	dvb_module_release(state->i2c_client_demod);
 #endif
-
 	dvb_usb_device_exit(intf);
 }
 
