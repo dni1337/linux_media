@@ -337,8 +337,135 @@ static int stid135_set_parameters(struct dvb_frontend *fe)
 static int stid135_get_frontend(struct dvb_frontend *fe, struct dtv_frontend_properties *p)
 {
 	struct stv *state = fe->demodulator_priv;
-	
-	return 0;
+	fe_lla_error_t err = FE_LLA_NO_ERROR;
+	struct fe_sat_signal_info signal_info;
+
+	mutex_lock(&state->base->status_lock);
+	err = fe_stid135_get_signal_info(state->base->handle, state->nr + 1, &signal_info, 0);
+	mutex_unlock(&state->base->status_lock);
+
+	if (err != FE_LLA_NO_ERROR) {
+		dev_err(&state->base->i2c->dev, "%s: fe_stid135_get_signal_info error %d !\n", __func__, err);
+		return 0;
+	}
+	if (!signal_info.locked)
+		 return 0;
+
+	switch (signal_info.standard) {
+	case FE_SAT_DSS_STANDARD:
+		p->delivery_system = SYS_DSS;
+		break;
+	case FE_SAT_DVBS2_STANDARD:
+		p->delivery_system = SYS_DVBS2;
+		break;
+	case FE_SAT_DVBS1_STANDARD:
+	default:
+		p->delivery_system = SYS_DVBS;
+    	}
+
+	switch (signal_info.modulation) {
+	case FE_SAT_MOD_8PSK:
+		p->modulation = PSK_8;
+		break;
+	case FE_SAT_MOD_16APSK:
+		p->modulation = APSK_16;
+		break;
+	case FE_SAT_MOD_64APSK:
+		p->modulation = APSK_64;
+		break;
+	case FE_SAT_MOD_128APSK:
+		p->modulation = APSK_128;
+		break;
+	case FE_SAT_MOD_256APSK:
+		p->modulation = APSK_256;
+		break;
+	case FE_SAT_MOD_1024APSK:
+		p->modulation = APSK_1024;
+		break;
+	case FE_SAT_MOD_8PSK_L:
+		p->modulation = APSK_8L;
+		break;
+	case FE_SAT_MOD_16APSK_L:
+		p->modulation = APSK_16L;
+		break;
+	case FE_SAT_MOD_64APSK_L:
+		p->modulation = APSK_64L;
+		break;
+	case FE_SAT_MOD_256APSK_L:
+		p->modulation = APSK_256L;
+		break;
+	case FE_SAT_MOD_QPSK:
+	default:
+		p->modulation = QPSK;
+    	}
+
+    	switch (signal_info.roll_off) {
+	  case FE_SAT_05:
+		p->rolloff = ROLLOFF_5;
+		break;
+	  case FE_SAT_10:
+		p->rolloff = ROLLOFF_10;
+		break;
+	  case FE_SAT_15:
+		p->rolloff = ROLLOFF_15;
+		break;
+	  case FE_SAT_20:
+		p->rolloff = ROLLOFF_20;
+		break;
+	  case FE_SAT_25:
+		p->rolloff = ROLLOFF_25;
+		break;
+	  case FE_SAT_35:
+		p->rolloff = ROLLOFF_35;
+		break;
+	  default:
+		p->rolloff = ROLLOFF_AUTO;
+	}
+
+	p->inversion = signal_info.spectrum == FE_SAT_IQ_SWAPPED ? INVERSION_ON : INVERSION_OFF;
+	if (p->delivery_system == SYS_DVBS2) {
+		enum fe_code_rate modcod2fec[0x20] = {
+			FEC_NONE, FEC_1_4, FEC_1_3, FEC_2_5,
+			FEC_1_2, FEC_3_5, FEC_2_3, FEC_3_4,
+			FEC_4_5, FEC_5_6, FEC_8_9, FEC_9_10,
+			FEC_3_5, FEC_2_3, FEC_3_4, FEC_5_6,
+			FEC_8_9, FEC_9_10, FEC_2_3, FEC_3_4,
+			FEC_4_5, FEC_5_6, FEC_8_9, FEC_9_10,
+			FEC_3_4, FEC_4_5, FEC_5_6, FEC_8_9,
+			FEC_9_10
+		};
+		if (signal_info.modcode < FE_SAT_MODCODE_UNKNOWN)
+			p->fec_inner = modcod2fec[signal_info.modcode];
+		else
+			p->fec_inner = FEC_AUTO;
+		p->modcode = signal_info.modcode;
+		p->pilot = signal_info.pilots == FE_SAT_PILOTS_ON ? PILOT_ON : PILOT_OFF;
+	}
+	else {
+		switch (signal_info.puncture_rate) {
+		case FE_SAT_PR_1_2:
+			p->fec_inner = FEC_1_2;
+			break;
+		case FE_SAT_PR_2_3:
+			p->fec_inner = FEC_2_3;
+			break;
+		case FE_SAT_PR_3_4:
+			p->fec_inner = FEC_3_4;
+			break;
+		case FE_SAT_PR_5_6:
+			p->fec_inner = FEC_5_6;
+			break;
+		case FE_SAT_PR_6_7:
+			p->fec_inner = FEC_6_7;
+			break;
+		case FE_SAT_PR_7_8:
+			p->fec_inner = FEC_7_8;
+			break;
+		default:
+			p->fec_inner = FEC_NONE;
+		}
+	}
+    	return 0;
 }
 
 static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
