@@ -364,6 +364,7 @@ enum fe_modulation {
 	APSK_64L,
 	APSK_128L,
 	APSK_256L,
+	APSK_1024,
 };
 
 /**
