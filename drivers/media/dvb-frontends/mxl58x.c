@@ -54,10 +54,14 @@
 
 #define MXL58X_DEFAULT_FIRMWARE "dvb-fe-mxl58x.fw"
 
-static int mode = 0;
+static int mode;
 module_param(mode, int, 0444);
 MODULE_PARM_DESC(mode,
 		"Multi-switch mode: 0=quattro/quad 1=normal direct connection");
+
+static unsigned int rfsource;
+module_param(rfsource, int, 0644);
+MODULE_PARM_DESC(rfsource, "RF source selection for direct connection mode (default:0 - auto)");
 
 LIST_HEAD(mxllist);
 
@@ -364,6 +368,7 @@ static int send_master_cmd(struct dvb_frontend *fe,
 	mutex_lock(&state->base->status_lock);
 	ret=send_command(state, cmdSize + MXL_HYDRA_CMD_HEADER_SIZE, &cmdBuff[0]);
 	mutex_unlock(&state->base->status_lock);
+	msleep(100);
 
 	return ret;
 }
@@ -1326,8 +1331,7 @@ static int config_dis(struct mxl *state, u32 id)
 	MXL_HYDRA_DISEQC_ID_E diseqcId = id;
 	MXL_HYDRA_DISEQC_OPMODE_E opMode = MXL_HYDRA_DISEQC_TONE_MODE; //lja MXL_HYDRA_DISEQC_ENVELOPE_MODE;
 	MXL_HYDRA_DISEQC_VER_E version = MXL_HYDRA_DISEQC_1_X;
-	MXL_HYDRA_DISEQC_CARRIER_FREQ_E carrierFreqInHz =
-		MXL_HYDRA_DISEQC_CARRIER_FREQ_22KHZ;
+	MXL_HYDRA_DISEQC_CARRIER_FREQ_E carrierFreqInHz = MXL_HYDRA_DISEQC_CARRIER_FREQ_22KHZ;
 	MXL58x_DSQ_OP_MODE_T diseqcMsg;
 	u8 cmdSize = sizeof(diseqcMsg);
 	u8 cmdBuff[MXL_HYDRA_OEM_MAX_CMD_BUFF_LEN];
@@ -1488,14 +1492,17 @@ struct dvb_frontend *mxl58x_attach(struct i2c_adapter *i2c,
 	state->rf_in = 0;
 	if(mode)
 	{ 
-	   if((demod ==0)||(demod ==1))
-			state->rf_in = 3;
-	   if((demod ==2)||(demod ==3))
-			state->rf_in = 2;
-	   if((demod ==4)||(demod ==5))
-			state->rf_in = 1;
-	   if((demod ==6)||(demod ==7))
-			state->rf_in = 0;
+		if((demod ==0)||(demod ==1))
+			      state->rf_in = 3;
+		if((demod ==2)||(demod ==3))
+			      state->rf_in = 2;
+		if((demod ==4)||(demod ==5))
+			      state->rf_in = 1;
+		if((demod ==6)||(demod ==7))
+			      state->rf_in = 0;
+
+		if (rfsource > 0 && rfsource < 5)
+			state->rf_in = 4 - rfsource;
 	}
 	state->fe.ops = mxl_ops;
 	state->fe.demodulator_priv = state;
