@@ -28,12 +28,19 @@
 #define SI2183_PROP_MODE	0x100a
 #define SI2183_PROP_DVBC_CONST	0x1101
 #define SI2183_PROP_DVBC_SR	0x1102
+#define SI2183_PROP_DVBC_AFC	0x1103
 #define SI2183_PROP_DVBT_HIER	0x1201
+#define SI2183_PROP_DVBT_AFC	0x1202
+#define SI2183_PROP_DVBT2_AFC	0x1301
 #define SI2183_PROP_DVBT2_MODE	0x1304
 #define SI2183_PROP_DVBS2_SR	0x1401
+#define SI2183_PROP_DVBS2_AFC	0x1402
 #define SI2183_PROP_DVBS_SR	0x1501
+#define SI2183_PROP_DVBS_AFC	0x1502
 #define SI2183_PROP_MCNS_CONST	0x1601
 #define SI2183_PROP_MCNS_SR	0x1602
+#define SI2183_PROP_MCNS_AFC	0x1603
+#define SI2183_PROP_DVBC2_AFC	0x1701
 
 #define SI2183_ARGLEN      30
 struct si2183_cmd {
@@ -283,6 +290,12 @@ static int si2183_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		cmd.rlen = 14;
 		snr_mul = 2;
 		break;
+	case SYS_DVBC2:
+		memcpy(cmd.args, "\x91\x01", 2);
+		cmd.wlen = 2;
+		cmd.rlen = 16;
+		snr_mul = 2;
+		break;
 	default:
 		ret = -EINVAL;
 		goto err;
@@ -475,6 +488,14 @@ static int si2183_set_dvbc(struct dvb_frontend *fe)
 		return ret;
 	}
 
+	/* AFC range */
+	prop = 100;
+	ret = si2183_set_prop(client, SI2183_PROP_DVBC_AFC, &prop);
+	if (ret) {
+		dev_err(&client->dev, "err set dvb-c AFC range\n");
+		return ret;
+	}
+
 	return 0;
 }
 
@@ -526,6 +547,41 @@ static int si2183_set_mcns(struct dvb_frontend *fe)
 	ret = si2183_set_prop(client, SI2183_PROP_MCNS_SR, &prop);
 	if (ret) {
 		dev_err(&client->dev, "err set mcns symbol rate\n");
+		return ret;
+	}
+
+	/* AFC range */
+	prop = 200;
+	ret = si2183_set_prop(client, SI2183_PROP_MCNS_AFC, &prop);
+	if (ret) {
+		dev_err(&client->dev, "err set mcns AFC range\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static int si2183_set_dvbc2(struct dvb_frontend *fe)
+{
+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+	struct i2c_client *client = fe->demodulator_priv;
+	struct si2183_cmd cmd;
+	int ret;
+	u16 prop;
+
+	/* dvb-c2 mode */
+	prop = 0xb8;
+	ret = si2183_set_prop(client, SI2183_PROP_MODE, &prop);
+	if (ret) {
+		dev_err(&client->dev, "err set dvb-c2 mode\n");
+		return ret;
+	}
+
+	/* AFC range */
+	prop = 550;
+	ret = si2183_set_prop(client, SI2183_PROP_DVBC2_AFC, &prop);
+	if (ret) {
+		dev_err(&client->dev, "err set dvb-c2 AFC range\n");
 		return ret;
 	}
 
@@ -766,7 +822,9 @@ static int si2183_set_frontend(struct dvb_frontend *fe)
 		case SYS_DVBT2:
 		case SYS_DVBC_ANNEX_A:
 		case SYS_DVBC_ANNEX_B:
+		case SYS_DVBC_ANNEX_C:
 		case SYS_ISDBT:
+		case SYS_DVBC2:
 			dev->RF_switch(dev->base->i2c,dev->rf_in,1);
 			break;
 			
@@ -802,10 +860,14 @@ static int si2183_set_frontend(struct dvb_frontend *fe)
 		ret = si2183_set_dvbt(fe);
 		break;
 	case SYS_DVBC_ANNEX_A:
+	case SYS_DVBC_ANNEX_C:
 	  ret = si2183_set_dvbc(fe);
 		break;
 	case SYS_DVBC_ANNEX_B:
 		ret = si2183_set_mcns(fe);
+		break;
+	case SYS_DVBC2:
+	  ret = si2183_set_dvbc2(fe);
 		break;
 	case SYS_ISDBT:
 		ret = si2183_set_isdbt(fe);
@@ -1400,8 +1462,8 @@ err:
 
 static const struct dvb_frontend_ops si2183_ops = {
 	.delsys = {SYS_DVBT, SYS_DVBT2, SYS_ISDBT,	  
-			SYS_DVBC_ANNEX_A, SYS_DVBC_ANNEX_B, 
-			SYS_DVBS, SYS_DVBS2, SYS_DSS},
+			SYS_DVBC_ANNEX_A, SYS_DVBC_ANNEX_B,  SYS_DVBC_ANNEX_C, 
+			SYS_DVBS, SYS_DVBS2, SYS_DVBC2},
 	.info = {
 		.name = "Silicon Labs Si2183",
 		.symbol_rate_min = 1000000,
