@@ -159,6 +159,10 @@ struct fib6_info {
 	struct rt6_info * __percpu	*rt6i_pcpu;
 	struct rt6_exception_bucket __rcu *rt6i_exception_bucket;
 
+#ifdef CONFIG_IPV6_ROUTER_PREF
+	unsigned long			last_probe;
+#endif
+
 	u32				fib6_metric;
 	u8				fib6_protocol;
 	u8				fib6_type;
@@ -279,6 +283,11 @@ void fib6_info_destroy_rcu(struct rcu_head *head);
 static inline void fib6_info_hold(struct fib6_info *f6i)
 {
 	atomic_inc(&f6i->fib6_ref);
+}
+
+static inline bool fib6_info_hold_safe(struct fib6_info *f6i)
+{
+	return atomic_inc_not_zero(&f6i->fib6_ref);
 }
 
 static inline void fib6_info_release(struct fib6_info *f6i)
