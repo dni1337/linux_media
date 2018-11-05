@@ -1532,7 +1532,7 @@ static int si2183_probe(struct i2c_client *client,
 	struct si2183_config *config = client->dev.platform_data;
 	struct si2183_dev *dev;
 	struct si_base *base;
-	int ret;
+	int ret = 0;
 
 	dev_dbg(&client->dev, "\n");
 
