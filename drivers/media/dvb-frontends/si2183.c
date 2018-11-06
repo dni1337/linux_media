@@ -54,6 +54,7 @@ static const struct dvb_frontend_ops si2183_ops;
 LIST_HEAD(silist);
 
 struct si_base {
+	struct mutex i2c_mutex;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
 	struct i2c_mux_core *muxc;
 #endif
@@ -184,11 +185,12 @@ err:
 
 static int si2183_cmd_execute(struct i2c_client *client, struct si2183_cmd *cmd)
 {
+	struct si2183_dev *dev = i2c_get_clientdata(client);
 	int ret;
 
-	i2c_lock_adapter(client->adapter);
+	mutex_lock(&dev->base->i2c_mutex);
 	ret = si2183_cmd_execute_unlocked(client, cmd);
-	i2c_unlock_adapter(client->adapter);
+	mutex_unlock(&dev->base->i2c_mutex);
 
 	return ret;
 }
@@ -1557,6 +1559,7 @@ static int si2183_probe(struct i2c_client *client,
 		dev->base = base;
 		list_add(&base->silist, &silist);
 
+		mutex_init(&base->i2c_mutex);
 #ifdef SI2183_USE_I2C_MUX
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
 		/* create mux i2c adapter for tuner */
