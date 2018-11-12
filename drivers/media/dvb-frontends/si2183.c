@@ -1335,7 +1335,7 @@ static int si2183_set_property(struct dvb_frontend *fe,
 			break;
 		case SYS_DVBC_ANNEX_A:
 		case SYS_DVBC_ANNEX_B:
-			fe->ops.info.frequency_min_hz = 470 * MHz;
+			fe->ops.info.frequency_min_hz = 47 * MHz;
 			fe->ops.info.frequency_max_hz = 862 * MHz;
 			fe->ops.info.frequency_stepsize_hz = 62500;
 			break;
