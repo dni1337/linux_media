@@ -199,7 +199,7 @@ static int device_process(struct vicodec_ctx *ctx,
 
 	dst_vb->sequence = q_dst->sequence++;
 	dst_vb->flags &= ~V4L2_BUF_FLAG_LAST;
-	v4l2_m2m_buf_copy_data(src_vb, dst_vb, !ctx->is_enc);
+	v4l2_m2m_buf_copy_metadata(src_vb, dst_vb, !ctx->is_enc);
 
 	return 0;
 }
@@ -339,7 +339,7 @@ info_from_header(const struct fwht_cframe_hdr *p_hdr)
 	unsigned int pixenc = 0;
 	unsigned int version = ntohl(p_hdr->version);
 
-	if (version == FWHT_VERSION) {
+	if (version >= 2) {
 		components_num = 1 + ((flags & FWHT_FL_COMPONENTS_NUM_MSK) >>
 				FWHT_FL_COMPONENTS_NUM_OFFSET);
 		pixenc = (flags & FWHT_FL_PIXENC_MSK);
@@ -362,7 +362,7 @@ static bool is_header_valid(const struct fwht_cframe_hdr *p_hdr)
 	if (w < MIN_WIDTH || w > MAX_WIDTH || h < MIN_HEIGHT || h > MAX_HEIGHT)
 		return false;
 
-	if (version == FWHT_VERSION) {
+	if (version >= 2) {
 		unsigned int components_num = 1 +
 			((flags & FWHT_FL_COMPONENTS_NUM_MSK) >>
 			FWHT_FL_COMPONENTS_NUM_OFFSET);
@@ -414,7 +414,7 @@ static void set_last_buffer(struct vb2_v4l2_buffer *dst_buf,
 	vb2_set_plane_payload(&dst_buf->vb2_buf, 0, 0);
 	dst_buf->sequence = q_dst->sequence++;
 
-	v4l2_m2m_buf_copy_data(src_buf, dst_buf, !ctx->is_enc);
+	v4l2_m2m_buf_copy_metadata(src_buf, dst_buf, !ctx->is_enc);
 	dst_buf->flags |= V4L2_BUF_FLAG_LAST;
 	v4l2_m2m_buf_done(dst_buf, VB2_BUF_STATE_DONE);
 }
@@ -953,6 +953,9 @@ static int vidioc_g_selection(struct file *file, void *priv,
 		valid_out_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
 	}
 
+	if (s->type != valid_cap_type && s->type != valid_out_type)
+		return -EINVAL;
+
 	q_data = get_q_data(ctx, s->type);
 	if (!q_data)
 		return -EINVAL;
@@ -994,12 +997,14 @@ static int vidioc_s_selection(struct file *file, void *priv,
 	if (multiplanar)
 		out_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
 
+	if (s->type != out_type)
+		return -EINVAL;
+
 	q_data = get_q_data(ctx, s->type);
 	if (!q_data)
 		return -EINVAL;
 
-	if (!ctx->is_enc || s->type != out_type ||
-	    s->target != V4L2_SEL_TGT_CROP)
+	if (!ctx->is_enc || s->target != V4L2_SEL_TGT_CROP)
 		return -EINVAL;
 
 	s->r.left = 0;
@@ -1113,9 +1118,14 @@ static int vicodec_enum_framesizes(struct file *file, void *fh,
 static int vicodec_subscribe_event(struct v4l2_fh *fh,
 				const struct v4l2_event_subscription *sub)
 {
+	struct vicodec_ctx *ctx = container_of(fh, struct vicodec_ctx, fh);
+
 	switch (sub->type) {
-	case V4L2_EVENT_EOS:
 	case V4L2_EVENT_SOURCE_CHANGE:
+		if (ctx->is_enc)
+			return -EINVAL;
+		/* fall through */
+	case V4L2_EVENT_EOS:
 		return v4l2_event_subscribe(fh, sub, 0, NULL);
 	default:
 		return v4l2_ctrl_subscribe_event(fh, sub);
@@ -1664,6 +1674,8 @@ static int vicodec_probe(struct platform_device *pdev)
 #ifdef CONFIG_MEDIA_CONTROLLER
 	dev->mdev.dev = &pdev->dev;
 	strscpy(dev->mdev.model, "vicodec", sizeof(dev->mdev.model));
+	strscpy(dev->mdev.bus_info, "platform:vicodec",
+		sizeof(dev->mdev.bus_info));
 	media_device_init(&dev->mdev);
 	dev->v4l2_dev.mdev = &dev->mdev;
 #endif
