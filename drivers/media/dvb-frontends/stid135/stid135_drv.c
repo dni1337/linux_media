@@ -2621,6 +2621,8 @@ static fe_lla_error_t Estimate_Power_Int(stchip_handle_t Handle,
 		
 		/*evaluate exp -9 sign */
 		if (exp_s32<0) {
+			if (exp_s32 < -31)
+				exp_s32	= -31;
 			/* if exp_s32<0 divide the mantissa  by 2^abs(exp_s32)*/
 			exp_abs_s32= XtoPowerY(2,(u32)(- exp_s32));
 			agc2x1000 = (u32)((1000 * mantisse) / exp_abs_s32);
