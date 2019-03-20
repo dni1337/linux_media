@@ -2601,7 +2601,7 @@ static fe_lla_error_t Estimate_Power_Int(stchip_handle_t Handle,
 	
 	/* check I2c error and demod lock for data coherency                */
 	/* Bit NOSFR must be =0 and POWER_IREF should not be null  */                                                                     
-	if ((NOSFR==0)& (DemodLock==1)& (error==FE_LLA_NO_ERROR) & (POWER_IREF!=0) ) {
+	if ((NOSFR==0) && (DemodLock==1) && (error==FE_LLA_NO_ERROR) && (POWER_IREF!=0)) {
 		/*************** calculate AGC2 ********************/ 
 		/*  Agc2= (AGC2I1*4 +AGC2I1) *2^XtoPowerY (exp-9)  */
 		/* exp min=5  max=15                               */
