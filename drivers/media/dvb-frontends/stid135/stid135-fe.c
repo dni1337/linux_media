@@ -475,8 +475,16 @@ static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	struct stv *state = fe->demodulator_priv;
 	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
 	fe_lla_error_t err = FE_LLA_NO_ERROR;
-
+    
 	*status = 0;
+	if (!mutex_trylock(&state->base->status_lock))
+    {
+		if (state->signal_info.locked)
+			*status |= FE_HAS_SIGNAL | FE_HAS_CARRIER
+					| FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
+		return 0;
+	}
+
 	p->strength.len = 1;
 	p->strength.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 	p->cnr.len = 1;
@@ -486,22 +494,20 @@ static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	p->pre_bit_count.len =1;
 	p->pre_bit_count.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 
-	mutex_lock(&state->base->status_lock);
 	err = fe_stid135_get_lock_status(state->base->handle, state->nr + 1, &state->signal_info.locked);
-	mutex_unlock(&state->base->status_lock);
 
 	if (err != FE_LLA_NO_ERROR) {
 		dev_warn(&state->base->i2c->dev, "%s: fe_stid135_get_lock_status error %d !\n", __func__, err);
+        mutex_unlock(&state->base->status_lock);
 		return 0;
 	}
-	
+
 	if (!state->signal_info.locked) {
-		mutex_lock(&state->base->status_lock);
 		err = fe_stid135_get_band_power_demod_not_locked(state->base->handle, state->nr + 1, &state->signal_info.power);
-		mutex_unlock(&state->base->status_lock);
 
 		if (err != FE_LLA_NO_ERROR) {
 			dev_warn(&state->base->i2c->dev, "%s: fe_stid135_get_band_power_demod_not_locked error %d !\n", __func__, err);
+            mutex_unlock(&state->base->status_lock);
 			return 0;
 		}
 
@@ -513,15 +519,15 @@ static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		
 		p->strength.stat[1].scale = FE_SCALE_RELATIVE;
 		p->strength.stat[1].uvalue = (100 + state->signal_info.power/1000) * 656;
+        mutex_unlock(&state->base->status_lock);
 		return 0;
 	}
 	  
-	mutex_lock(&state->base->status_lock);
 	err = fe_stid135_get_signal_info(state->base->handle, state->nr + 1, &state->signal_info, 0);
-	mutex_unlock(&state->base->status_lock);
 
 	if (err != FE_LLA_NO_ERROR) {
 		dev_warn(&state->base->i2c->dev, "%s: fe_stid135_get_signal_info error %d !\n", __func__, err);
+        mutex_unlock(&state->base->status_lock);
 		return 0;
 	}
 
@@ -549,14 +555,13 @@ static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	p->post_bit_error.stat[0].uvalue = state->signal_info.ber;
 	
 	if (mc_auto && state->signal_info.standard == FE_SAT_DVBS2_STANDARD) {
-		mutex_lock(&state->base->status_lock);
 		err = fe_stid135_filter_forbidden_modcodes(state->base->handle, state->nr + 1, state->signal_info.C_N * 10);
-		mutex_unlock(&state->base->status_lock);
 
 		if (err != FE_LLA_NO_ERROR)
 			dev_warn(&state->base->i2c->dev, "%s: fe_stid135_filter_forbidden_modcodes error %d !\n", __func__, err);
 	}
 
+	mutex_unlock(&state->base->status_lock);
 	return 0;
 }
 
