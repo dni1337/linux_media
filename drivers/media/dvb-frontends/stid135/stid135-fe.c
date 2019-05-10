@@ -478,7 +478,7 @@ static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
     
 	*status = 0;
 	if (!mutex_trylock(&state->base->status_lock))
-    {
+	{
 		if (state->signal_info.locked)
 			*status |= FE_HAS_SIGNAL | FE_HAS_CARRIER
 					| FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
@@ -519,7 +519,7 @@ static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		
 		p->strength.stat[1].scale = FE_SCALE_RELATIVE;
 		p->strength.stat[1].uvalue = (100 + state->signal_info.power/1000) * 656;
-        mutex_unlock(&state->base->status_lock);
+		mutex_unlock(&state->base->status_lock);
 		return 0;
 	}
 	  
@@ -527,7 +527,7 @@ static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
 
 	if (err != FE_LLA_NO_ERROR) {
 		dev_warn(&state->base->i2c->dev, "%s: fe_stid135_get_signal_info error %d !\n", __func__, err);
-        mutex_unlock(&state->base->status_lock);
+		mutex_unlock(&state->base->status_lock);
 		return 0;
 	}
 
@@ -697,7 +697,7 @@ static int stid135_sleep(struct dvb_frontend *fe)
 	fe_lla_error_t err = FE_LLA_NO_ERROR;
 	struct fe_stid135_internal_param *p_params = state->base->handle;;
 
-	if (state->base->mode == 0)
+	if (state->base->set_voltage)
 		return 0;
 
 	dev_dbg(&state->base->i2c->dev, "%s: tuner %d\n", __func__, state->rf_in);
