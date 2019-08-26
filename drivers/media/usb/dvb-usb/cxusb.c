@@ -464,26 +464,6 @@ static int cxusb_aver_streaming_ctrl(struct dvb_usb_adapter *adap, int onoff)
 	return 0;
 }
 
-static int cxusb_read_status(struct dvb_frontend *fe,
-			     enum fe_status *status)
-{
-	struct dvb_usb_adapter *adap = (struct dvb_usb_adapter *)fe->dvb->priv;
-	struct cxusb_state *state = (struct cxusb_state *)adap->dev->priv;
-	int ret;
-
-	ret = state->fe_read_status(fe, status);
-
-	/* it need resync slave fifo when signal change from unlock to lock.*/
-	if ((*status & FE_HAS_LOCK) && (!state->last_lock)) {
-		mutex_lock(&state->stream_mutex);
-		cxusb_streaming_ctrl(adap, 1);
-		mutex_unlock(&state->stream_mutex);
-	}
-
-	state->last_lock = (*status & FE_HAS_LOCK) ? 1 : 0;
-	return ret;
-}
-
 static void cxusb_d680_dmb_drain_message(struct dvb_usb_device *d)
 {
 	int       ep = d->props.generic_bulk_ctrl_endpoint;
@@ -1410,7 +1390,6 @@ static int cxusb_mygica_t230_frontend_attach(struct dvb_usb_adapter *adap)
 	si2168_config.i2c_adapter = &i2c_adapter;
 	si2168_config.fe = &adap->fe_adap[0].fe;
 	si2168_config.ts_mode = SI2168_TS_PARALLEL;
-	si2168_config.ts_clock_mode = SI2168_TS_CLK_AUTO_ADAPT;
 	si2168_config.ts_clock_inv = 1;
 
 	state->i2c_client_demod = dvb_module_probe("si2168", NULL,
@@ -1431,12 +1410,6 @@ static int cxusb_mygica_t230_frontend_attach(struct dvb_usb_adapter *adap)
 		dvb_module_release(state->i2c_client_demod);
 		return -ENODEV;
 	}
-
-	/* hook fe: need to resync the slave fifo when signal locks. */
-	mutex_init(&state->stream_mutex);
-	state->last_lock = 0;
-	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
-	adap->fe_adap[0].fe->ops.read_status = cxusb_read_status;
 
 	return 0;
 }
@@ -1466,8 +1439,8 @@ static int cxusb_mygica_t230c_frontend_attach(struct dvb_usb_adapter *adap)
 	si2168_config.i2c_adapter = &i2c_adapter;
 	si2168_config.fe = &adap->fe_adap[0].fe;
 	si2168_config.ts_mode = SI2168_TS_PARALLEL;
-	si2168_config.ts_clock_mode = d->udev->descriptor.idProduct == 0xc68a || d->udev->descriptor.idProduct == 0xc69a?
-						SI2168_TS_CLK_MANUAL : SI2168_TS_CLK_AUTO_ADAPT;
+	if (le16_to_cpu(d->udev->descriptor.idProduct) == 0xc68a || le16_to_cpu(d->udev->descriptor.idProduct) == 0xc69a)
+		si2168_config.ts_mode |= SI2168_TS_CLK_MANUAL;
 	si2168_config.ts_clock_inv = 1;
 
 	state->i2c_client_demod = dvb_module_probe("si2168", NULL,
@@ -1486,12 +1459,6 @@ static int cxusb_mygica_t230c_frontend_attach(struct dvb_usb_adapter *adap)
 		dvb_module_release(state->i2c_client_demod);
 		return -ENODEV;
 	}
-
-	/* hook fe: need to resync the slave fifo when signal locks. */
-	mutex_init(&state->stream_mutex);
-	state->last_lock = 0;
-	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
-	adap->fe_adap[0].fe->ops.read_status = cxusb_read_status;
 
 	return 0;
 }
