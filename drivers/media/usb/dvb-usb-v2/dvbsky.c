@@ -528,7 +528,7 @@ static int dvbsky_t330_attach(struct dvb_usb_adapter *adap)
 	return 0;
 }
 
-static int dvbsky_mygica_t230c_attach(struct dvb_usb_adapter *adap)
+static int dvbsky_mygica_t230_attach(struct dvb_usb_adapter *adap)
 {
 	struct dvbsky_state *state = adap_to_priv(adap);
 	struct dvb_usb_device *d = adap_to_d(adap);
@@ -552,18 +552,23 @@ static int dvbsky_mygica_t230c_attach(struct dvb_usb_adapter *adap)
 
 	/* attach tuner */
 	si2157_config.fe = adap->fe[0];
-	if (le16_to_cpu(d->udev->descriptor.idProduct) == USB_PID_MYGICA_T230) {
-		si2157_config.if_port = 1;
-		state->i2c_client_tuner = dvb_module_probe("si2157", NULL,
-							   i2c_adapter,
-							   0x60,
-							   &si2157_config);
-	} else {
+	switch (le16_to_cpu(d->udev->descriptor.idProduct)) {
+	case USB_PID_MYGICA_T230C:
+	case USB_PID_MYGICA_T230C2: {
 		si2157_config.if_port = 0;
 		state->i2c_client_tuner = dvb_module_probe("si2157", "si2141",
 							   i2c_adapter,
 							   0x60,
 							   &si2157_config);
+		break;
+	}
+	default: {
+		si2157_config.if_port = 1;
+		state->i2c_client_tuner = dvb_module_probe("si2157", NULL,
+							   i2c_adapter,
+							   0x60,
+							   &si2157_config);
+	}
 	}
 	if (!state->i2c_client_tuner) {
 		dvb_module_release(state->i2c_client_demod);
@@ -728,7 +733,7 @@ static struct dvb_usb_device_properties dvbsky_t330_props = {
 	}
 };
 
-static struct dvb_usb_device_properties mygica_t230c_props = {
+static struct dvb_usb_device_properties mygica_t230_props = {
 	.driver_name = KBUILD_MODNAME,
 	.owner = THIS_MODULE,
 	.adapter_nr = adapter_nr,
@@ -739,7 +744,7 @@ static struct dvb_usb_device_properties mygica_t230c_props = {
 	.generic_bulk_ctrl_delay = DVBSKY_MSG_DELAY,
 
 	.i2c_algo         = &dvbsky_i2c_algo,
-	.frontend_attach  = dvbsky_mygica_t230c_attach,
+	.frontend_attach  = dvbsky_mygica_t230_attach,
 	.frontend_detach  = dvbsky_frontend_detach,
 	.init             = dvbsky_init,
 	.get_rc_config    = dvbsky_get_rc_config,
@@ -787,14 +792,26 @@ static const struct usb_device_id dvbsky_id_table[] = {
 		&dvbsky_s960_props, "Terratec Cinergy S2 Rev.4",
 		RC_MAP_DVBSKY) },
 	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230,
-		&mygica_t230c_props, "MyGica Mini DVB-T2 USB Stick T230",
+		&mygica_t230_props, "MyGica Mini DVB-T2 USB Stick T230",
 		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
 	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C,
-		&mygica_t230c_props, "MyGica Mini DVB-T2 USB Stick T230C",
+		&mygica_t230_props, "MyGica Mini DVB-T2 USB Stick T230C",
 		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
 	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C2,
-		&mygica_t230c_props, "MyGica Mini DVB-T2 USB Stick T230C v2",
+		&mygica_t230_props, "MyGica Mini DVB-T2 USB Stick T230C v2",
 		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
+	{ DVB_USB_DEVICE(USB_VID_GTEK, 0xd230,
+		&mygica_t230_props, "Geniatech T2 X9330-0 USB2.0",
+		RC_MAP_EMPTY) },
+	{ DVB_USB_DEVICE(USB_VID_GTEK, 0xd231,
+		&mygica_t230_props, "Geniatech T2 X9331-1 USB2.0",
+		RC_MAP_EMPTY) },
+	{ DVB_USB_DEVICE(USB_VID_GTEK, 0xd232,
+		&mygica_t230_props, "Geniatech T2 X9330-2 USB2.0",
+		RC_MAP_EMPTY) },
+	{ DVB_USB_DEVICE(USB_VID_GTEK, 0xd233,
+		&mygica_t230_props, "Geniatech T2 X9330-3 USB2.0",
+		RC_MAP_EMPTY) },
 	{ }
 };
 MODULE_DEVICE_TABLE(usb, dvbsky_id_table);

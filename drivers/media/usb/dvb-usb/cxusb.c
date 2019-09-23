@@ -1769,10 +1769,12 @@ static int cxusb_probe(struct usb_interface *intf,
 					THIS_MODULE, NULL, adapter_nr) ||
 		   !dvb_usb_device_init(intf, &cxusb_mygica_d689_properties,
 					THIS_MODULE, NULL, adapter_nr) ||
+#if 0
 		   !dvb_usb_device_init(intf, &cxusb_mygica_t230_properties,
 					THIS_MODULE, NULL, adapter_nr) ||
 		   !dvb_usb_device_init(intf, &cxusb_mygica_t230c_properties,
 					THIS_MODULE, NULL, adapter_nr) ||
+#endif
 		   0)
 		return 0;
 
