@@ -1820,10 +1820,12 @@ static struct usb_device_id dw2102_table[] = {
 	[TERRATEC_DUAL_1] = {USB_DEVICE(0x153B,0x1181)},
 	[TERRATEC_DUAL_2] = {USB_DEVICE(0x153B,0x1182)},
 	[TEVII_S662] = {USB_DEVICE(0x9022, USB_PID_TEVII_S662)},
+#if 0
 	[GENIATECH_X9320_0] = {USB_DEVICE(USB_VID_GTEK, 0x3300)},
 	[GENIATECH_X9320_1] = {USB_DEVICE(USB_VID_GTEK, 0x3301)},
 	[GENIATECH_X9320_2] = {USB_DEVICE(USB_VID_GTEK, 0x3302)},
 	[GENIATECH_X9320_3] = {USB_DEVICE(USB_VID_GTEK, 0x3303)},
+#endif
 	{ }
 };
 
@@ -2258,6 +2260,7 @@ static struct dvb_usb_device_properties su3000_properties = {
 			{ &dw2102_table[TERRATEC_CINERGY_S2_R4], NULL },
 			{ NULL },
 		},
+#if 0
 		{ "Geniatech S2 X9320-0 USB2.0",
 			{ &dw2102_table[GENIATECH_X9320_0], NULL },
 			{ NULL },
@@ -2274,6 +2277,7 @@ static struct dvb_usb_device_properties su3000_properties = {
 			{ &dw2102_table[GENIATECH_X9320_3], NULL },
 			{ NULL },
 		},
+#endif
 	}
 };
 

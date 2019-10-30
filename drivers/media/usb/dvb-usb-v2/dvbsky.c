@@ -578,6 +578,59 @@ static int dvbsky_mygica_t230_attach(struct dvb_usb_adapter *adap)
 	return 0;
 }
 
+static int dvbsky_hdstar_attach(struct dvb_usb_adapter *adap)
+{
+	struct dvbsky_state *state = adap_to_priv(adap);
+	struct dvb_usb_device *d = adap_to_d(adap);
+	struct i2c_adapter *i2c_adapter;
+	struct m88ds3103_platform_data m88ds3103_pdata = {};
+	struct ts2020_config ts2020_config = {};
+
+	/* attach demod */
+	m88ds3103_pdata.clk = 27000000;
+	m88ds3103_pdata.i2c_wr_max = 33;
+	m88ds3103_pdata.ts_mode = M88DS3103_TS_CI;
+	m88ds3103_pdata.ts_clk = 16000;
+	m88ds3103_pdata.ts_clk_pol = 0;
+	m88ds3103_pdata.spec_inv = 0;
+	m88ds3103_pdata.agc = 0x99;
+	m88ds3103_pdata.agc_inv = 0;
+	m88ds3103_pdata.clk_out = M88DS3103_CLOCK_OUT_DISABLED;
+	m88ds3103_pdata.envelope_mode = 0;
+	m88ds3103_pdata.lnb_hv_pol = 1,
+	m88ds3103_pdata.lnb_en_pol = 0,
+
+	state->i2c_client_demod = dvb_module_probe("m88ds3103", NULL,
+						   &d->i2c_adap,
+						   0x68, &m88ds3103_pdata);
+	if (!state->i2c_client_demod)
+		return -ENODEV;
+
+	adap->fe[0] = m88ds3103_pdata.get_dvb_frontend(state->i2c_client_demod);
+	i2c_adapter = m88ds3103_pdata.get_i2c_adapter(state->i2c_client_demod);
+
+	/* attach tuner */
+	ts2020_config.fe = adap->fe[0];
+	ts2020_config.get_agc_pwm = m88ds3103_get_agc_pwm;
+
+	state->i2c_client_tuner = dvb_module_probe("ts2020", NULL,
+						   i2c_adapter,
+						   0x60, &ts2020_config);
+	if (!state->i2c_client_tuner) {
+		dvb_module_release(state->i2c_client_demod);
+		return -ENODEV;
+	}
+
+	/* delegate signal strength measurement to tuner */
+	adap->fe[0]->ops.read_signal_strength =
+			adap->fe[0]->ops.tuner_ops.get_rf_strength;
+
+	/* hook fe: need to resync the slave fifo when signal locks. */
+	state->fe_read_status = adap->fe[0]->ops.read_status;
+	adap->fe[0]->ops.read_status = dvbsky_usb_read_status;
+
+	return 0;
+}
 
 static int dvbsky_identify_state(struct dvb_usb_device *d, const char **name)
 {
@@ -759,6 +812,32 @@ static struct dvb_usb_device_properties mygica_t230_props = {
 	}
 };
 
+static struct dvb_usb_device_properties mygica_hdstar_props = {
+	.driver_name = KBUILD_MODNAME,
+	.owner = THIS_MODULE,
+	.adapter_nr = adapter_nr,
+	.size_of_priv = sizeof(struct dvbsky_state),
+
+	.generic_bulk_ctrl_endpoint = 0x01,
+	.generic_bulk_ctrl_endpoint_response = 0x81,
+	.generic_bulk_ctrl_delay = DVBSKY_MSG_DELAY,
+
+	.i2c_algo         = &dvbsky_i2c_algo,
+	.frontend_attach  = dvbsky_hdstar_attach,
+	.frontend_detach  = dvbsky_frontend_detach,
+	.init             = dvbsky_init,
+	.get_rc_config    = dvbsky_get_rc_config,
+	.streaming_ctrl   = dvbsky_streaming_ctrl,
+	.identify_state	  = dvbsky_identify_state,
+
+	.num_adapters = 1,
+	.adapter = {
+		{
+			.stream = DVB_USB_STREAM_BULK(0x82, 8, 4096),
+		}
+	}
+};
+
 static const struct usb_device_id dvbsky_id_table[] = {
 	{ DVB_USB_DEVICE(0x0572, 0x6831,
 		&dvbsky_s960_props, "DVBSky S960/S860", RC_MAP_DVBSKY) },
@@ -804,13 +883,25 @@ static const struct usb_device_id dvbsky_id_table[] = {
 		&mygica_t230_props, "Geniatech T2 X9330-0 USB2.0",
 		RC_MAP_EMPTY) },
 	{ DVB_USB_DEVICE(USB_VID_GTEK, 0xd231,
-		&mygica_t230_props, "Geniatech T2 X9331-1 USB2.0",
+		&mygica_t230_props, "Geniatech T2 X9330-1 USB2.0",
 		RC_MAP_EMPTY) },
 	{ DVB_USB_DEVICE(USB_VID_GTEK, 0xd232,
 		&mygica_t230_props, "Geniatech T2 X9330-2 USB2.0",
 		RC_MAP_EMPTY) },
 	{ DVB_USB_DEVICE(USB_VID_GTEK, 0xd233,
 		&mygica_t230_props, "Geniatech T2 X9330-3 USB2.0",
+		RC_MAP_EMPTY) },
+	{ DVB_USB_DEVICE(USB_VID_GTEK, 0x3300,
+		&mygica_hdstar_props, "Geniatech T2 X9230-0 USB2.0",
+		RC_MAP_EMPTY) },
+	{ DVB_USB_DEVICE(USB_VID_GTEK, 0x3301,
+		&mygica_hdstar_props, "Geniatech T2 X9230-1 USB2.0",
+		RC_MAP_EMPTY) },
+	{ DVB_USB_DEVICE(USB_VID_GTEK, 0x3302,
+		&mygica_hdstar_props, "Geniatech T2 X9230-2 USB2.0",
+		RC_MAP_EMPTY) },
+	{ DVB_USB_DEVICE(USB_VID_GTEK, 0x3303,
+		&mygica_hdstar_props, "Geniatech T2 X9230-3 USB2.0",
 		RC_MAP_EMPTY) },
 	{ }
 };
