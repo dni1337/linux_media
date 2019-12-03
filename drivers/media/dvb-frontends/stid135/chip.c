@@ -246,7 +246,7 @@ STCHIP_Handle_t ChipOpen(STCHIP_Info_t *hChipOpenParams)
 			
 			if(hChip->pFieldMapImage != NULL)
 			{
-				if((ChipGetHandleFromName(hChipOpenParams->Name)==NULL) && (AppendNode(hChip)!=NULL)) 
+				if(AppendNode(hChip)!=NULL) 
 				{
 					hChip->pI2CHost = hChipOpenParams->pI2CHost;
 					hChip->I2cAddr = hChipOpenParams->I2cAddr;
@@ -259,9 +259,9 @@ STCHIP_Handle_t ChipOpen(STCHIP_Info_t *hChipOpenParams)
 					hChip->RepeaterHost = hChipOpenParams->RepeaterHost;
 					hChip->RepeaterFn   = hChipOpenParams->RepeaterFn;
 					hChip->WrStart      = hChipOpenParams->WrStart;
-				    hChip->WrSize       = hChipOpenParams->WrSize;     
-				    hChip->RdStart      = hChipOpenParams->RdStart;     
-				    hChip->RdSize       = hChipOpenParams->RdSize;     
+					hChip->WrSize       = hChipOpenParams->WrSize;     
+					hChip->RdStart      = hChipOpenParams->RdStart;     
+					hChip->RdSize       = hChipOpenParams->RdSize;     
 					hChip->Error = CHIPERR_NO_ERROR;
 					hChip->pData = hChipOpenParams->pData;
 					hChip->LastRegIndex = 0;
