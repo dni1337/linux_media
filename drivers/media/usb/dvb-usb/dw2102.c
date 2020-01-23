@@ -1431,7 +1431,7 @@ static int su3000_frontend_attach(struct dvb_usb_adapter *adap)
 
 	mutex_unlock(&d->data_mutex);
 
-#if 0
+#if 1
 	/* First try ds300x version */
 	adap->fe_adap[0].fe = dvb_attach(ds3000_attach, &su3000_ds3000_config,
 					&d->i2c_adap);
@@ -1461,12 +1461,12 @@ attach2:
 	m88ds3103_pdata.lnb_hv_pol = 1;
 	m88ds3103_pdata.lnb_en_pol = 0;
 	memset(&board_info, 0, sizeof(board_info));
-	strlcpy(board_info.type, "m88ds3103", I2C_NAME_SIZE);
+	strscpy(board_info.type, "m88ds3103", I2C_NAME_SIZE);
 	board_info.addr = 0x68;
 	board_info.platform_data = &m88ds3103_pdata;
 	request_module("m88ds3103");
-	client = i2c_new_device(&d->i2c_adap, &board_info);
-	if (client == NULL || client->dev.driver == NULL)
+	client = i2c_new_client_device(&d->i2c_adap, &board_info);
+	if (!i2c_client_has_driver(client))
 		return -ENODEV;
 	if (!try_module_get(client->dev.driver->owner)) {
 		i2c_unregister_device(client);
@@ -1475,24 +1475,16 @@ attach2:
 	adap->fe_adap[0].fe = m88ds3103_pdata.get_dvb_frontend(client);
 	i2c_adapter = m88ds3103_pdata.get_i2c_adapter(client);
 
-	state->i2c_client_demod = client;
-
 	/* attach tuner */
 	ts2020_config.fe = adap->fe_adap[0].fe;
 	memset(&board_info, 0, sizeof(board_info));
-	strlcpy(board_info.type, "ts2022", I2C_NAME_SIZE);
+	strscpy(board_info.type, "ts2022", I2C_NAME_SIZE);
 	board_info.addr = 0x60;
 	board_info.platform_data = &ts2020_config;
 	request_module("ts2020");
-	client = i2c_new_device(i2c_adapter, &board_info);
+	client = i2c_new_client_device(i2c_adapter, &board_info);
 
-	if (client == NULL || client->dev.driver == NULL) {
-		dvb_frontend_detach(adap->fe_adap[0].fe);
-		return -ENODEV;
-	}
-
-	if (!try_module_get(client->dev.driver->owner)) {
-		i2c_unregister_device(client);
+	if (!i2c_client_has_driver(client)) {
 		dvb_frontend_detach(adap->fe_adap[0].fe);
 		return -ENODEV;
 	}
@@ -1502,7 +1494,6 @@ attach2:
 			adap->fe_adap[0].fe->ops.tuner_ops.get_rf_strength;
 
 	state->i2c_client_tuner = client;
-
 attach3:
 #else
 	adap->fe_adap[0].fe = dvb_attach(ds3k_attach, &su3000_ds3k_config,
