@@ -123,8 +123,6 @@ struct m88ds3103_config {
 	u8 agc;
 	u8 lnb_hv_pol:1;
 	u8 lnb_en_pol:1;
-	/* Hook for Lock LED */
-	void (*set_lock_led)(struct dvb_frontend *fe, int offon);
 };
 
 #if defined(CONFIG_DVB_M88DS3103) || \
