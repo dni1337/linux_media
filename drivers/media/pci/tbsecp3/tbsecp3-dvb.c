@@ -32,6 +32,8 @@
 
 #include "stid135.h"
 
+#include "rda5816.h"
+
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
 struct sec_priv {
@@ -329,6 +331,17 @@ static struct av201x_config tbs6522_av201x_cfg[] = {
 	},
 };
 
+static struct rda5816_config rda5816_cfg[] = {
+	{
+		.i2c_adr = 0x8,
+		.xtal   = 1,    //1=27M  0=24M
+	},
+	{
+		.i2c_adr = 0x9,
+		.xtal   = 1,
+	},
+};
+
 static struct stid135_cfg tbs6903x_stid135_cfg = {
 	.adr		= 0x68,
 	.clk		= 27,
@@ -476,22 +489,23 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		break;
 
 	case TBSECP3_BOARD_TBS6522:
+	case TBSECP3_BOARD_TBS6504:
 		/* attach demod */
 		memset(&si2183_config, 0, sizeof(si2183_config));
 		si2183_config.i2c_adapter = &i2c;
 		si2183_config.fe = &adapter->fe;
 		si2183_config.ts_mode = SI2183_TS_PARALLEL;
 		si2183_config.ts_clock_gapped = true;
-		si2183_config.fef_pin = adapter->nr ? SI2183_MP_A : SI2183_MP_B;
+		si2183_config.fef_pin = (adapter->nr%2) ? SI2183_MP_A : SI2183_MP_B;
 		si2183_config.fef_inv = 0;
-		si2183_config.agc_pin = adapter->nr ? SI2183_MP_C : SI2183_MP_D;
+		si2183_config.agc_pin = (adapter->nr%2) ? SI2183_MP_C : SI2183_MP_D;
 		si2183_config.ter_agc_inv = 0;
 		si2183_config.sat_agc_inv = 1;
-		si2183_config.rf_in = adapter->nr;
+		si2183_config.rf_in = adapter->nr%2;
 		si2183_config.RF_switch = NULL;
 
 		adapter->i2c_client_demod = dvb_module_probe("si2183", NULL,
-						   i2c, adapter->nr ? 0x64 : 0x67, &si2183_config);
+						   i2c, (adapter->nr%2) ? 0x64 : 0x67, &si2183_config);
 		if (!adapter->i2c_client_demod)
 			goto frontend_atach_fail;
 
@@ -506,7 +520,7 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		adapter->fe->ops.delsys[1] = SYS_DVBS2;
 		adapter->fe->ops.delsys[2] = SYS_DSS;
 		
-		if (dvb_attach(av201x_attach, adapter->fe, &tbs6522_av201x_cfg[adapter->nr],
+		if (dvb_attach(av201x_attach, adapter->fe, &tbs6522_av201x_cfg[adapter->nr%2],
 				i2c) == NULL) {
 			dev_err(&dev->pci_dev->dev,
 				"frontend %d tuner attach failed\n",
@@ -534,7 +548,7 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		si2157_config.if_port = 1;
 
 		adapter->i2c_client_tuner = dvb_module_probe("si2157", "si2157",
-							  i2c, adapter->nr ? 0x61 : 0x60, &si2157_config);
+							  i2c, (adapter->nr%2) ? 0x61 : 0x60, &si2157_config);
 		if (!adapter->i2c_client_tuner)
 			goto frontend_atach_fail;
 		break;
@@ -791,7 +805,67 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 			    "error attaching lnb control on adapter %d\n",
 			    adapter->nr);
 		}
+
 		break;
+	case TBSECP3_BOARD_TBS6508:
+		memset(&si2183_config, 0, sizeof(si2183_config));
+		si2183_config.i2c_adapter = &i2c;
+		si2183_config.fe = &adapter->fe;
+		si2183_config.ts_mode =  SI2183_TS_PARALLEL ;
+		si2183_config.ts_clock_gapped = true;
+		si2183_config.agc_pin = (adapter->nr%2) ? SI2183_MP_D : SI2183_MP_C;
+		si2183_config.sat_agc_inv = 1;
+		si2183_config.rf_in = adapter->nr;
+		si2183_config.RF_switch = NULL;
+	
+		adapter->i2c_client_demod = dvb_module_probe("si2183", NULL,
+						   i2c, (adapter->nr %2)? 0x67 : 0x64, &si2183_config);
+		if (!adapter->i2c_client_demod)
+			goto frontend_atach_fail;
+
+		/* dvb core doesn't support 2 tuners for 1 demod so
+		  we split the adapter in 2 frontends */
+		adapter->fe2 = &adapter->_fe2;
+		memcpy(adapter->fe2, adapter->fe, sizeof(struct dvb_frontend));
+
+		/* sattelite tuner */
+		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe->ops.delsys[0] = SYS_DVBS;
+		adapter->fe->ops.delsys[1] = SYS_DVBS2;
+		adapter->fe->ops.delsys[2] = SYS_DSS;
+		if (dvb_attach(rda5816_attach, adapter->fe, &rda5816_cfg[(adapter->nr %2)],
+				i2c) == NULL) {
+			dev_err(&dev->pci_dev->dev,
+				"frontend %d tuner attach failed\n",
+				adapter->nr);
+			goto frontend_atach_fail;
+		}
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+			dev_warn(&dev->pci_dev->dev,
+				"error attaching lnb control on adapter %d\n",
+				adapter->nr);
+		}
+
+		/* terrestrial tuner */
+		memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe2->ops.delsys[0] = SYS_DVBT;
+		adapter->fe2->ops.delsys[1] = SYS_DVBT2;
+		adapter->fe2->ops.delsys[2] = SYS_DVBC_ANNEX_A;
+		adapter->fe2->ops.delsys[3] = SYS_ISDBT;
+		adapter->fe2->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+		adapter->fe2->id = 1;
+
+		/* attach tuner */
+		memset(&si2157_config, 0, sizeof(si2157_config));
+		si2157_config.fe = adapter->fe2;
+		si2157_config.if_port = 1;
+
+		adapter->i2c_client_tuner = dvb_module_probe("si2157", "si2157",
+							  i2c, (adapter->nr%2) ? 0x60 : 0x61, &si2157_config);
+		if (!adapter->i2c_client_tuner)
+			goto frontend_atach_fail;
+		break;		
+
 	default:
 		dev_warn(&dev->pci_dev->dev, "unknonw card\n");
 		return -ENODEV;
