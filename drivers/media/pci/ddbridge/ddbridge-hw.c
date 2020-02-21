@@ -322,6 +322,16 @@ static const struct ddb_info ddb_s2x_48 = {
 	.mci_type = 0,
 };
 
+static const struct ddb_info ddb_s2x_48_b = {
+	.type     = DDB_OCTOPUS_MCI,
+	.name     = "Digital Devices MAX SX8 Basic",
+	.regmap   = &octopus_map,
+	.port_num = 4,
+	.i2c_mask = 0x00,
+	.tempmon_irq = 24,
+	.mci_ports = 4,
+	.mci_type = 0,
+};
 /****************************************************************************/
 /****************************************************************************/
 /****************************************************************************/
@@ -358,6 +368,7 @@ static const struct ddb_device_id ddb_device_ids[] = {
 	DDB_DEVID(0x0008, 0x0037, ddb_c2t2i_v0_8),
 	DDB_DEVID(0x0008, 0x0038, ddb_c2t2i_8),
 	DDB_DEVID(0x0009, 0x0025, ddb_s2x_48),
+	DDB_DEVID(0x000b, 0x0026, ddb_s2x_48_b),
 	DDB_DEVID(0x0006, 0x0039, ddb_ctv7),
 	DDB_DEVID(0x0011, 0x0040, ddb_ci),
 	DDB_DEVID(0x0011, 0x0041, ddb_cis),
