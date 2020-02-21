@@ -325,4 +325,10 @@ config MEDIA_TUNER_R848
 	help
 	  Rafael Micro R848 silicon tuner driver.
 
+config MEDIA_TUNER_RDA5816
+	tristate "RDA Microelectronics RDA5816"
+	depends on MEDIA_SUPPORT &&I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Rafael micro Rda5816 tuner driver.
 endmenu

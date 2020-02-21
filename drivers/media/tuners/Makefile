@@ -48,5 +48,6 @@ obj-$(CONFIG_MEDIA_TUNER_TDA18250) += tda18250.o
 obj-$(CONFIG_MEDIA_TUNER_AV201X) += av201x.o
 obj-$(CONFIG_MEDIA_TUNER_R848) += r848.o
 obj-$(CONFIG_MEDIA_TUNER_STV6120) += stv6120.o
+obj-$(CONFIG_MEDIA_TUNER_RDA5816) += rda5816.o
 
 ccflags-y += -I$(srctree)/drivers/media/dvb-frontends
