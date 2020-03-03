@@ -628,6 +628,13 @@ config DVB_STV0297
 	help
 	  A DVB-C tuner module. Say Y when you want to support this frontend.
 
+config DVB_M88DC2800
+	tristate "Montage M88DC2800 based"
+	depends on DVB_CORE && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  A DVB-C tuner module. Say Y when you want to support this frontend.
+
 comment "ATSC (North American/Korean Terrestrial/Cable DTV) frontends"
 	depends on DVB_CORE
 
