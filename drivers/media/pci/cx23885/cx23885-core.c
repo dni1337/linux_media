@@ -2166,6 +2166,7 @@ static int cx23885_initdev(struct pci_dev *pci_dev,
 		cx23885_irq_add_enable(dev, PCI_MSK_GPIO1 | PCI_MSK_GPIO0);
 		break;
 	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 		cx23885_irq_add_enable(dev, PCI_MSK_GPIO0);
 		break;
 	}

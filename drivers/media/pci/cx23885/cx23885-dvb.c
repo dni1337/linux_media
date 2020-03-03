@@ -66,6 +66,7 @@
 #include "m88ds3103.h"
 #include "m88rs6000t.h"
 #include "lgdt3306a.h"
+#include "m88dc2800.h"
 
 static unsigned int debug;
 
@@ -932,6 +933,11 @@ static struct lgdt3306a_config hauppauge_hvr1265k4_config = {
 	.xtalMHz                = 25, /* 24 or 25 */
 };
 
+static struct m88dc2800_config dvbsky_dc2800_config = {
+	.demod_address = 0x1c,
+	.ts_mode = 3,	
+};
+
 static int netup_altera_fpga_rw(void *device, int flag, int data, int read)
 {
 	struct cx23885_dev *dev = (struct cx23885_dev *)device;
@@ -1144,6 +1150,7 @@ static int dvb_register_ci_mac(struct cx23885_tsport *port)
 		}
 	case CX23885_BOARD_DVBSKY_S950C:
 	case CX23885_BOARD_DVBSKY_T980C:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 	case CX23885_BOARD_TT_CT2_4500_CI: {
 		u8 eeprom[256]; /* 24C02 i2c eeprom */
 		struct sp2_config sp2_config;
@@ -2216,6 +2223,12 @@ static int dvb_register(struct cx23885_tsport *port)
 			goto frontend_detach;
 		}
 		port->i2c_client_tuner = client_tuner;
+		break;
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
+		i2c_bus = &dev->i2c_bus[1];
+		fe0->dvb.frontend = dvb_attach(m88dc2800_attach,
+					&dvbsky_dc2800_config,
+					&i2c_bus->i2c_adap);
 		break;
 	case CX23885_BOARD_HAUPPAUGE_STARBURST2:
 	case CX23885_BOARD_HAUPPAUGE_HVR5525:

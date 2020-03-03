@@ -820,6 +820,11 @@ struct cx23885_board cx23885_boards[] = {
 			.amux   = CX25840_AUDIO7,
 		} },
 	},
+	[CX23885_BOARD_DVBSKY_C2800E_CI] = {
+		.ci_type	= 3,
+		.name		= "DVBSKY C2800E DVB-C CI",
+		.portb		= CX23885_MPEG_DVB,
+	},
 };
 const unsigned int cx23885_bcount = ARRAY_SIZE(cx23885_boards);
 
@@ -1147,6 +1152,10 @@ struct cx23885_subid cx23885_subids[] = {
 		.subvendor = 0x1461,
 		.subdevice = 0x3100,
 		.card      = CX23885_BOARD_AVERMEDIA_CE310B,
+	}, {
+		.subvendor = 0x4254,
+		.subdevice = 0x2800,
+		.card      = CX23885_BOARD_DVBSKY_C2800E_CI,
 	},
 };
 const unsigned int cx23885_idcount = ARRAY_SIZE(cx23885_subids);
@@ -1804,6 +1813,7 @@ void cx23885_gpio_setup(struct cx23885_dev *dev)
 	case CX23885_BOARD_DVBSKY_T980C:
 	case CX23885_BOARD_DVBSKY_S950C:
 	case CX23885_BOARD_TT_CT2_4500_CI:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 		/*
 		 * GPIO-0 INTA from CiMax, input
 		 * GPIO-1 reset CiMax, output, high active
@@ -1976,6 +1986,7 @@ int cx23885_ir_init(struct cx23885_dev *dev)
 	case CX23885_BOARD_DVBSKY_S950:
 	case CX23885_BOARD_DVBSKY_S952:
 	case CX23885_BOARD_DVBSKY_T982:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 		if (!enable_885_ir)
 			break;
 		dev->sd_ir = cx23885_find_hw(dev, CX23885_HW_AV_CORE);
@@ -2029,6 +2040,7 @@ void cx23885_ir_fini(struct cx23885_dev *dev)
 	case CX23885_BOARD_DVBSKY_S950:
 	case CX23885_BOARD_DVBSKY_S952:
 	case CX23885_BOARD_DVBSKY_T982:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 		cx23885_irq_remove(dev, PCI_MSK_AV_CORE);
 		/* sd_ir is a duplicate pointer to the AV Core, just clear it */
 		dev->sd_ir = NULL;
@@ -2083,6 +2095,7 @@ void cx23885_ir_pci_int_enable(struct cx23885_dev *dev)
 	case CX23885_BOARD_DVBSKY_S950:
 	case CX23885_BOARD_DVBSKY_S952:
 	case CX23885_BOARD_DVBSKY_T982:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 		if (dev->sd_ir)
 			cx23885_irq_add_enable(dev, PCI_MSK_AV_CORE);
 		break;
@@ -2206,6 +2219,7 @@ void cx23885_card_setup(struct cx23885_dev *dev)
 	case CX23885_BOARD_DVBSKY_S950C:
 	case CX23885_BOARD_TT_CT2_4500_CI:
 	case CX23885_BOARD_DVBSKY_S950:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 		ts1->gen_ctrl_val  = 0x5; /* Parallel */
 		ts1->ts_clk_en_val = 0x1; /* Enable TS_CLK */
 		ts1->src_sel_val   = CX23885_SRC_SEL_PARALLEL_MPEG_VIDEO;
@@ -2336,6 +2350,7 @@ void cx23885_card_setup(struct cx23885_dev *dev)
 	case CX23885_BOARD_DVBSKY_S950:
 	case CX23885_BOARD_DVBSKY_S952:
 	case CX23885_BOARD_DVBSKY_T982:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 		/* Currently only enabled for the integrated IR controller */
 		if (!enable_885_ir)
 			break;

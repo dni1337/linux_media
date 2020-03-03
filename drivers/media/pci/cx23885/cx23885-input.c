@@ -85,6 +85,7 @@ void cx23885_input_rx_work_handler(struct cx23885_dev *dev, u32 events)
 	case CX23885_BOARD_DVBSKY_S950:
 	case CX23885_BOARD_DVBSKY_S952:
 	case CX23885_BOARD_DVBSKY_T982:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 	case CX23885_BOARD_HAUPPAUGE_HVR1265_K4:
 		/*
 		 * The only boards we handle right now.  However other boards
@@ -145,6 +146,7 @@ static int cx23885_input_ir_start(struct cx23885_dev *dev)
 	case CX23885_BOARD_DVBSKY_S950:
 	case CX23885_BOARD_DVBSKY_S952:
 	case CX23885_BOARD_DVBSKY_T982:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 	case CX23885_BOARD_HAUPPAUGE_HVR1265_K4:
 		/*
 		 * The IR controller on this board only returns pulse widths.
@@ -313,6 +315,7 @@ int cx23885_input_init(struct cx23885_dev *dev)
 	case CX23885_BOARD_DVBSKY_S950:
 	case CX23885_BOARD_DVBSKY_S952:
 	case CX23885_BOARD_DVBSKY_T982:
+	case CX23885_BOARD_DVBSKY_C2800E_CI:
 		/* Integrated CX23885 IR controller */
 		allowed_protos = RC_PROTO_BIT_ALL_IR_DECODER;
 		rc_map = RC_MAP_DVBSKY;
