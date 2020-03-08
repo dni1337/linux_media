@@ -1830,8 +1830,7 @@ static int m88dc2800_init(struct dvb_frontend *fe)
 	return 0;
 }
 
-static int m88dc2800_set_parameters(struct dvb_frontend *fe,
-			      struct dvb_frontend_parameters *p)
+static int m88dc2800_set_parameters(struct dvb_frontend *fe)
 {
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	u8 is_annex_c, is_update;
