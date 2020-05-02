@@ -2761,8 +2761,7 @@ fe_lla_error_t FE_STiD135_GetRFLevel(fe_stid135_handle_t handle,
 	u8 exp;
 	u32 Agc2x1000;
 	u32 InterpolatedGvanax1000;
-	s32 PchRFx1000;
-	s32 Pbandx1000;
+	s32 PchRFx1000 = 0, Pbandx1000 = 0;
 	s32 agcrf_path;
 	struct fe_stid135_internal_param *pParams;
 	fe_lla_error_t error = FE_LLA_NO_ERROR;
@@ -10608,13 +10607,13 @@ fe_lla_error_t fe_stid135_bb_flt_calib(fe_stid135_handle_t handle, FE_OXFORD_Tun
 {
 	s32 fld_value = 0;
 	u32 measure_h1, measure_h3;
-	u32 ratio, ratio_threshold = 174; /* 174 because 10xlog(174/10)=12.4dB */
+	u32 ratio = 0, ratio_threshold = 174; /* 174 because 10xlog(174/10)=12.4dB */
 	fe_lla_error_t error = FE_LLA_NO_ERROR;
 	BOOL calib_value_found = FALSE;
 	s32 epsilon = 5;
 	s32 start_index = 0;
 	s32 end_index;
-	s32 middle_index;
+	s32 middle_index = 0;
 	struct fe_stid135_internal_param *pParams;
 	s32 best_i_cal = 0x00, best_q_cal = 0x00;
 	
