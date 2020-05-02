@@ -599,8 +599,8 @@ static int cycitv_power_ctrl(struct dvb_usb_device *d, int i)
 	return 0;
 }
 static int cycitv_identify_state(struct usb_device *udev,
-				struct dvb_usb_device_properties *props,
-				struct dvb_usb_device_description **desc,
+				const struct dvb_usb_device_properties *props,
+				const struct dvb_usb_device_description **desc,
 				int *cold)
 {
 	info("%s\n", __func__);
