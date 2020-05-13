@@ -39,8 +39,8 @@ Arguments
 Description
 ===========
 
-To enumerate image formats applications initialize the ``type`` and
-``index`` field of struct :c:type:`v4l2_fmtdesc` and call
+To enumerate image formats applications initialize the ``type``, ``mbus_code``
+and ``index`` fields of struct :c:type:`v4l2_fmtdesc` and call
 the :ref:`VIDIOC_ENUM_FMT` ioctl with a pointer to this structure. Drivers
 fill the rest of the structure or return an ``EINVAL`` error code. All
 formats are enumerable by beginning at index zero and incrementing by
@@ -48,10 +48,36 @@ one until ``EINVAL`` is returned. If applicable, drivers shall return
 formats in preference order, where preferred formats are returned before
 (that is, with lower ``index`` value) less-preferred formats.
 
-.. note::
+Depending on the ``V4L2_CAP_IO_MC`` :ref:`capability <device-capabilities>`,
+the ``mbus_code`` field is handled differently:
 
-   After switching input or output the list of enumerated image
-   formats may be different.
+1) ``V4L2_CAP_IO_MC`` is not set (also known as a 'video-node-centric' driver)
+
+   Applications shall initialize the ``mbus_code`` field to zero and drivers
+   shall ignore the value of the field.
+
+   Drivers shall enumerate all image formats.
+
+   .. note::
+
+      After switching the input or output the list of enumerated image
+      formats may be different.
+
+2) ``V4L2_CAP_IO_MC`` is set (also known as an 'MC-centric' driver)
+
+   If the ``mbus_code`` field is zero, then all image formats
+   shall be enumerated.
+
+   If the ``mbus_code`` field is initialized to a valid (non-zero)
+   :ref:`media bus format code <v4l2-mbus-pixelcode>`, then drivers
+   shall restrict enumeration to only the image formats that can produce
+   (for video output devices) or be produced from (for video capture
+   devices) that media bus code. If the ``mbus_code`` is unsupported by
+   the driver, then ``EINVAL`` shall be returned.
+
+   Regardless of the value of the ``mbus_code`` field, the enumerated image
+   formats shall not depend on the active configuration of the video device
+   or device pipeline.
 
 
 .. tabularcolumns:: |p{4.4cm}|p{4.4cm}|p{8.7cm}|
@@ -76,8 +102,9 @@ formats in preference order, where preferred formats are returned before
 	``V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE``,
 	``V4L2_BUF_TYPE_VIDEO_OVERLAY``,
 	``V4L2_BUF_TYPE_SDR_CAPTURE``,
-	``V4L2_BUF_TYPE_SDR_OUTPUT`` and
-	``V4L2_BUF_TYPE_META_CAPTURE``.
+	``V4L2_BUF_TYPE_SDR_OUTPUT``,
+	``V4L2_BUF_TYPE_META_CAPTURE`` and
+	``V4L2_BUF_TYPE_META_OUTPUT``.
 	See :c:type:`v4l2_buf_type`.
     * - __u32
       - ``flags``
@@ -106,7 +133,13 @@ formats in preference order, where preferred formats are returned before
 	   These codes are not the same as those used
 	   in the Windows world.
     * - __u32
-      - ``reserved``\ [4]
+      - ``mbus_code``
+      - Media bus code restricting the enumerated formats, set by the
+        application. Only applicable to drivers that advertise the
+        ``V4L2_CAP_IO_MC`` :ref:`capability <device-capabilities>`, shall be 0
+        otherwise.
+    * - __u32
+      - ``reserved``\ [3]
       - Reserved for future extensions. Drivers must set the array to
 	zero.
 
@@ -157,3 +190,6 @@ appropriately. The generic error codes are described at the
 EINVAL
     The struct :c:type:`v4l2_fmtdesc` ``type`` is not
     supported or the ``index`` is out of bounds.
+
+    If ``V4L2_CAP_IO_MC`` is set and the specified ``mbus_code``
+    is unsupported, then also return this error code.
