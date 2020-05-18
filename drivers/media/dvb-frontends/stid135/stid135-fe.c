@@ -75,7 +75,7 @@ struct stv {
 	int                  nr;
 	int                  rf_in;
 	
-	unsigned long        tune_time;
+	unsigned long        stats_time;
 	struct fe_sat_signal_info signal_info;
 };
 
@@ -316,6 +316,17 @@ static int stid135_set_parameters(struct dvb_frontend *fe)
 	if (err != FE_LLA_NO_ERROR)
 		dev_err(&state->base->i2c->dev, "%s: fe_stid135_reset_modcodes_filter error %d !\n", __func__, err);
 
+	state->stats_time = 0;
+	state->signal_info.locked = 0;
+	p->strength.len = 1;
+	p->strength.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+	p->cnr.len = 1;
+	p->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+	p->pre_bit_error.len =1;
+	p->pre_bit_error.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+	p->pre_bit_count.len =1;
+	p->pre_bit_count.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
+
 	err |= fe_stid135_search(state->base->handle, state->nr + 1, &search_params, &search_results, 0);
 	mutex_unlock(&state->base->status_lock);
 
@@ -326,7 +337,10 @@ static int stid135_set_parameters(struct dvb_frontend *fe)
 	}
 
 	if (search_results.locked)
+	{
+		state->signal_info.locked = 1;
 		dev_warn(&state->base->i2c->dev, "%s: locked !\n", __func__);
+	}
 	else {
 		err |= fe_stid135_get_band_power_demod_not_locked(state->base->handle, state->nr + 1, &rf_power);
 		dev_warn(&state->base->i2c->dev, "%s: not locked, band rf_power %d dBm !\n", __func__, rf_power / 1000);
@@ -364,7 +378,7 @@ static int stid135_get_frontend(struct dvb_frontend *fe, struct dtv_frontend_pro
 	case FE_SAT_DVBS1_STANDARD:
 	default:
 		p->delivery_system = SYS_DVBS;
-    	}
+	}
 
 	switch (state->signal_info.modulation) {
 	case FE_SAT_MOD_8PSK:
@@ -400,9 +414,9 @@ static int stid135_get_frontend(struct dvb_frontend *fe, struct dtv_frontend_pro
 	case FE_SAT_MOD_QPSK:
 	default:
 		p->modulation = QPSK;
-    	}
+	}
 
-    	switch (state->signal_info.roll_off) {
+	switch (state->signal_info.roll_off) {
 	  case FE_SAT_05:
 		p->rolloff = ROLLOFF_5;
 		break;
@@ -467,7 +481,7 @@ static int stid135_get_frontend(struct dvb_frontend *fe, struct dtv_frontend_pro
 			p->fec_inner = FEC_NONE;
 		}
 	}
-    	return 0;
+	return 0;
 }
 
 static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
@@ -484,15 +498,6 @@ static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
 					| FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
 		return 0;
 	}
-
-	p->strength.len = 1;
-	p->strength.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
-	p->cnr.len = 1;
-	p->cnr.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
-	p->pre_bit_error.len =1;
-	p->pre_bit_error.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
-	p->pre_bit_count.len =1;
-	p->pre_bit_count.stat[0].scale = FE_SCALE_NOT_AVAILABLE;
 
 	err = fe_stid135_get_lock_status(state->base->handle, state->nr + 1, &state->signal_info.locked);
 
@@ -522,44 +527,51 @@ static int stid135_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		mutex_unlock(&state->base->status_lock);
 		return 0;
 	}
-	  
-	err = fe_stid135_get_signal_info(state->base->handle, state->nr + 1, &state->signal_info, 0);
 
-	if (err != FE_LLA_NO_ERROR) {
-		dev_warn(&state->base->i2c->dev, "%s: fe_stid135_get_signal_info error %d !\n", __func__, err);
-		mutex_unlock(&state->base->status_lock);
-		return 0;
+	if (!state->stats_time ||
+		(time_after(jiffies, state->stats_time)))
+	{
+		/* Prevent retrieving stats faster than once per 5 seconds */
+		state->stats_time = jiffies + msecs_to_jiffies(5000);
+
+		err = fe_stid135_get_signal_info(state->base->handle, state->nr + 1, &state->signal_info, 0);
+
+		if (err != FE_LLA_NO_ERROR) {
+			dev_warn(&state->base->i2c->dev, "%s: fe_stid135_get_signal_info error %d !\n", __func__, err);
+			mutex_unlock(&state->base->status_lock);
+			return 0;
+		}
+
+		p->strength.len = 2;
+		p->strength.stat[0].scale = FE_SCALE_DECIBEL;
+		p->strength.stat[0].svalue = state->signal_info.power;
+		
+		p->strength.stat[1].scale = FE_SCALE_RELATIVE;
+		p->strength.stat[1].uvalue = (100 + state->signal_info.power/1000) * 656;
+
+		p->cnr.len = 2;
+		p->cnr.stat[0].scale = FE_SCALE_DECIBEL;
+		p->cnr.stat[0].svalue = state->signal_info.C_N * 100;
+
+		p->cnr.stat[1].scale = FE_SCALE_RELATIVE;
+		p->cnr.stat[1].uvalue = state->signal_info.C_N * 328;
+		if (p->cnr.stat[1].uvalue > 0xffff)
+			p->cnr.stat[1].uvalue = 0xffff;
+
+		p->post_bit_error.len = 1;
+		p->post_bit_error.stat[0].scale = FE_SCALE_COUNTER;
+		p->post_bit_error.stat[0].uvalue = state->signal_info.ber;
+		
+		if (mc_auto && state->signal_info.standard == FE_SAT_DVBS2_STANDARD) {
+			err = fe_stid135_filter_forbidden_modcodes(state->base->handle, state->nr + 1, state->signal_info.C_N * 10);
+
+			if (err != FE_LLA_NO_ERROR)
+				dev_warn(&state->base->i2c->dev, "%s: fe_stid135_filter_forbidden_modcodes error %d !\n", __func__, err);
+		}
 	}
 
 	*status |= FE_HAS_SIGNAL | FE_HAS_CARRIER
 		    | FE_HAS_VITERBI | FE_HAS_SYNC | FE_HAS_LOCK;
-
-	p->strength.len = 2;
-	p->strength.stat[0].scale = FE_SCALE_DECIBEL;
-	p->strength.stat[0].svalue = state->signal_info.power;
-	
-	p->strength.stat[1].scale = FE_SCALE_RELATIVE;
-	p->strength.stat[1].uvalue = (100 + state->signal_info.power/1000) * 656;
-
-	p->cnr.len = 2;
-	p->cnr.stat[0].scale = FE_SCALE_DECIBEL;
-	p->cnr.stat[0].svalue = state->signal_info.C_N * 100;
-
-	p->cnr.stat[1].scale = FE_SCALE_RELATIVE;
-	p->cnr.stat[1].uvalue = state->signal_info.C_N * 328;
-	if (p->cnr.stat[1].uvalue > 0xffff)
-		p->cnr.stat[1].uvalue = 0xffff;
-
-	p->post_bit_error.len = 1;
-	p->post_bit_error.stat[0].scale = FE_SCALE_COUNTER;
-	p->post_bit_error.stat[0].uvalue = state->signal_info.ber;
-	
-	if (mc_auto && state->signal_info.standard == FE_SAT_DVBS2_STANDARD) {
-		err = fe_stid135_filter_forbidden_modcodes(state->base->handle, state->nr + 1, state->signal_info.C_N * 10);
-
-		if (err != FE_LLA_NO_ERROR)
-			dev_warn(&state->base->i2c->dev, "%s: fe_stid135_filter_forbidden_modcodes error %d !\n", __func__, err);
-	}
 
 	mutex_unlock(&state->base->status_lock);
 	return 0;
@@ -576,7 +588,6 @@ static int stid135_tune(struct dvb_frontend *fe, bool re_tune,
 		r = stid135_set_parameters(fe);
 		if (r)
 			return r;
-		state->tune_time = jiffies;
 	}
 
 	r = stid135_read_status(fe, status);
