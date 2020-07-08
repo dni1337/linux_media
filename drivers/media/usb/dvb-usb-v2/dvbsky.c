@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+/// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Driver for DVBSky USB2.0 receiver
  *
@@ -862,18 +862,18 @@ static const struct usb_device_id dvbsky_id_table[] = {
 		&dvbsky_s960_props, "Terratec Cinergy S2 Rev.4",
 		RC_MAP_DVBSKY) },
 	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230,
-		&mygica_t230_props, "MyGica Mini DVB-T2 USB Stick T230",
+		&mygica_t230_props, "MyGica Mini DVB-(T/T2/C) USB Stick T230",
 		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
 	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C,
-		&mygica_t230_props, "MyGica Mini DVB-T2 USB Stick T230C",
+		&mygica_t230_props, "MyGica Mini DVB-(T/T2/C) USB Stick T230C",
 		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
 	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C_LITE,
-		&mygica_t230_props, "MyGica Mini DVB-T2 USB Stick T230C Lite",
-		NULL) },
-	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C2,
-		&mygica_t230_props, "MyGica Mini DVB-T2 USB Stick T230C v2",
+		&mygica_t230_props, "MyGica Mini DVB-(T/T2/C) USB Stick T230C Lite",
 		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
-	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C2_LITE,
+	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C2,
+		&mygica_t230_props, "MyGica Mini DVB-(T/T2/C) USB Stick T230C v2",
+		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
+	 { DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C2_LITE,
 		&mygica_t230_props, "MyGica Mini DVB-T2 USB Stick T230C Lite v2",
 		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
 	{ DVB_USB_DEVICE(USB_VID_GTEK, 0xd230,
