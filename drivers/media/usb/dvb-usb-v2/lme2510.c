@@ -326,7 +326,7 @@ static int lme2510_frontend_attach(struct dvb_usb_adapter *adap)
 	board_info.addr = 0x64;
 	board_info.platform_data = &dev->si2168_config;
 	request_module("%s", "si2168");
-	client_demod = i2c_new_device(&d->i2c_adap, &board_info);
+	client_demod = i2c_new_client_device(&d->i2c_adap, &board_info);
 	if (!client_demod || !client_demod->dev.driver) {
 		ret = -ENODEV;
 		goto err;
@@ -345,7 +345,7 @@ static int lme2510_frontend_attach(struct dvb_usb_adapter *adap)
 	board_info.addr = 0x60;
 	board_info.platform_data = &dev->si2157_config;
 	request_module("%s", "si2157");
-	client_tuner = i2c_new_device(adapter, &board_info);
+	client_tuner = i2c_new_client_device(adapter, &board_info);
 	if (!client_tuner || !client_tuner->dev.driver) {
 		ret = -ENODEV;
 		goto err_module_put_demod;

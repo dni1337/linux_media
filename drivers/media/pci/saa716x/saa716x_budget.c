@@ -936,7 +936,7 @@ static int saa716x_tbs6221_frontend_attach(struct saa716x_adapter *adapter, int 
 	info.addr = 0x64;
 	info.platform_data = &si2168_config;
 	request_module(info.type);
-	client = i2c_new_device(&i2c->i2c_adapter, &info);
+	client = i2c_new_client_device(&i2c->i2c_adapter, &info);
 	if (client == NULL || client->dev.driver == NULL) {
 		goto err;
 	}
