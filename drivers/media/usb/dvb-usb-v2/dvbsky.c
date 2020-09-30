@@ -11,6 +11,10 @@
 #include "sp2.h"
 #include "si2168.h"
 #include "si2157.h"
+#include "tda18271.h"
+#include "cxd2820r.h"
+#include "tda18273.h"
+
 
 #define DVBSKY_MSG_DELAY	0/*2000*/
 #define DVBSKY_BUF_LEN	64
@@ -633,6 +637,67 @@ static int dvbsky_hdstar_attach(struct dvb_usb_adapter *adap)
 	return 0;
 }
 
+static struct cxd2820r_config cxd2820r_config = {
+	.i2c_address = 0x6c, /* (0xd8 >> 1) */
+	.ts_mode = 0x38,
+	.ts_clock_inv = 1,
+};
+
+static struct tda18271_config tda18271_config = {
+	.output_opt = TDA18271_OUTPUT_LT_OFF,
+	.gate = TDA18271_GATE_DIGITAL,
+};
+
+static int dvbsky_mygica_t220_attach(struct dvb_usb_adapter *adap)
+{
+	struct dvbsky_state *state = adap_to_priv(adap);
+	struct dvb_usb_device *d = adap_to_d(adap);
+
+	adap->fe[0] = dvb_attach(cxd2820r_attach, &cxd2820r_config,
+					&d->i2c_adap, NULL);
+	if (adap->fe[0] == NULL)
+		return -EIO;
+
+	if (!dvb_attach(tda18271_attach, adap->fe[0], 0x60,
+		&d->i2c_adap, &tda18271_config))
+		return -EIO;
+
+	/* delegate signal strength measurement to tuner */
+	adap->fe[0]->ops.read_signal_strength =
+			adap->fe[0]->ops.tuner_ops.get_rf_strength;
+
+	/* hook fe: need to resync the slave fifo when signal locks. */
+	state->fe_read_status = adap->fe[0]->ops.read_status;
+	adap->fe[0]->ops.read_status = dvbsky_usb_read_status;
+
+	return 0;
+}
+
+static int dvbsky_mygica_t220a_attach(struct dvb_usb_adapter *adap)
+{
+	struct dvbsky_state *state = adap_to_priv(adap);
+	struct dvb_usb_device *d = adap_to_d(adap);
+
+	adap->fe[0] = dvb_attach(cxd2820r_attach, &cxd2820r_config,
+					&d->i2c_adap, NULL);
+	if (adap->fe[0] == NULL)
+		return -EIO;
+
+	if (!dvb_attach(tda18273_attach, adap->fe[0],
+				&d->i2c_adap, 0x60))
+		return -EIO;
+
+	/* delegate signal strength measurement to tuner */
+	adap->fe[0]->ops.read_signal_strength =
+			adap->fe[0]->ops.tuner_ops.get_rf_strength;
+
+	/* hook fe: need to resync the slave fifo when signal locks. */
+	state->fe_read_status = adap->fe[0]->ops.read_status;
+	adap->fe[0]->ops.read_status = dvbsky_usb_read_status;
+
+	return 0;
+}
+
 static int dvbsky_identify_state(struct dvb_usb_device *d, const char **name)
 {
 	dvbsky_gpio_ctrl(d, 0x04, 1);
@@ -829,6 +894,58 @@ static struct dvb_usb_device_properties mygica_hdstar_props = {
 	}
 };
 
+static struct dvb_usb_device_properties mygica_t220_props = {
+	.driver_name = KBUILD_MODNAME,
+	.owner = THIS_MODULE,
+	.adapter_nr = adapter_nr,
+	.size_of_priv = sizeof(struct dvbsky_state),
+
+	.generic_bulk_ctrl_endpoint = 0x01,
+	.generic_bulk_ctrl_endpoint_response = 0x81,
+	.generic_bulk_ctrl_delay = DVBSKY_MSG_DELAY,
+
+	.i2c_algo         = &dvbsky_i2c_algo,
+	.frontend_attach  = dvbsky_mygica_t220_attach,
+	.frontend_detach  = dvbsky_frontend_detach,
+	.init             = dvbsky_init,
+	.get_rc_config    = dvbsky_get_rc_config,
+	.streaming_ctrl   = dvbsky_streaming_ctrl,
+	.identify_state	  = dvbsky_identify_state,
+
+	.num_adapters = 1,
+	.adapter = {
+		{
+			.stream = DVB_USB_STREAM_BULK(0x82, 8, 4096),
+		}
+	}
+};
+
+static struct dvb_usb_device_properties mygica_t220a_props = {
+	.driver_name = KBUILD_MODNAME,
+	.owner = THIS_MODULE,
+	.adapter_nr = adapter_nr,
+	.size_of_priv = sizeof(struct dvbsky_state),
+
+	.generic_bulk_ctrl_endpoint = 0x01,
+	.generic_bulk_ctrl_endpoint_response = 0x81,
+	.generic_bulk_ctrl_delay = DVBSKY_MSG_DELAY,
+
+	.i2c_algo         = &dvbsky_i2c_algo,
+	.frontend_attach  = dvbsky_mygica_t220a_attach,
+	.frontend_detach  = dvbsky_frontend_detach,
+	.init             = dvbsky_init,
+	.get_rc_config    = dvbsky_get_rc_config,
+	.streaming_ctrl   = dvbsky_streaming_ctrl,
+	.identify_state	  = dvbsky_identify_state,
+
+	.num_adapters = 1,
+	.adapter = {
+		{
+			.stream = DVB_USB_STREAM_BULK(0x82, 8, 4096),
+		}
+	}
+};
+
 static const struct usb_device_id dvbsky_id_table[] = {
 	{ DVB_USB_DEVICE(0x0572, 0x6831,
 		&dvbsky_s960_props, "DVBSky S960/S860", RC_MAP_DVBSKY) },
@@ -875,6 +992,12 @@ static const struct usb_device_id dvbsky_id_table[] = {
 		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
 	 { DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C2_LITE,
 		&mygica_t230_props, "MyGica Mini DVB-T2 USB Stick T230C Lite v2",
+		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
+	{ DVB_USB_DEVICE(USB_VID_GTEK, 0xD220,
+		&mygica_t220_props, "MyGica DVB-(T/T2) USB Stick T220",
+		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
+	{ DVB_USB_DEVICE(USB_VID_CONEXANT, 0xC686,
+		&mygica_t220a_props, "MyGica DVB-(T/T2) USB Stick T220A",
 		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
 	{ DVB_USB_DEVICE(USB_VID_GTEK, 0xd230,
 		&mygica_t230_props, "Geniatech T2 X9330-0 USB2.0",

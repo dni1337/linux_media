@@ -2647,10 +2647,12 @@ static int dw2102_probe(struct usb_interface *intf,
 			THIS_MODULE, NULL, adapter_nr) ||
 	    0 == dvb_usb_device_init(intf, &su3000_properties,
 			 THIS_MODULE, NULL, adapter_nr) ||
+#if 0
 	    0 == dvb_usb_device_init(intf, &t220_properties,
 			 THIS_MODULE, NULL, adapter_nr) ||
 	    0 == dvb_usb_device_init(intf, &t220a_properties,
 			 THIS_MODULE, NULL, adapter_nr) ||
+#endif
 	    0 == dvb_usb_device_init(intf, &tt_s2_4600_properties,
 			 THIS_MODULE, NULL, adapter_nr) ||
 	    0 == dvb_usb_device_init(intf, &tevii_properties,
