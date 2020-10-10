@@ -44,7 +44,7 @@ struct vidtv_pes_optional_pts_dts {
 struct vidtv_pes_optional {
 	/*
 	 * These flags show which components are actually
-	 * present in the "optinal fields" in the optinal PES
+	 * present in the "optional fields" in the optional PES
 	 * header and which are not
 	 *
 	 * u16 two:2;  //0x2
@@ -125,6 +125,7 @@ struct pes_ts_header_write_args {
 	u8 *continuity_counter;
 	bool wrote_pes_header;
 	u32 n_stuffing_bytes;
+	u64 pcr;
 };
 
 /**
@@ -168,6 +169,7 @@ struct pes_write_args {
 	u64 dts;
 
 	u32 n_pes_h_s_bytes;
+	u64 pcr;
 };
 
 /**

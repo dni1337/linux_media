@@ -100,11 +100,7 @@ static void vidtv_mux_update_clk(struct vidtv_mux *m)
 	/* call this at every thread iteration */
 	u64 elapsed_time;
 
-	/* this will not hold a value yet if we have just started */
-	m->timing.past_jiffies = m->timing.current_jiffies ?
-				 m->timing.current_jiffies :
-				 get_jiffies_64();
-
+	m->timing.past_jiffies = m->timing.current_jiffies;
 	m->timing.current_jiffies = get_jiffies_64();
 
 	elapsed_time = jiffies_to_usecs(m->timing.current_jiffies -
@@ -258,6 +254,7 @@ static u32 vidtv_mux_packetize_access_units(struct vidtv_mux *m,
 		args.access_unit_len = au->nbytes;
 		args.dest_offset     = m->mux_buf_offset;
 		args.pts             = au->pts;
+		args.pcr	     = m->timing.clk;
 
 		m->mux_buf_offset += vidtv_pes_write_into(args);
 
@@ -449,6 +446,7 @@ struct vidtv_mux *vidtv_mux_init(struct dvb_frontend *fe,
 	m->pcr_pid = args.pcr_pid;
 	m->transport_stream_id = args.transport_stream_id;
 	m->priv = args.priv;
+	m->timing.current_jiffies = get_jiffies_64();
 
 	if (args.channels)
 		m->channels = args.channels;

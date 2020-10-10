@@ -131,7 +131,7 @@ struct rkisp1_isp {
 	const struct rkisp1_isp_mbus_info *src_fmt;
 	struct mutex ops_lock; /* serialize the subdevice ops */
 	bool is_dphy_errctrl_disabled;
-	atomic_t frame_sequence;
+	__u32 frame_sequence;
 };
 
 /*
@@ -262,10 +262,8 @@ struct rkisp1_stats {
  * @rkisp1:		pointer to the rkisp1 device
  * @config_lock:	locks the buffer list 'params' and 'is_streaming'
  * @params:		queue of rkisp1_buffer
- * @cur_params:		the first params values from userspace
  * @vdev_fmt:		v4l2_format of the metadata format
  * @is_streaming:	device is streaming
- * @is_first_params:	the first params should take effect immediately
  * @quantization:	the quantization configured on the isp's src pad
  * @raw_type:		the bayer pattern on the isp video sink pad
  */
@@ -275,10 +273,8 @@ struct rkisp1_params {
 
 	spinlock_t config_lock; /* locks the buffers list 'params' and 'is_streaming' */
 	struct list_head params;
-	struct rkisp1_params_cfg cur_params;
 	struct v4l2_format vdev_fmt;
 	bool is_streaming;
-	bool is_first_params;
 
 	enum v4l2_quantization quantization;
 	enum rkisp1_fmt_raw_pat_type raw_type;
@@ -330,6 +326,7 @@ struct rkisp1_debug {
 	unsigned long outform_size_error;
 	unsigned long img_stabilization_size_error;
 	unsigned long inform_size_error;
+	unsigned long irq_delay;
 	unsigned long mipi_error;
 	unsigned long stats_error;
 	unsigned long stop_timeout[2];
@@ -409,6 +406,17 @@ static inline u32 rkisp1_read(struct rkisp1_device *rkisp1, unsigned int addr)
 {
 	return readl(rkisp1->base_addr + addr);
 }
+
+/*
+ * rkisp1_cap_enum_mbus_codes - A helper function that return the i'th supported mbus code
+ *				of the capture entity. This is used to enumerate the supported
+ *				mbus codes on the source pad of the resizer.
+ *
+ * @cap:  the capture entity
+ * @code: the mbus code, the function reads the code->index and fills the code->code
+ */
+int rkisp1_cap_enum_mbus_codes(struct rkisp1_capture *cap,
+			       struct v4l2_subdev_mbus_code_enum *code);
 
 /*
  * rkisp1_sd_adjust_crop_rect - adjust a rectangle to fit into another rectangle.
