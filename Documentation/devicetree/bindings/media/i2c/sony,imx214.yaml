@@ -55,7 +55,6 @@ properties:
 
   port:
     type: object
-    $ref: /schemas/graph.yaml#/properties/port
     description: |
       Video output port. See ../video-interfaces.txt.
 
@@ -69,13 +68,13 @@ properties:
             description: See ../video-interfaces.txt
             anyOf:
               - items:
-                - const: 1
-                - const: 2
+                  - const: 1
+                  - const: 2
               - items:
-                - const: 1
-                - const: 2
-                - const: 3
-                - const: 4
+                  - const: 1
+                  - const: 2
+                  - const: 3
+                  - const: 4
 
           link-frequencies:
             $ref: /schemas/types.yaml#/definitions/uint64-array
