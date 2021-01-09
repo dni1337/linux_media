@@ -37,15 +37,12 @@ properties:
 
   vdddo-supply:
     description: Chip digital IO regulator (1.8V).
-    maxItems: 1
 
   vdda-supply:
     description: Chip analog regulator (2.7V).
-    maxItems: 1
 
   vddd-supply:
     description: Chip digital core regulator (1.12V).
-    maxItems: 1
 
   flash-leds:
     description: See ../video-interfaces.txt
@@ -55,7 +52,6 @@ properties:
 
   port:
     type: object
-    $ref: /schemas/graph.yaml#/properties/port
     description: |
       Video output port. See ../video-interfaces.txt.
 
@@ -69,13 +65,13 @@ properties:
             description: See ../video-interfaces.txt
             anyOf:
               - items:
-                - const: 1
-                - const: 2
+                  - const: 1
+                  - const: 2
               - items:
-                - const: 1
-                - const: 2
-                - const: 3
-                - const: 4
+                  - const: 1
+                  - const: 2
+                  - const: 3
+                  - const: 4
 
           link-frequencies:
             $ref: /schemas/types.yaml#/definitions/uint64-array

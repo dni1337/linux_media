@@ -3,6 +3,7 @@
 # Makefile for the video capture/playback device drivers.
 #
 
+obj-$(CONFIG_VIDEO_ALLEGRO_DVT)		+= allegro-dvt/
 obj-$(CONFIG_VIDEO_ASPEED)		+= aspeed-video.o
 obj-$(CONFIG_VIDEO_CADENCE)		+= cadence/
 obj-$(CONFIG_VIDEO_VIA_CAMERA) += via-camera.o
@@ -81,3 +82,5 @@ obj-$(CONFIG_VIDEO_QCOM_CAMSS)		+= qcom/camss/
 obj-$(CONFIG_VIDEO_QCOM_VENUS)		+= qcom/venus/
 
 obj-y					+= sunxi/
+
+obj-$(CONFIG_VIDEO_MESON_GE2D)		+= meson/ge2d/
