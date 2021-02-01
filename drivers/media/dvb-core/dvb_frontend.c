@@ -1033,7 +1033,7 @@ static int dvb_frontend_clear_cache(struct dvb_frontend *fe)
 
 	c->stream_id = NO_STREAM_ID_FILTER;
 	c->scrambling_sequence_index = 0;/* default sequence */
-	c->modcode = ALL_MODCODES;
+	c->modcode = MODCODE_ALL;
 
 	switch (c->delivery_system) {
 	case SYS_DVBS:
