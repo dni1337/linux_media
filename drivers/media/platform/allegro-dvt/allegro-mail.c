@@ -67,12 +67,16 @@ static inline u32 settings_get_mcu_codec(struct create_channel_param *param)
 
 	if (version < MCU_MSG_VERSION_2019_2) {
 		switch (pixelformat) {
+		case V4L2_PIX_FMT_HEVC:
+			return 2;
 		case V4L2_PIX_FMT_H264:
 		default:
 			return 1;
 		}
 	} else {
 		switch (pixelformat) {
+		case V4L2_PIX_FMT_HEVC:
+			return 1;
 		case V4L2_PIX_FMT_H264:
 		default:
 			return 0;
@@ -109,12 +113,17 @@ allegro_encode_config_blob(u32 *dst, struct create_channel_param *param)
 
 	val = 0;
 	val |= param->temporal_mvp_enable ? BIT(20) : 0;
-	val |= FIELD_PREP(GENMASK(7, 4), param->log2_max_frame_num) |
-	       FIELD_PREP(GENMASK(3, 0), param->log2_max_poc);
+	val |= FIELD_PREP(GENMASK(7, 4), param->log2_max_frame_num);
+	if (version >= MCU_MSG_VERSION_2019_2)
+		val |= FIELD_PREP(GENMASK(3, 0), param->log2_max_poc - 1);
+	else
+		val |= FIELD_PREP(GENMASK(3, 0), param->log2_max_poc);
 	dst[i++] = val;
 
 	val = 0;
+	val |= param->enable_reordering ? BIT(0) : 0;
 	val |= param->dbf_ovr_en ? BIT(2) : 0;
+	val |= param->override_lf ? BIT(12) : 0;
 	dst[i++] = val;
 
 	if (version >= MCU_MSG_VERSION_2019_2) {
