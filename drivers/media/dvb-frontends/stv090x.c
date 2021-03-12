@@ -3472,6 +3472,49 @@ err:
 	return -1;
 }
 
+static int stv090x_set_modcode(struct stv090x_state *state, u32 modcode)
+{
+    int i;
+	u32 reg;
+	dprintk(FE_DEBUG, 1, "Set modcode 0x%04X", modcode);
+
+	if (modcode == MODCODE_ALL)
+		return 0;
+
+	modcode = modcode>>1;
+	for (i = 1; i < 29; i++) {
+		reg = stv090x_read_reg(state, STV090x_ADDR_OFFST(state, MODCODLSTF) - i/2);
+		switch(i) {
+		case STV090x_QPSK_910: /* QPSK 9/10 */
+		case STV090x_8PSK_910: /* 8PSK 9/10 */
+		case STV090x_16APSK_910: /* 16PSK 9/10 */
+			if (modcode&1)
+				reg &= 0xcf;
+			else
+				reg |= 0x30;
+			break;
+		case STV090x_32APSK_910: /* 32PSK 9/10 */
+			if (modcode&1)
+				reg &= 0xfc;
+			else
+				reg |= 3;
+			break;
+		default:
+			if (modcode&1)
+				reg &= i%2 ? 0xf : 0xf0;
+			else
+				reg |= i%2 ? 0xf0 : 0xf;
+		}
+		if (stv090x_write_reg(state, STV090x_ADDR_OFFST(state, MODCODLSTF) - i/2, reg) < 0)
+			goto err;
+        modcode = modcode>>1;
+	}
+	return 0;
+err:
+	dprintk(FE_ERROR, 1, "I/O error");
+	return -1;
+}
+
 static enum dvbfe_search stv090x_search(struct dvb_frontend *fe)
 {
 	struct stv090x_state *state = fe->demodulator_priv;
@@ -3515,12 +3558,13 @@ static enum dvbfe_search stv090x_search(struct dvb_frontend *fe)
 
 	if (stv090x_algo(state) == STV090x_RANGEOK) {
 		dprintk(FE_DEBUG, 1, "Search success!");
+		if (props->delivery_system == SYS_DVBS2)
+			stv090x_set_modcode(state, props->modcode);
 		return DVBFE_ALGO_SEARCH_SUCCESS;
 	} else {
 		dprintk(FE_DEBUG, 1, "Search failed!");
 		return DVBFE_ALGO_SEARCH_FAILED;
 	}
-
 	return DVBFE_ALGO_SEARCH_ERROR;
 }
 
