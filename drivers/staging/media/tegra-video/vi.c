@@ -297,10 +297,9 @@ static int tegra_channel_start_streaming(struct vb2_queue *vq, u32 count)
 	struct tegra_vi_channel *chan = vb2_get_drv_priv(vq);
 	int ret;
 
-	ret = pm_runtime_get_sync(chan->vi->dev);
+	ret = pm_runtime_resume_and_get(chan->vi->dev);
 	if (ret < 0) {
 		dev_err(chan->vi->dev, "failed to get runtime PM: %d\n", ret);
-		pm_runtime_put_noidle(chan->vi->dev);
 		return ret;
 	}
 
@@ -1131,8 +1130,8 @@ static void tegra_channel_host1x_syncpts_free(struct tegra_vi_channel *chan)
 	int i;
 
 	for (i = 0; i < chan->numgangports; i++) {
-		host1x_syncpt_free(chan->mw_ack_sp[i]);
-		host1x_syncpt_free(chan->frame_start_sp[i]);
+		host1x_syncpt_put(chan->mw_ack_sp[i]);
+		host1x_syncpt_put(chan->frame_start_sp[i]);
 	}
 }
 
@@ -1177,7 +1176,7 @@ static int tegra_channel_host1x_syncpt_init(struct tegra_vi_channel *chan)
 		mw_sp = host1x_syncpt_request(&vi->client, flags);
 		if (!mw_sp) {
 			dev_err(vi->dev, "failed to request memory ack syncpoint\n");
-			host1x_syncpt_free(fs_sp);
+			host1x_syncpt_put(fs_sp);
 			ret = -ENOMEM;
 			goto free_syncpts;
 		}
@@ -1812,8 +1811,8 @@ static int tegra_vi_graph_parse_one(struct tegra_vi_channel *chan,
 			continue;
 		}
 
-		tvge = v4l2_async_notifier_add_fwnode_subdev(&chan->notifier,
-				remote, struct tegra_vi_graph_entity);
+		tvge = v4l2_async_notifier_add_fwnode_subdev(&chan->notifier, remote,
+							     struct tegra_vi_graph_entity);
 		if (IS_ERR(tvge)) {
 			ret = PTR_ERR(tvge);
 			dev_err(vi->dev,
