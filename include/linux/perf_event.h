@@ -762,6 +762,7 @@ struct perf_event {
 #ifdef CONFIG_BPF_SYSCALL
 	perf_overflow_handler_t		orig_overflow_handler;
 	struct bpf_prog			*prog;
+	u64				bpf_cookie;
 #endif
 
 #ifdef CONFIG_EVENT_TRACING
@@ -1575,6 +1576,12 @@ static struct perf_pmu_events_attr _var = {				    \
 	.id		= 0,						    \
 	.event_str	= _str,						    \
 };
+
+#define PMU_EVENT_ATTR_ID(_name, _show, _id)				\
+	(&((struct perf_pmu_events_attr[]) {				\
+		{ .attr = __ATTR(_name, 0444, _show, NULL),		\
+		  .id = _id, }						\
+	})[0].attr.attr)
 
 #define PMU_FORMAT_ATTR(_name, _format)					\
 static ssize_t								\
