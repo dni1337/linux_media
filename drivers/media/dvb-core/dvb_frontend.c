@@ -2575,8 +2575,7 @@ static int dvb_frontend_handle_ioctl(struct file *file,
 
 	case FE_DISEQC_SEND_BURST:
 		if (fe->ops.diseqc_send_burst) {
-			err = fe->ops.diseqc_send_burst(fe,
-						(enum fe_sec_mini_cmd)parg);
+			err = fe->ops.diseqc_send_burst(fe, (long)parg);
 			fepriv->state = FESTATE_DISEQC;
 			fepriv->status = 0;
 		}
@@ -2584,9 +2583,8 @@ static int dvb_frontend_handle_ioctl(struct file *file,
 
 	case FE_SET_TONE:
 		if (fe->ops.set_tone) {
-			err = fe->ops.set_tone(fe,
-					       (enum fe_sec_tone_mode)parg);
-			fepriv->tone = (enum fe_sec_tone_mode)parg;
+			fepriv->tone = (long)parg;
+			err = fe->ops.set_tone(fe, fepriv->tone);
 			fepriv->state = FESTATE_DISEQC;
 			fepriv->status = 0;
 		}
@@ -2594,9 +2592,8 @@ static int dvb_frontend_handle_ioctl(struct file *file,
 
 	case FE_SET_VOLTAGE:
 		if (fe->ops.set_voltage) {
-			err = fe->ops.set_voltage(fe,
-						  (enum fe_sec_voltage)parg);
-			fepriv->voltage = (enum fe_sec_voltage)parg;
+			fepriv->voltage = (long)parg;
+			err = fe->ops.set_voltage(fe, fepriv->voltage);
 			fepriv->state = FESTATE_DISEQC;
 			fepriv->status = 0;
 		}
@@ -2956,7 +2953,9 @@ int dvb_frontend_suspend(struct dvb_frontend *fe)
 	else if (fe->ops.tuner_ops.sleep)
 		ret = fe->ops.tuner_ops.sleep(fe);
 
-	if (fe->ops.sleep)
+	if (fe->ops.suspend)
+		ret = fe->ops.suspend(fe);
+	else if (fe->ops.sleep)
 		ret = fe->ops.sleep(fe);
 
 	return ret;
@@ -2972,7 +2971,9 @@ int dvb_frontend_resume(struct dvb_frontend *fe)
 		fe->id);
 
 	fe->exit = DVB_FE_DEVICE_RESUME;
-	if (fe->ops.init)
+	if (fe->ops.resume)
+		ret = fe->ops.resume(fe);
+	else if (fe->ops.init)
 		ret = fe->ops.init(fe);
 
 	if (fe->ops.tuner_ops.resume)
