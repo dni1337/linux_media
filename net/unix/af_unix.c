@@ -828,7 +828,7 @@ static void unix_unhash(struct sock *sk)
 }
 
 struct proto unix_dgram_proto = {
-	.name			= "UNIX-DGRAM",
+	.name			= "UNIX",
 	.owner			= THIS_MODULE,
 	.obj_size		= sizeof(struct unix_sock),
 	.close			= unix_close,
@@ -2904,12 +2904,10 @@ static int unix_shutdown(struct socket *sock, int mode)
 		other->sk_shutdown |= peer_mode;
 		unix_state_unlock(other);
 		other->sk_state_change(other);
-		if (peer_mode == SHUTDOWN_MASK) {
+		if (peer_mode == SHUTDOWN_MASK)
 			sk_wake_async(other, SOCK_WAKE_WAITD, POLL_HUP);
-			other->sk_state = TCP_CLOSE;
-		} else if (peer_mode & RCV_SHUTDOWN) {
+		else if (peer_mode & RCV_SHUTDOWN)
 			sk_wake_async(other, SOCK_WAKE_WAITD, POLL_IN);
-		}
 	}
 	if (other)
 		sock_put(other);
@@ -3051,6 +3049,8 @@ static __poll_t unix_poll(struct file *file, struct socket *sock, poll_table *wa
 	/* readable? */
 	if (!skb_queue_empty_lockless(&sk->sk_receive_queue))
 		mask |= EPOLLIN | EPOLLRDNORM;
+	if (sk_is_readable(sk))
+		mask |= EPOLLIN | EPOLLRDNORM;
 
 	/* Connection-based need to check for termination and startup */
 	if ((sk->sk_type == SOCK_STREAM || sk->sk_type == SOCK_SEQPACKET) &&
@@ -3089,6 +3089,8 @@ static __poll_t unix_dgram_poll(struct file *file, struct socket *sock,
 
 	/* readable? */
 	if (!skb_queue_empty_lockless(&sk->sk_receive_queue))
+		mask |= EPOLLIN | EPOLLRDNORM;
+	if (sk_is_readable(sk))
 		mask |= EPOLLIN | EPOLLRDNORM;
 
 	/* Connection-based need to check for termination and startup */
