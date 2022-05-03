@@ -32,7 +32,6 @@
 #include "tda18271.h"
 #include "cxd2820r.h"
 #include "m88ds3103.h"
-#include "tda18273.h"
 #include "ds3k.h"
 
 /* Max transfer size done by I2C transfer functions */
@@ -1617,66 +1616,6 @@ static int t220_frontend_attach(struct dvb_usb_adapter *adap)
 	return 0;
 }
 
-static int t220a_frontend_attach(struct dvb_usb_adapter *adap)
-{
-	struct dvb_usb_device *d = adap->dev;
-	struct dw2102_state *state = d->priv;
-
-	mutex_lock(&d->data_mutex);
-
-	state->data[0] = 0xe;
-	state->data[1] = 0x87;
-	state->data[2] = 0x0;
-
-	if (dvb_usb_generic_rw(d, state->data, 3, state->data, 1, 0) < 0)
-		err("command 0x0e transfer failed.");
-
-	state->data[0] = 0xe;
-	state->data[1] = 0x86;
-	state->data[2] = 1;
-
-	if (dvb_usb_generic_rw(d, state->data, 3, state->data, 1, 0) < 0)
-		err("command 0x0e transfer failed.");
-
-	state->data[0] = 0xe;
-	state->data[1] = 0x80;
-	state->data[2] = 0;
-
-	if (dvb_usb_generic_rw(d, state->data, 3, state->data, 1, 0) < 0)
-		err("command 0x0e transfer failed.");
-
-	msleep(50);
-
-	state->data[0] = 0xe;
-	state->data[1] = 0x80;
-	state->data[2] = 1;
-
-	if (dvb_usb_generic_rw(d, state->data, 3, state->data, 1, 0) < 0)
-		err("command 0x0e transfer failed.");
-
-	state->data[0] = 0x51;
-
-	if (dvb_usb_generic_rw(d, state->data, 1, state->data, 1, 0) < 0)
-		err("command 0x51 transfer failed.");
-
-	mutex_unlock(&d->data_mutex);
-
-	adap->fe_adap[0].fe = dvb_attach(cxd2820r_attach, &cxd2820r_config,
-					&d->i2c_adap, NULL);
-	if (adap->fe_adap[0].fe == NULL)
-		return -EIO;
-
-	if (!dvb_attach(tda18273_attach, adap->fe_adap[0].fe,
-				&d->i2c_adap, 0x60))
-		return -EIO;
-
-	/* hook fe: need to resync the slave fifo when signal locks */
-	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
-	adap->fe_adap[0].fe->ops.read_status = su3000_read_status;
-
-	return 0;
-}
-
 static int m88rs2000_frontend_attach(struct dvb_usb_adapter *adap)
 {
 	struct dvb_usb_device *d = adap->dev;
@@ -1802,10 +1741,10 @@ enum dw2102_table_entry {
 	PROF_7500,
 	GENIATECH_SU3000,
 	HAUPPAUGE_MAX_S2,
-	TERRATEC_CINERGY_S2,
+	TERRATEC_CINERGY_S2_R1,
 	TEVII_S480_1,
 	TEVII_S480_2,
-	X3M_SPC1400HD,
+	GENIATECH_X3M_SPC1400HD,
 	TEVII_S421,
 	TEVII_S632,
 	TERRATEC_CINERGY_S2_R2,
@@ -1815,66 +1754,44 @@ enum dw2102_table_entry {
 	TERRATEC_CINERGY_S2_2,
 	GOTVIEW_SAT_HD,
 	GENIATECH_T220,
-	GENIATECH_T220A,
-	TECHNOTREND_S2_4600,
+	TECHNOTREND_CONNECT_S2_4600,
 	TEVII_S482_1,
 	TEVII_S482_2,
-	TERRATEC_DUAL_1,
-	TERRATEC_DUAL_2,
+	TERRATEC_CINERGY_S2_BOX,
 	TEVII_S662,
-	GENIATECH_X9320_0,
-	GENIATECH_X9320_1,
-	GENIATECH_X9320_2,
-	GENIATECH_X9320_3,
 };
 
 static struct usb_device_id dw2102_table[] = {
-	[CYPRESS_DW2102] = {USB_DEVICE(USB_VID_CYPRESS, USB_PID_DW2102)},
-	[CYPRESS_DW2101] = {USB_DEVICE(USB_VID_CYPRESS, 0x2101)},
-	[CYPRESS_DW2104] = {USB_DEVICE(USB_VID_CYPRESS, USB_PID_DW2104)},
-	[TEVII_S650] = {USB_DEVICE(0x9022, USB_PID_TEVII_S650)},
-	[TERRATEC_CINERGY_S] = {USB_DEVICE(USB_VID_TERRATEC, USB_PID_TERRATEC_CINERGY_S)},
-	[CYPRESS_DW3101] = {USB_DEVICE(USB_VID_CYPRESS, USB_PID_DW3101)},
-	[TEVII_S630] = {USB_DEVICE(0x9022, USB_PID_TEVII_S630)},
-	[PROF_1100] = {USB_DEVICE(0x3011, USB_PID_PROF_1100)},
-	[TEVII_S660] = {USB_DEVICE(0x9022, USB_PID_TEVII_S660)},
-	[PROF_7500] = {USB_DEVICE(0x3034, 0x7500)},
-	[GENIATECH_SU3000] = {USB_DEVICE(0x1f4d, 0x3000)},
-	[HAUPPAUGE_MAX_S2] = {USB_DEVICE(0x2040, 0xd900)},
-	[TERRATEC_CINERGY_S2] = {USB_DEVICE(USB_VID_TERRATEC, USB_PID_TERRATEC_CINERGY_S2_R1)},
-	[TEVII_S480_1] = {USB_DEVICE(0x9022, USB_PID_TEVII_S480_1)},
-	[TEVII_S480_2] = {USB_DEVICE(0x9022, USB_PID_TEVII_S480_2)},
-	[X3M_SPC1400HD] = {USB_DEVICE(USB_VID_GTEK, 0x3100)},
-	[TEVII_S421] = {USB_DEVICE(0x9022, USB_PID_TEVII_S421)},
-	[TEVII_S632] = {USB_DEVICE(0x9022, USB_PID_TEVII_S632)},
-	[TERRATEC_CINERGY_S2_R2] = {USB_DEVICE(USB_VID_TERRATEC,
-				    USB_PID_TERRATEC_CINERGY_S2_R2)},
-	[TERRATEC_CINERGY_S2_R3] = {USB_DEVICE(USB_VID_TERRATEC,
-				    USB_PID_TERRATEC_CINERGY_S2_R3)},
-	[TERRATEC_CINERGY_S2_R4] = {USB_DEVICE(USB_VID_TERRATEC,
-				    USB_PID_TERRATEC_CINERGY_S2_R4)},
-	[TERRATEC_CINERGY_S2_1] = {USB_DEVICE(USB_VID_TERRATEC_2,
-				   USB_PID_TERRATEC_CINERGY_S2_1)},
-	[TERRATEC_CINERGY_S2_2] = {USB_DEVICE(USB_VID_TERRATEC_2,
-				   USB_PID_TERRATEC_CINERGY_S2_2)},
-	[GOTVIEW_SAT_HD] = {USB_DEVICE(0x1FE1, USB_PID_GOTVIEW_SAT_HD)},
-#if 0
-	[GENIATECH_T220] = {USB_DEVICE(USB_VID_GTEK, 0xD220)},
-	[GENIATECH_T220A] = {USB_DEVICE(0x0572, 0xC686)},
-#endif
-	[TECHNOTREND_S2_4600] = {USB_DEVICE(USB_VID_TECHNOTREND,
-		USB_PID_TECHNOTREND_CONNECT_S2_4600)},
-	[TEVII_S482_1] = {USB_DEVICE(0x9022, 0xd483)},
-	[TEVII_S482_2] = {USB_DEVICE(0x9022, 0xd484)},
-	[TERRATEC_DUAL_1] = {USB_DEVICE(0x153B,0x1181)},
-	[TERRATEC_DUAL_2] = {USB_DEVICE(0x153B,0x1182)},
-	[TEVII_S662] = {USB_DEVICE(0x9022, USB_PID_TEVII_S662)},
-#if 0
-	[GENIATECH_X9320_0] = {USB_DEVICE(USB_VID_GTEK, 0x3300)},
-	[GENIATECH_X9320_1] = {USB_DEVICE(USB_VID_GTEK, 0x3301)},
-	[GENIATECH_X9320_2] = {USB_DEVICE(USB_VID_GTEK, 0x3302)},
-	[GENIATECH_X9320_3] = {USB_DEVICE(USB_VID_GTEK, 0x3303)},
-#endif
+	DVB_USB_DEV(CYPRESS, CYPRESS_DW2102),
+	DVB_USB_DEV(CYPRESS, CYPRESS_DW2101),
+	DVB_USB_DEV(CYPRESS, CYPRESS_DW2104),
+	DVB_USB_DEV(TEVII, TEVII_S650),
+	DVB_USB_DEV(TERRATEC, TERRATEC_CINERGY_S),
+	DVB_USB_DEV(CYPRESS, CYPRESS_DW3101),
+	DVB_USB_DEV(TEVII, TEVII_S630),
+	DVB_USB_DEV(PROF_1, PROF_1100),
+	DVB_USB_DEV(TEVII, TEVII_S660),
+	DVB_USB_DEV(PROF_2, PROF_7500),
+	DVB_USB_DEV(GTEK, GENIATECH_SU3000),
+	DVB_USB_DEV(HAUPPAUGE, HAUPPAUGE_MAX_S2),
+	DVB_USB_DEV(TERRATEC, TERRATEC_CINERGY_S2_R1),
+	DVB_USB_DEV(TEVII, TEVII_S480_1),
+	DVB_USB_DEV(TEVII, TEVII_S480_2),
+	DVB_USB_DEV(GTEK, GENIATECH_X3M_SPC1400HD),
+	DVB_USB_DEV(TEVII, TEVII_S421),
+	DVB_USB_DEV(TEVII, TEVII_S632),
+	DVB_USB_DEV(TERRATEC, TERRATEC_CINERGY_S2_R2),
+	DVB_USB_DEV(TERRATEC, TERRATEC_CINERGY_S2_R3),
+	DVB_USB_DEV(TERRATEC, TERRATEC_CINERGY_S2_R4),
+	DVB_USB_DEV(TERRATEC_2, TERRATEC_CINERGY_S2_1),
+	DVB_USB_DEV(TERRATEC_2, TERRATEC_CINERGY_S2_2),
+	DVB_USB_DEV(GOTVIEW, GOTVIEW_SAT_HD),
+	DVB_USB_DEV(GTEK, GENIATECH_T220),
+	DVB_USB_DEV(TECHNOTREND, TECHNOTREND_CONNECT_S2_4600),
+	DVB_USB_DEV(TEVII, TEVII_S482_1),
+	DVB_USB_DEV(TEVII, TEVII_S482_2),
+	DVB_USB_DEV(TERRATEC, TERRATEC_CINERGY_S2_BOX),
+	DVB_USB_DEV(TEVII, TEVII_S662),
 	{ }
 };
 
@@ -1936,18 +1853,18 @@ static int dw2102_load_firmware(struct usb_device *dev,
 		case USB_PID_TEVII_S650:
 			dw2104_properties.rc.core.rc_codes = RC_MAP_TEVII_NEC;
 			fallthrough;
-		case USB_PID_DW2104:
+		case USB_PID_CYPRESS_DW2104:
 			reset = 1;
 			dw210x_op_rw(dev, 0xc4, 0x0000, 0, &reset, 1,
 					DW210X_WRITE_MSG);
 			fallthrough;
-		case USB_PID_DW3101:
+		case USB_PID_CYPRESS_DW3101:
 			reset = 0;
 			dw210x_op_rw(dev, 0xbf, 0x0040, 0, &reset, 0,
 					DW210X_WRITE_MSG);
 			break;
 		case USB_PID_TERRATEC_CINERGY_S:
-		case USB_PID_DW2102:
+		case USB_PID_CYPRESS_DW2102:
 			dw210x_op_rw(dev, 0xbf, 0x0040, 0, &reset, 0,
 					DW210X_WRITE_MSG);
 			dw210x_op_rw(dev, 0xb9, 0x0000, 0, &reset16[0], 2,
@@ -2397,19 +2314,15 @@ static struct dvb_usb_device_properties su3000_properties = {
 			{ NULL },
 		},
 		{ "Terratec Cinergy S2 USB HD",
-			{ &dw2102_table[TERRATEC_CINERGY_S2], NULL },
+			{ &dw2102_table[TERRATEC_CINERGY_S2_R1], NULL },
 			{ NULL },
 		},
 		{ "X3M TV SPC1400HD PCI",
-			{ &dw2102_table[X3M_SPC1400HD], NULL },
+			{ &dw2102_table[GENIATECH_X3M_SPC1400HD], NULL },
 			{ NULL },
 		},
 		{ "GOTVIEW Satellite HD",
 			{ &dw2102_table[GOTVIEW_SAT_HD], NULL },
-			{ NULL },
-		},
-		{ "Terratec Cinergy S2 USB HD",
-			{ &dw2102_table[TERRATEC_CINERGY_S2], NULL },
 			{ NULL },
 		},
 		{ "Terratec Cinergy S2 USB HD Rev.2",
@@ -2537,55 +2450,6 @@ static struct dvb_usb_device_properties t220_properties = {
 	}
 };
 
-static struct dvb_usb_device_properties t220a_properties = {
-	.caps = DVB_USB_IS_AN_I2C_ADAPTER,
-	.usb_ctrl = DEVICE_SPECIFIC,
-	.size_of_priv = sizeof(struct dw2102_state),
-	.power_ctrl = su3000_power_ctrl,
-	.num_adapters = 1,
-	.identify_state	= su3000_identify_state,
-	.i2c_algo = &su3000_i2c_algo,
-
-	.rc.core = {
-		.rc_interval = 150,
-		.rc_codes = RC_MAP_SU3000,
-		.module_name = "dw2102",
-		.allowed_protos   = RC_PROTO_BIT_RC5,
-		.rc_query = su3000_rc_query,
-	},
-
-	.read_mac_address = su3000_read_mac_address,
-
-	.generic_bulk_ctrl_endpoint = 0x01,
-
-	.adapter = {
-		{
-		.num_frontends = 1,
-		.fe = { {
-			.streaming_ctrl   = su3000_streaming_ctrl,
-			.frontend_attach  = t220a_frontend_attach,
-			.stream = {
-				.type = USB_BULK,
-				.count = 8,
-				.endpoint = 0x82,
-				.u = {
-					.bulk = {
-						.buffersize = 4096,
-					}
-				}
-			}
-		} },
-		}
-	},
-	.num_device_descs = 1,
-	.devices = {
-		{ "Geniatech T220A DVB-T/T2 USB2.0",
-			{ &dw2102_table[GENIATECH_T220A], NULL },
-			{ NULL },
-		},
-	}
-};
-
 static struct dvb_usb_device_properties tt_s2_4600_properties = {
 	.caps = DVB_USB_IS_AN_I2C_ADAPTER,
 	.usb_ctrl = DEVICE_SPECIFIC,
@@ -2629,7 +2493,7 @@ static struct dvb_usb_device_properties tt_s2_4600_properties = {
 	.num_device_descs = 1,
 	.devices = {
 		{ "TechnoTrend TT-connect S2-4600",
-			{ &dw2102_table[TECHNOTREND_S2_4600], NULL },
+			{ &dw2102_table[TECHNOTREND_CONNECT_S2_4600], NULL },
 			{ NULL },
 		},
 	}
@@ -2692,59 +2556,6 @@ static struct dvb_usb_device_properties tevii_properties = {
 	}
 };
 
-static struct dvb_usb_device_properties terratec_properties = {
-	.caps = DVB_USB_IS_AN_I2C_ADAPTER,
-	.usb_ctrl = DEVICE_SPECIFIC,
-	.size_of_priv = sizeof(struct dw2102_state),
-	.power_ctrl = su3000_power_ctrl,
-	.num_adapters = 1,
-	.identify_state	= su3000_identify_state,
-	.i2c_algo = &su3000_i2c_algo,
-
-	.rc.core = {
-		.rc_interval = 250,
-		.rc_codes = RC_MAP_TERRATEC_CINERGY_S2_DUAL,
-		.module_name = "dw2102",
-		.allowed_protos   = RC_PROTO_BIT_NEC,
-		.rc_query = dw2102_rc_query,
-	},
-
-	.read_mac_address = su3000_read_mac_address,
-
-	.generic_bulk_ctrl_endpoint = 0x01,
-
-	.adapter = {
-		{
-		.num_frontends = 1,
-		.fe = {{
-			.streaming_ctrl   = su3000_streaming_ctrl,
-			.frontend_attach  = su3000_frontend_attach,
-			.stream = {
-				.type = USB_BULK,
-				.count = 8,
-				.endpoint = 0x82,
-				.u = {
-					.bulk = {
-						.buffersize = 4096,
-					}
-				}
-			}
-		} },
-		}
-	},
-	.num_device_descs = 2,
-	.devices = {
-		{ "Terratec Cinergy S2 Dual (tuner 1)",
-			{ &dw2102_table[TERRATEC_DUAL_1], NULL },
-			{ NULL },
-		},
-		{ "Terratec Cinergy S2 Dual (tuner 2)",
-			{ &dw2102_table[TERRATEC_DUAL_2], NULL },
-			{ NULL },
-		},
-	}
-};
-
 static int dw2102_probe(struct usb_interface *intf,
 		const struct usb_device_id *id)
 {
@@ -2766,10 +2577,10 @@ static int dw2102_probe(struct usb_interface *intf,
 				  THIS_MODULE, NULL, adapter_nr) &&
 	      dvb_usb_device_init(intf, &su3000_properties,
 				  THIS_MODULE, NULL, adapter_nr) &&
-#if 0
 	      dvb_usb_device_init(intf, &t220_properties,
 				  THIS_MODULE, NULL, adapter_nr) &&
-#endif
+	      dvb_usb_device_init(intf, &tevii_properties,
+				  THIS_MODULE, NULL, adapter_nr) &&
 	      dvb_usb_device_init(intf, &tt_s2_4600_properties,
 				  THIS_MODULE, NULL, adapter_nr))) {
 

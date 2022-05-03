@@ -178,7 +178,7 @@ static int si2157_find_and_load_firmware(struct dvb_frontend *fe)
 		}
 	}
 
-	if (!fw_name && !fw_alt_name) {
+	if (required && !fw_name && !fw_alt_name) {
 		dev_err(&client->dev,
 			"unknown chip version Si21%d-%c%c%c ROM 0x%02x\n",
 			part_id, cmd.args[1], cmd.args[3], cmd.args[4], rom_id);
