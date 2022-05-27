@@ -77,6 +77,13 @@ config DVB_STV6111
 
 	  Say Y when you want to support these frontends.
 
+config DVB_CXD2850
+	tristate "Sony CXD2850"
+	depends on DVB_CORE && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Say Y when you want to support this frontend.
+
 config DVB_MXL5XX
 	tristate "MaxLinear MxL5xx based tuner-demodulators"
 	depends on DVB_CORE && I2C
@@ -423,6 +430,13 @@ config DVB_CXD2820R
 
 config DVB_CXD2841ER
 	tristate "Sony CXD2841ER"
+	depends on DVB_CORE && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Say Y when you want to support this frontend.
+
+config DVB_CXD2817
+	tristate "Sony CXD2817"
 	depends on DVB_CORE && I2C
 	default m if !MEDIA_SUBDRV_AUTOSELECT
 	help
@@ -854,6 +868,13 @@ config DVB_TUNER_DIB0090
 
 comment "SEC control devices for DVB-S"
 	depends on DVB_CORE
+
+config DVB_A8290
+	tristate "Allegro A8290 SEC controller"
+	depends on DVB_CORE && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  A SEC controller.
 
 config DVB_A8293
 	tristate "Allegro A8293"

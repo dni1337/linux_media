@@ -68,6 +68,13 @@ config MEDIA_TUNER_IT913X
 	help
 	  ITE Tech IT913x silicon tuner driver.
 
+config DVB_TDA18272
+	tristate "NXP TDA18272 based"
+	depends on MEDIA_SUPPORT && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  A silicon tuner module. Say Y when you want to support this tuner.
+
 config MEDIA_TUNER_TDA18273
 	tristate "NXP TDA18273 silicon tuner"
 	depends on MEDIA_SUPPORT && I2C
@@ -303,6 +310,13 @@ config MEDIA_TUNER_XC5000
 	  A driver for the silicon tuner XC5000 from Xceive.
 	  This device is only used inside a SiP called together with a
 	  demodulator for now.
+
+config DVB_CXD2861
+	tristate "Sony CXD2861"
+	depends on DVB_CORE && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Say Y when you want to support this tuner
 
 config MEDIA_TUNER_AV201X
 	tristate "Airoha Technology AV201x silicon tuner"

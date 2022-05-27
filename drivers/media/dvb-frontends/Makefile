@@ -19,6 +19,7 @@ stv0900-objs := stv0900_core.o stv0900_sw.o
 # Please keep it alphabetically sorted by Kconfig name
 # (e. g. LC_ALL=C sort Makefile)
 
+obj-$(CONFIG_DVB_A8290) += a8290.o
 obj-$(CONFIG_DVB_A8293) += a8293.o
 obj-$(CONFIG_DVB_AF9013) += af9013.o
 obj-$(CONFIG_DVB_AF9033) += af9033.o
@@ -137,6 +138,8 @@ obj-$(CONFIG_DVB_ZL10036) += zl10036.o
 obj-$(CONFIG_DVB_ZL10039) += zl10039.o
 obj-$(CONFIG_DVB_ZL10353) += zl10353.o
 
+obj-$(CONFIG_DVB_CXD2817) += cxd2817.o
+obj-$(CONFIG_DVB_CXD2850) += cxd2850.o
 obj-$(CONFIG_DVB_DS3K) += ds3k.o
 obj-$(CONFIG_DVB_TAS2101) += tas2101.o
 obj-$(CONFIG_DVB_AVL6882) += avl6882.o
