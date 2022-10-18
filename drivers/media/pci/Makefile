@@ -18,6 +18,7 @@ obj-y        +=	ttpci/		\
 		smipcie/	\
 		netup_unidvb/	\
 		tbsecp3/	\
+		hm610/		\
 		intel/
 
 # Please keep it alphabetically sorted by Kconfig name
