@@ -1311,6 +1311,42 @@ static int config_ts(struct mxl *state, MXL_HYDRA_DEMOD_ID_E demodId, MXL_HYDRA_
 	return status;
 }
 
+static int MxLWare_HYDRA_API_CfgTSOutDriveStrength(struct mxl *state, MXL_HYDRA_TS_DRIVE_STRENGTH_E tsDriveStrength)
+{
+  int status = 0;		
+  //MXL_HYDRA_CONTEXT_T * devHandlePtr;
+  //UINT8 mxlStatus = (UINT8)MXL_SUCCESS;
+  
+  //MXLENTERAPISTR(devId);
+  //MXLENTERAPI(MXL_HYDRA_PRINT("tsDriveStrength = %d\n", tsDriveStrength););
+
+  //mxlStatus = MxLWare_HYDRA_Ctrl_GetDeviceContext(devId, &devHandlePtr);
+  //if (mxlStatus == MXL_SUCCESS)
+  //{
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_00, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_05, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_06, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_11, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_12, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_13, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_14, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_16, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_17, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_18, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_22, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_23, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_24, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_25, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_29, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_30, tsDriveStrength);
+	status = SET_REG_FIELD_DATA(PAD_MUX_PAD_DRV_DIGIO_31, tsDriveStrength);
+
+  //}
+
+ // MXLEXITAPISTR(devId, mxlStatus);
+  return status;
+}
+
 static int config_mux(struct mxl *state)
 {
 	SET_REG_FIELD_DATA(XPT_ENABLE_OUTPUT0, 0);
@@ -1425,6 +1461,9 @@ static int probe(struct mxl *state)
 	status = load_fw(state);
 	if (status)
 		return status;
+
+	//Can be used anytime after firmware has been successfully downloaded
+	MxLWare_HYDRA_API_CfgTSOutDriveStrength(state, MXL_HYDRA_TS_DRIVE_STRENGTH_8x);
 
 	config_dis(state, 0);
 	config_dis(state, 1);
