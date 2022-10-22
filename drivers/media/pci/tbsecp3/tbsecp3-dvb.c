@@ -301,6 +301,7 @@ static struct mxl58x_cfg tbs6909_mxl58x_cfg = {
 	.type		= 0x01,
 	.clk		= 24000000,
 	.cap		= 12,
+	.ts_strength = false,
 	.set_voltage	= max_set_voltage,
 };
 

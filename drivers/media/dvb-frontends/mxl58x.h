@@ -11,6 +11,7 @@ struct mxl58x_cfg {
 	u8   type;
 	u32  cap;
 	u32  clk;
+	bool ts_strength;
 
 	int (*set_voltage)(struct i2c_adapter *i2c,
 		enum fe_sec_voltage voltage, u8 rf_in);

@@ -1462,8 +1462,8 @@ static int probe(struct mxl *state)
 	if (status)
 		return status;
 
-	//Can be used anytime after firmware has been successfully downloaded
-	MxLWare_HYDRA_API_CfgTSOutDriveStrength(state, MXL_HYDRA_TS_DRIVE_STRENGTH_8x);
+	if (cfg->ts_strength)
+		MxLWare_HYDRA_API_CfgTSOutDriveStrength(state, MXL_HYDRA_TS_DRIVE_STRENGTH_8x);
 
 	config_dis(state, 0);
 	config_dis(state, 1);
