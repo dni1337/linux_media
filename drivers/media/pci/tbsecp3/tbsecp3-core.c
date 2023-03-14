@@ -197,9 +197,9 @@ static int tbsecp3_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	if (pci_enable_device(pdev) < 0)
 		return -ENODEV;
 
-	ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-	if (ret) {
-		dev_err(&pdev->dev, "32-bit PCI DMA not supported\n");
+	if(dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)))
+		if(dma_set_mask(&pdev->dev, DMA_BIT_MASK(32))) {
+		dev_err(&pdev->dev, "64/32-bit PCI DMA not supported\n");
 		goto err0;
 	}
 	pci_set_master(pdev);
