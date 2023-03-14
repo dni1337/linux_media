@@ -843,8 +843,7 @@ static const struct dvb_frontend_ops si2168_ops = {
 	.read_ucblocks		= si2168_read_ucblocks,
 };
 
-static int si2168_probe(struct i2c_client *client,
-		const struct i2c_device_id *id)
+static int si2168_probe(struct i2c_client *client)
 {
 	struct si2168_config *config = client->dev.platform_data;
 	struct si2168_dev *dev;
@@ -953,7 +952,7 @@ err:
 	return ret;
 }
 
-static int si2168_remove(struct i2c_client *client)
+static void si2168_remove(struct i2c_client *client)
 {
 	struct si2168_dev *dev = i2c_get_clientdata(client);
 
@@ -965,8 +964,6 @@ static int si2168_remove(struct i2c_client *client)
 	dev->fe.demodulator_priv = NULL;
 
 	kfree(dev);
-
-	return 0;
 }
 
 static const struct i2c_device_id si2168_id_table[] = {
@@ -980,7 +977,7 @@ static struct i2c_driver si2168_driver = {
 		.name                = "si2168",
 		.suppress_bind_attrs = true,
 	},
-	.probe		= si2168_probe,
+	.probe_new	= si2168_probe,
 	.remove		= si2168_remove,
 	.id_table	= si2168_id_table,
 };
