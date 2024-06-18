@@ -10,6 +10,8 @@ menuconfig MEDIA_PCI_SUPPORT
 
 if MEDIA_PCI_SUPPORT
 
+source "drivers/media/pci/dvbloopback/Kconfig"
+
 if MEDIA_CAMERA_SUPPORT
 	comment "Media capture support"
 
