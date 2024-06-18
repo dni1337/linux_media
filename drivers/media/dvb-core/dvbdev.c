@@ -87,7 +87,7 @@ static int dvb_device_open(struct inode *inode, struct file *file)
 {
 	struct dvb_device *dvbdev;
 
-	mutex_lock(&dvbdev_mutex);
+	//mutex_lock(&dvbdev_mutex);
 	down_read(&minor_rwsem);
 	dvbdev = dvb_minors[iminor(inode)];
 
@@ -103,12 +103,12 @@ static int dvb_device_open(struct inode *inode, struct file *file)
 		if (file->f_op->open)
 			err = file->f_op->open(inode, file);
 		up_read(&minor_rwsem);
-		mutex_unlock(&dvbdev_mutex);
+		//mutex_unlock(&dvbdev_mutex);
 		return err;
 	}
 fail:
 	up_read(&minor_rwsem);
-	mutex_unlock(&dvbdev_mutex);
+	//mutex_unlock(&dvbdev_mutex);
 	return -ENODEV;
 }
 
