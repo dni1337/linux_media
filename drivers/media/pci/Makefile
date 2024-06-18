@@ -43,3 +43,4 @@ obj-$(CONFIG_VIDEO_TW5864) += tw5864/
 obj-$(CONFIG_VIDEO_TW686X) += tw686x/
 obj-$(CONFIG_VIDEO_TW68) += tw68/
 obj-$(CONFIG_VIDEO_ZORAN) += zoran/
+obj-$(CONFIG_DVB_LOOPBACK_ADAPTER) += dvbloopback/
